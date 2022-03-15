@@ -1,22 +1,20 @@
-from faulthandler import disable
 import os
 from functools import partial
 
 from pathlib import Path
 from itertools import cycle
-from sre_parse import State
-import tkinter
-from turtle import bgcolor
+
 from PIL import Image, ImageTk, ImageSequence
 
 import tkinter as tk
 from tkinter import filedialog as fd
 from tkinter import messagebox
-from pyparsing import col
 
 import ttkbootstrap as ttk
 from ttkbootstrap.constants import *
-from ttkbootstrap.scrolled import ScrolledFrame, ScrolledText
+from ttkbootstrap.scrolled import ScrolledFrame
+
+import math
 
 # USE PIL FOR IMAGE RESIZE
 class TemplateLoader(ttk.LabelFrame):
@@ -93,6 +91,118 @@ class TemplateLoader(ttk.LabelFrame):
         self.shownLimage = ImageTk.PhotoImage(self.currentImage)
         self.imageContainer.configure(image=self.shownLimage)
 
+
+class ImageLoader(ttk.LabelFrame):
+    def __init__(self, master, imagePath = 'assets/nice.jpg'):
+        super().__init__(master, text="Template Image")
+
+        self.originalImage = Image.open(imagePath)
+
+        width = self.originalImage.size[0]
+        height = self.originalImage.size[1]
+
+        self.imageSize = self.originalImage.size
+        self.aspectRatio = (1, width / height)
+
+        self.currentImage = self.originalImage
+        self.tkImage = ImageTk.PhotoImage(self.originalImage)
+
+        self.imageContainer = ttk.Label(self, image=self.tkImage)
+        self.imageContainer.pack(expand=YES, anchor=CENTER)
+
+        self.imageEdits = [(width / 2, height / 2)]
+        self.setupZoom(0.2)
+
+        self.imageContainer.bind('<Button-5>', lambda e: self.zoomOut(e.x, e.y))  # zoom for Linux, wheel scroll down
+        self.imageContainer.bind('<Button-4>', lambda e: self.zoomIn(e.x, e.y))  # zoom for Linux, wheel scroll up
+
+    def setupZoom(self, zoom):
+        width = zoom * self.currentImage.size[0]
+        height = zoom * self.currentImage.size[1]
+
+        self.zoomedImageSize = (width, height)
+        self.zoom = zoom
+        self.zoomLevel = 0
+
+    def zoomIn(self, x, y):
+        coords, box = self.normalizeCoordinates(x, y)
+
+        zoomMultiplier = self.zoom ** self.zoomLevel
+        coords = self.coordsDistance(self.imageEdits[0], coords, zoomMultiplier)
+        #print(coords)
+        self.imageEdits.append(coords)
+        
+        self.currentImage = self.currentImage.resize(
+            self.imageSize, 
+            resample=Image.NEAREST, 
+            box=box
+        )
+        self.tkImage = ImageTk.PhotoImage(self.currentImage)
+        self.imageContainer.configure(image=self.tkImage)
+
+        self.zoomLevel += 1
+
+    def normalizeCoordinates(self, x, y):
+        xCoordinates = [x - self.zoomedImageSize[0] / 2, x + self.zoomedImageSize[0] / 2]
+        yCoordinates = [y - self.zoomedImageSize[1] / 2, y + self.zoomedImageSize[1] / 2]
+
+        for val in xCoordinates:
+            xDisplaceValue = 0
+
+            if val < 0:
+                xDisplaceValue = abs(val)
+            elif val > self.imageSize[0]:
+                xDisplaceValue = self.imageSize[0] - val
+
+            xCoordinates = [x + xDisplaceValue for x in xCoordinates]
+            x += xDisplaceValue
+
+        for val in yCoordinates:
+            yDisplaceValue = 0
+
+            if val < 0:
+                yDisplaceValue = abs(val)
+            elif val > self.imageSize[1]:
+                yDisplaceValue = self.imageSize[1] - val
+
+            yCoordinates = [x + yDisplaceValue for x in yCoordinates]
+            y += yDisplaceValue
+
+        return ((x, y), [xCoordinates[0], yCoordinates[0], xCoordinates[1], yCoordinates[1]])
+
+    def zoomOut(self, x, y):
+        if self.zoomLevel == 0:
+            return
+        elif self.zoomLevel == 1:
+            self.imageEdits.pop()
+            self.currentImage = self.originalImage
+        else:
+            self.imageEdits.pop()
+            coords = tuple(map(sum, zip(*self.imageEdits)))
+            print(self.imageEdits)
+            zoomLevel = self.zoom ** (self.zoomLevel - 2)
+            box = self.getBox(coords[0], coords[1], zoomLevel)
+
+            self.currentImage = self.originalImage.resize(
+                self.imageSize, 
+                resample=Image.NEAREST, 
+                box=box
+            )
+
+        self.tkImage = ImageTk.PhotoImage(self.currentImage)
+        self.imageContainer.configure(image=self.tkImage)
+
+        self.zoomLevel -= 1
+        #print('zoom level:', self.zoomLevel)
+
+    def getBox(self, x, y, sizeMultiplier=1):
+        return [x - sizeMultiplier * (self.zoomedImageSize[0] / 2), y - sizeMultiplier * (self.zoomedImageSize[1] / 2),
+                x + sizeMultiplier * (self.zoomedImageSize[0] / 2), y + sizeMultiplier * (self.zoomedImageSize[1] / 2)]
+
+    def coordsDistance(self, center, point, multiplier=1):
+        x = point[0] - center[0]
+        y = point[1] - center[1]
+        return (multiplier *  x, multiplier * y)
 
 
 class ColorChooser(ttk.Frame):
@@ -195,7 +305,7 @@ class ColorChooser(ttk.Frame):
         r, g, b = rgb
         return f'#{r:02x}{g:02x}{b:02x}'
 
-    def keysPressed(topWidget, entryTextVar, event:tkinter.Event):
+    def keysPressed(topWidget, entryTextVar, event:tk.Event):
         if event.keysym == 'Right':
             # check if the cursor is in the end of the word
             # (don't want to fire the event if the user just wants
@@ -222,7 +332,7 @@ class FontChooser(ttk.Frame):
                 stripethickness=8,
                 subtext="Font Size",
                 bootstyle=WARNING,
-                interactive=True
+                interactive=False
             )
             self.meter.pack(side=TOP, padx=6, pady=6)
 
@@ -244,7 +354,7 @@ class FontChooser(ttk.Frame):
         if newValue >= 0:
             self.meter.configure(amountused=newValue)
 
-    def _wheelScroll(self, event:tkinter.Event):
+    def _wheelScroll(self, event:tk.Event):
         # Respond to Linux (event.num) or Windows (event.delta) wheel event
         if event.num == 4 or event.delta == 120: # scroll up
             self._incrementMeter()
@@ -539,7 +649,7 @@ def CreateApp(master):
     meterFrame.pack(expand=YES)
 
     # =-=-=-=-=-=- Image Options -=-=-=-=-=--=-=
-    templateLoader = TemplateLoader(master=lframe)
+    templateLoader = ImageLoader(master=lframe)
     templateLoader.pack(expand=YES, anchor=SW)
 
 
