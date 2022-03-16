@@ -14,8 +14,6 @@ import ttkbootstrap as ttk
 from ttkbootstrap.constants import *
 from ttkbootstrap.scrolled import ScrolledFrame
 
-import math
-
 # USE PIL FOR IMAGE RESIZE
 class TemplateLoader(ttk.LabelFrame):
     def __init__(self, master, loadingImage = 'assets/loading6.gif', defaultImage = None):
@@ -93,56 +91,69 @@ class TemplateLoader(ttk.LabelFrame):
 
 
 class ImageLoader(ttk.LabelFrame):
-    def __init__(self, master, imagePath = 'assets/nice.jpg'):
+    def __init__(self, master, imagePath = 'assets/nice.jpg', zoom=0.5):
         super().__init__(master, text="Template Image")
 
-        self.originalImage = Image.open(imagePath)
-
-        width = self.originalImage.size[0]
-        height = self.originalImage.size[1]
-
-        self.imageSize = self.originalImage.size
-        self.aspectRatio = (1, width / height)
-
-        self.currentImage = self.originalImage
-        self.tkImage = ImageTk.PhotoImage(self.originalImage)
-
-        self.imageContainer = ttk.Label(self, image=self.tkImage)
+        self.imageContainer = ttk.Label(self)
         self.imageContainer.pack(expand=YES, anchor=CENTER)
 
-        self.imageEdits = [(width / 2, height / 2)]
-        self.setupZoom(0.2)
-
-        self.imageContainer.bind('<Button-5>', lambda e: self.zoomOut(e.x, e.y))  # zoom for Linux, wheel scroll down
-        self.imageContainer.bind('<Button-4>', lambda e: self.zoomIn(e.x, e.y))  # zoom for Linux, wheel scroll up
-
-    def setupZoom(self, zoom):
-        width = zoom * self.currentImage.size[0]
-        height = zoom * self.currentImage.size[1]
-
-        self.zoomedImageSize = (width, height)
+        self.imageEdits = []
         self.zoom = zoom
+        # zoom in count
         self.zoomLevel = 0
 
-    def zoomIn(self, x, y):
-        coords, box = self.normalizeCoordinates(x, y)
+        image = Image.open(imagePath)
+        self.setImage(image)
+        self.__setCurrentImage(image)
+
+        self.imageContainer.bind('<Button-4>', lambda e: self.__zoomIn(e.x, e.y))  # zoom for Linux, wheel scroll up
+        self.imageContainer.bind('<Button-5>', lambda _: self.__zoomOut())  # zoom for Linux, wheel scroll down
+
+    def setImage(self, image:Image.Image):
+        """Sets Imageloaders image.
+
+        Args:
+            image (PIL.Image.Image): image object to load.
+        """
+        self.originalImage = image
+        self.imageSize = self.originalImage.size
+
+        centerCoords = (self.originalImage.size[0] / 2, self.originalImage.size[1] / 2)
+
+        self.imageEdits.clear()
+        self.imageEdits.append(centerCoords)
+
+        width = self.zoom * self.originalImage.size[0]
+        height = self.zoom * self.originalImage.size[1]
+        self.zoomedImageSize = (width, height)
+
+    def __setCurrentImage(self, image:Image.Image):
+        """Sets ImagesLoaders shown image.
+
+        Args:
+            image (PIL.Image.Image): image object to display.
+        """
+        self.currentImage = image
+        self.tkImage = ImageTk.PhotoImage(self.currentImage)
+        self.imageContainer.configure(image=self.tkImage)
+
+    def __zoomIn(self, x, y):
+        coords, box = self.__normalizeCoordinates(x, y)
 
         zoomMultiplier = self.zoom ** self.zoomLevel
-        coords = self.coordsDistance(self.imageEdits[0], coords, zoomMultiplier)
-        #print(coords)
+        coords = self.__coordDistance(self.imageEdits[0], coords, zoomMultiplier)
         self.imageEdits.append(coords)
-        
-        self.currentImage = self.currentImage.resize(
+
+        zoomedInImage = self.currentImage.resize(
             self.imageSize, 
             resample=Image.NEAREST, 
             box=box
         )
-        self.tkImage = ImageTk.PhotoImage(self.currentImage)
-        self.imageContainer.configure(image=self.tkImage)
-
+        
+        self.__setCurrentImage(zoomedInImage)
         self.zoomLevel += 1
 
-    def normalizeCoordinates(self, x, y):
+    def __normalizeCoordinates(self, x, y):
         xCoordinates = [x - self.zoomedImageSize[0] / 2, x + self.zoomedImageSize[0] / 2]
         yCoordinates = [y - self.zoomedImageSize[1] / 2, y + self.zoomedImageSize[1] / 2]
 
@@ -170,36 +181,44 @@ class ImageLoader(ttk.LabelFrame):
 
         return ((x, y), [xCoordinates[0], yCoordinates[0], xCoordinates[1], yCoordinates[1]])
 
-    def zoomOut(self, x, y):
+    def __zoomOut(self):
         if self.zoomLevel == 0:
             return
         elif self.zoomLevel == 1:
             self.imageEdits.pop()
-            self.currentImage = self.originalImage
+            zoomedOutImage = self.originalImage
         else:
             self.imageEdits.pop()
             coords = tuple(map(sum, zip(*self.imageEdits)))
-            print(self.imageEdits)
             zoomLevel = self.zoom ** (self.zoomLevel - 2)
-            box = self.getBox(coords[0], coords[1], zoomLevel)
+            box = self.__getBox(coords[0], coords[1], zoomLevel)
 
-            self.currentImage = self.originalImage.resize(
+            zoomedOutImage = self.originalImage.resize(
                 self.imageSize, 
                 resample=Image.NEAREST, 
                 box=box
             )
 
-        self.tkImage = ImageTk.PhotoImage(self.currentImage)
-        self.imageContainer.configure(image=self.tkImage)
-
+        self.__setCurrentImage(zoomedOutImage)
         self.zoomLevel -= 1
-        #print('zoom level:', self.zoomLevel)
 
-    def getBox(self, x, y, sizeMultiplier=1):
+    def __getBox(self, x, y, sizeMultiplier=1):
+        """Get box coordinates around the center (x, y).
+        The size of the box is zoomedImageSize and is shrinked
+        or enlarged based on the sizeMultiplier.
+
+        Args:
+            x (float): x center coordinate
+            y (float): y center coordinate
+            sizeMultiplier (int, optional): can change the box size. Defaults to 1.
+
+        Returns:
+            list: box coordinates (left, top, right, bottom)
+        """
         return [x - sizeMultiplier * (self.zoomedImageSize[0] / 2), y - sizeMultiplier * (self.zoomedImageSize[1] / 2),
                 x + sizeMultiplier * (self.zoomedImageSize[0] / 2), y + sizeMultiplier * (self.zoomedImageSize[1] / 2)]
 
-    def coordsDistance(self, center, point, multiplier=1):
+    def __coordDistance(self, center, point, multiplier=1):
         x = point[0] - center[0]
         y = point[1] - center[1]
         return (multiplier *  x, multiplier * y)
@@ -675,5 +694,4 @@ if __name__ == "__main__":
     app.geometry('1600x800')
     app.bind_class('TEntry', "<Return>", lambda event: print(type(event)))
     CreateApp(master=app)
-
     app.mainloop()
