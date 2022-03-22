@@ -3,6 +3,7 @@ from functools import partial
 
 from pathlib import Path
 from itertools import cycle
+import tkinter
 
 from PIL import Image, ImageTk, ImageSequence
 
@@ -91,25 +92,36 @@ class TemplateLoader(ttk.LabelFrame):
 
 
 class ImageLoader(ttk.LabelFrame):
-    def __init__(self, master, imagePath = 'assets/nice.jpg', zoom=0.5):
-        super().__init__(master, text="Template Image")
+    def __init__(self, master, imagePath=None, gifImagePath='assets/loading6.gif', zoom=0.5):
+        super().__init__(master, text='Template Image')
 
         self.imageContainer = ttk.Label(self)
         self.imageContainer.pack(expand=YES, anchor=CENTER)
 
         self.imageEdits = []
         self.zoom = zoom
-        # zoom in count
-        self.zoomLevel = 0
+        self.zoomLevel = 0  # zoom count
 
-        image = Image.open(imagePath)
-        self.setImage(image)
-        self.__setCurrentImage(image)
+        # setup loading image
+        # open the GIF and create a cycle iterator
+        with Image.open(gifImagePath) as gif:
+            # create a sequence
+            sequence = ImageSequence.Iterator(gif)
+            images = [ImageTk.PhotoImage(s) for s in sequence]
+            self.loadingImageCycle = cycle(images)
+            # length of each frame
+            self.framerate = gif.info["duration"]
 
-        self.imageContainer.bind('<Button-4>', lambda e: self.__zoomIn(e.x, e.y))  # zoom for Linux, wheel scroll up
-        self.imageContainer.bind('<Button-5>', lambda _: self.__zoomOut())  # zoom for Linux, wheel scroll down
+        if imagePath:
+            image = Image.open(imagePath)
+            self.loadImage(image)
+        else:
+            self._startGif()
 
-    def setImage(self, image:Image.Image):
+        self.imageContainer.bind('<Button-4>', self._zoomIn)  # zoom for Linux, wheel scroll up
+        self.imageContainer.bind('<Button-5>', self._zoomOut)  # zoom for Linux, wheel scroll down
+
+    def loadImage(self, image:Image.Image):
         """Sets Imageloaders image.
 
         Args:
@@ -127,7 +139,13 @@ class ImageLoader(ttk.LabelFrame):
         height = self.zoom * self.originalImage.size[1]
         self.zoomedImageSize = (width, height)
 
-    def __setCurrentImage(self, image:Image.Image):
+        self._setCurrentImage(image)
+
+    def unloadImage(self):
+        self.originalImage.close()
+        self._startGif()
+
+    def _setCurrentImage(self, image:Image.Image):
         """Sets ImagesLoaders shown image.
 
         Args:
@@ -137,11 +155,23 @@ class ImageLoader(ttk.LabelFrame):
         self.tkImage = ImageTk.PhotoImage(self.currentImage)
         self.imageContainer.configure(image=self.tkImage)
 
-    def __zoomIn(self, x, y):
-        coords, box = self.__normalizeCoordinates(x, y)
+    def _startGif(self):
+        self.imageContainer.configure(image=next(self.loadingImageCycle))
+        self.updateGifFunc = self.after(self.framerate, self._nextFrame)
+
+    def _stopGif(self):
+        self.after_cancel(self.updateGifFunc)
+
+    def _nextFrame(self):
+        """Update the image for each frame"""
+        self.imageContainer.configure(image=next(self.loadingImageCycle))
+        self.after(self.framerate, self._nextFrame)
+
+    def _zoomIn(self, e:tkinter.Event):
+        coords, box = self._normalizeCoordinates(e.x, e.y)
 
         zoomMultiplier = self.zoom ** self.zoomLevel
-        coords = self.__coordDistance(self.imageEdits[0], coords, zoomMultiplier)
+        coords = self._coordDistance(self.imageEdits[0], coords, zoomMultiplier)
         self.imageEdits.append(coords)
 
         zoomedInImage = self.currentImage.resize(
@@ -150,10 +180,10 @@ class ImageLoader(ttk.LabelFrame):
             box=box
         )
         
-        self.__setCurrentImage(zoomedInImage)
+        self._setCurrentImage(zoomedInImage)
         self.zoomLevel += 1
 
-    def __normalizeCoordinates(self, x, y):
+    def _normalizeCoordinates(self, x, y):
         xCoordinates = [x - self.zoomedImageSize[0] / 2, x + self.zoomedImageSize[0] / 2]
         yCoordinates = [y - self.zoomedImageSize[1] / 2, y + self.zoomedImageSize[1] / 2]
 
@@ -181,7 +211,7 @@ class ImageLoader(ttk.LabelFrame):
 
         return ((x, y), [xCoordinates[0], yCoordinates[0], xCoordinates[1], yCoordinates[1]])
 
-    def __zoomOut(self):
+    def _zoomOut(self, _):
         if self.zoomLevel == 0:
             return
         elif self.zoomLevel == 1:
@@ -191,7 +221,7 @@ class ImageLoader(ttk.LabelFrame):
             self.imageEdits.pop()
             coords = tuple(map(sum, zip(*self.imageEdits)))
             zoomLevel = self.zoom ** (self.zoomLevel - 2)
-            box = self.__getBox(coords[0], coords[1], zoomLevel)
+            box = self._getBox(coords[0], coords[1], zoomLevel)
 
             zoomedOutImage = self.originalImage.resize(
                 self.imageSize, 
@@ -199,10 +229,10 @@ class ImageLoader(ttk.LabelFrame):
                 box=box
             )
 
-        self.__setCurrentImage(zoomedOutImage)
+        self._setCurrentImage(zoomedOutImage)
         self.zoomLevel -= 1
 
-    def __getBox(self, x, y, sizeMultiplier=1):
+    def _getBox(self, x, y, sizeMultiplier=1):
         """Get box coordinates around the center (x, y).
         The size of the box is zoomedImageSize and is shrinked
         or enlarged based on the sizeMultiplier.
@@ -218,7 +248,7 @@ class ImageLoader(ttk.LabelFrame):
         return [x - sizeMultiplier * (self.zoomedImageSize[0] / 2), y - sizeMultiplier * (self.zoomedImageSize[1] / 2),
                 x + sizeMultiplier * (self.zoomedImageSize[0] / 2), y + sizeMultiplier * (self.zoomedImageSize[1] / 2)]
 
-    def __coordDistance(self, center, point, multiplier=1):
+    def _coordDistance(self, center, point, multiplier=1):
         x = point[0] - center[0]
         y = point[1] - center[1]
         return (multiplier *  x, multiplier * y)
@@ -382,6 +412,7 @@ class FontChooser(ttk.Frame):
 
     def getFontSize(self) -> int:
         return self.meter.amountusedvar.get()
+
 
 class NewTextEditor(ttk.Frame):
 
