@@ -190,6 +190,7 @@ class ImageViewer(ttk.Frame):
         self._filter = Image.ANTIALIAS  # could be: NEAREST, BILINEAR, BICUBIC and ANTIALIAS
         self._previous_state = 0  # previous state of the keyboard
         self.path = path
+        self.zoomLevel = 0
 
         self.rowconfigure(0, weight=1)  # make the CanvasImage widget expandable
         self.columnconfigure(0, weight=1)
@@ -204,11 +205,14 @@ class ImageViewer(ttk.Frame):
                                 xscrollcommand=hbar.set, yscrollcommand=vbar.set)
         self.canvas.grid(row=0, column=0, sticky=NSEW)
         self.canvas.update()  # wait till canvas is created
-        #hbar.configure(command=self.__scroll_x)  # bind scrollbars to the canvas
-        #vbar.configure(command=self.__scroll_y)
+        hbar.configure(command=self._scrollX)  # bind scrollbars to the canvas
+        vbar.configure(command=self._scrollY)
 
         self.canvas.bind('<ButtonPress-1>', self._moveFrom)  # remember canvas position
         self.canvas.bind('<B1-Motion>',     self._moveTo)  # move canvas to the new position
+        self.canvas.bind('<MouseWheel>', self._wheel)  # zoom for Windows and MacOS, but not Linux
+        self.canvas.bind('<Button-5>',   self._wheel)  # zoom for Linux, wheel scroll down
+        self.canvas.bind('<Button-4>',   self._wheel)  # zoom for Linux, wheel scroll up
 
         # Decide if this image huge or not
         self._huge = False  # huge or not
@@ -226,6 +230,18 @@ class ImageViewer(ttk.Frame):
         self._showImage()  # show image on the canvas
         self.canvas.focus_set()  # set focus on the canvas
 
+    # noinspection PyUnusedLocal
+    def _scrollX(self, *args, **_):
+        """ Scroll canvas horizontally and redraw the image """
+        self.canvas.xview(*args)  # scroll horizontally
+        self._showImage()  # redraw the image
+
+    # noinspection PyUnusedLocal
+    def _scrollY(self, *args, **_):
+        """ Scroll canvas vertically and redraw the image """
+        self.canvas.yview(*args)  # scroll vertically
+        self._showImage()  # redraw the image
+
     def _showImage(self):
         imageTk = ImageTk.PhotoImage(self._image)
         imageid = self.canvas.create_image(0, 0, anchor=NW, image=imageTk)
@@ -239,8 +255,16 @@ class ImageViewer(ttk.Frame):
                       self.canvas.canvasx(self.canvas.winfo_width()),
                       self.canvas.canvasy(self.canvas.winfo_height()))
 
-        print(box_image)
+        map(int, box_image)
+        self.canvas.configure(scrollregion=self.canvas.bbox('all'))
+
+        print(self.canvas.winfo_width())
         print(box_canvas)
+
+        x1 = max(box_canvas[0] - box_image[0], 0)  # get coordinates (x1,y1,x2,y2) of the image tile
+        y1 = max(box_canvas[1] - box_image[1], 0)
+        x2 = min(box_canvas[2], box_image[2]) - box_image[0]
+        y2 = min(box_canvas[3], box_image[3]) - box_image[1]
 
     def _moveFrom(self, event:tk.Event):
         """ Remember previous coordinates for scrolling with the mouse """
@@ -250,6 +274,38 @@ class ImageViewer(ttk.Frame):
         """ Drag (move) canvas to the new position """
         self.canvas.scan_dragto(event.x, event.y, gain=1)
         self._showImage()  # zoom tile and show it on the canvas
+
+    def outside(self, x, y):
+        """ Checks if the point (x,y) is outside the image area """
+        bbox = self.canvas.coords(self.container)  # get image area
+        if bbox[0] < x < bbox[2] and bbox[1] < y < bbox[3]:
+            return False  # point (x,y) is inside the image area
+        else:
+            return True  # point (x,y) is outside the image area
+
+    def _wheel(self, event:tk.Event):
+        """ Zoom with mouse wheel """
+        x = self.canvas.canvasx(event.x)  # get coordinates of the event on the canvas
+        y = self.canvas.canvasy(event.y)
+
+        if self.outside(x, y): return  # zoom only inside image area
+        scale = 1.0
+
+        # Respond to Linux (event.num) or Windows (event.delta) wheel event
+        if event.num == 5 or event.delta == -120:  # scroll down, smaller
+            #if round(self._min_side * self.imscale) < 30: return  # image is less than 30 pixels
+            self.imscale /= self._delta
+            scale        /= self._delta
+        elif event.num == 4 or event.delta == 120:  # scroll up, bigger
+            i = min(self.canvas.winfo_width(), self.canvas.winfo_height()) >> 1
+            if i < self.imscale: return  # 1 pixel is bigger than the visible area
+            self.imscale *= self._delta
+            scale        *= self._delta
+        # Take appropriate image from the pyramid
+        self.canvas.scale('all', x, y, scale, scale)  # rescale all objects
+        # Redraw some figures before showing image on the screen
+        #self.redraw_figures()  # method for child classes
+        self._showImage()
 
 
 class ColorChooser(ttk.Frame):
