@@ -341,8 +341,11 @@ def CreateApp(master):
     meterFrame.pack(expand=YES)
 
     # =-=-=-=-=-=- Image Options -=-=-=-=-=--=-=
-    templateLoader = ImageLoader(master=lframe, gifImagePath='assets/loading6.gif')
-    templateLoader.pack(expand=YES, anchor=SW)
+    #templateLoader = ImageLoader(master=lframe, gifImagePath='assets/loading6.gif')
+    #templateLoader.pack(expand=YES, anchor=SW)
+
+    canvas = ImageViewer(lframe, 'assets/nice.jpg')  # create widget
+    canvas.pack(expand=YES, fill=BOTH, pady=(7, 0), anchor=SW)
 
 
 def about():
