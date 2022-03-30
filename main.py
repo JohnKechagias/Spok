@@ -8,30 +8,31 @@ from tkinter import messagebox
 import ttkbootstrap as ttk
 from ttkbootstrap.constants import *
 from ttkbootstrap.scrolled import ScrolledFrame
+from ttkbootstrap.dialogs.dialogs import FontDialog
 
 from widgets import *
 
 class FontChooser(ttk.Frame):
     def __init__(self, master, defaultFontSize=18, maxFontSize=50):
-            super().__init__(master)
-            
-            self.meter = ttk.Meter(
-                master=self,
-                amounttotal=maxFontSize,
-                metersize=150,
-                amountused=defaultFontSize,
-                stripethickness=8,
-                subtext="Font Size",
-                bootstyle=WARNING,
-                interactive=False
-            )
-            self.meter.pack(side=TOP, padx=6, pady=6)
+        super().__init__(master)
+        
+        self.meter = ttk.Meter(
+            master=self,
+            amounttotal=maxFontSize,
+            metersize=150,
+            amountused=defaultFontSize,
+            stripethickness=8,
+            subtext="Font Size",
+            bootstyle=WARNING,
+            interactive=False
+        )
+        self.meter.pack(side=TOP, padx=6, pady=6)
 
-            # get label child of meter widget
-            meterChild = self.meter.winfo_children()[0].winfo_children()[0]
-            meterChild.bind('<Button-5>', self._wheelScroll) # Linux, wheel scroll down
-            meterChild.bind('<Button-4>', self._wheelScroll)  # Linux, wheel scroll up
-            meterChild.bind('<MouseWheel>', self._wheelScroll) # windows wheel scroll keybind
+        # get label child of meter widget
+        meterChild = self.meter.winfo_children()[0].winfo_children()[0]
+        meterChild.bind('<Button-5>', self._wheelScroll) # Linux, wheel scroll down
+        meterChild.bind('<Button-4>', self._wheelScroll)  # Linux, wheel scroll up
+        meterChild.bind('<MouseWheel>', self._wheelScroll) # windows wheel scroll keybind
 
     def _incrementMeter(self):
         newValue = self.meter.amountusedvar.get() + 1
@@ -70,11 +71,18 @@ class NewTextEditor(ttk.Frame):
     ):
         super().__init__(master, padding=padding)
 
+        self.rowconfigure(0, weight=1)  # make the CanvasImage widget expandable
+        self.columnconfigure(1, weight=1)
+        self.columnconfigure(2, weight=1)
+
         # setup text widget
         self._numberedText = ttk.Text(master=self, width=3)
+        self._numberedText.tag_configure('line', justify=RIGHT)
         self._text = ttk.Text(master=self, padx=50, **kwargs)
         self._hbar = None
         self._vbar = None
+
+        self.numberOfTextLines = 0
 
         # delegate text methods to frame
         for method in vars(ttk.Text).keys():
@@ -88,13 +96,16 @@ class NewTextEditor(ttk.Frame):
             self._vbar = ttk.Scrollbar(
                 master=self,
                 bootstyle=bootstyle,
-                command=self.__scrollBoth,
+                command=self._scrollBoth,
                 orient=VERTICAL,
             )
-            self._vbar.place(relx=1.0, relheight=1.0, anchor=NE)
-            self._numberedText.configure(yscrollcommand=self.__updateScroll)
-            self._text.configure(yscrollcommand=self.__updateScroll)
-            self._text.bind('<Return>', self._showLineNumber)
+            self._vbar.grid(row=0, column=2, sticky=NSEW)
+            self._numberedText.configure(yscrollcommand=self._updateScroll)
+            self._text.configure(yscrollcommand=self._updateScroll)
+
+            self._text.bind("<Configure>", self._onChange)
+            self._text.bind('<Key>', self._onChange)
+            self._text.bind('<Button>', self._onChange)
 
         if hbar:
             self._hbar = ttk.Scrollbar(
@@ -104,10 +115,11 @@ class NewTextEditor(ttk.Frame):
                 orient=HORIZONTAL,
             )
             self._hbar.place(rely=1.0, relwidth=1.0, anchor=SW)
-            self._text.configure(xscrollcommand=self._hbar.set, wrap="none")
+            self._text.configure(xscrollcommand=self._hbar.set, wrap=WORD)
         
-        self._numberedText.pack(side=LEFT, fill=Y, expand=YES)
-        self._text.pack(side=LEFT, fill=BOTH, expand=YES)
+        self._numberedText.grid(row=0, column=0, sticky=NS)
+        self._text.grid(row=0, column=1, sticky=NSEW)
+
 
         # position scrollbars
         if self._hbar:
@@ -121,15 +133,27 @@ class NewTextEditor(ttk.Frame):
             self.autohide_scrollbar()
             self.hide_scrollbars()
 
-    def _showLineNumber(self, *_):
-        print(self._text.count('1.0', 'end', 'displaylines'))
+    def _onChange(self, *_):
+        numberOfTextLines = self._text.count('1.0', END, 'indices')[0]
+
+        print(numberOfTextLines)
+
+        if numberOfTextLines != self.numberOfTextLines:
+            self.numberOfTextLines = numberOfTextLines
+            self._updateNumberedText(numberOfTextLines)
+
+    def _updateNumberedText(self, nums):
+        self._numberedText.delete('1.0', END)
+
+        for i in range(nums):
+            self._numberedText.insert(f'{i + 1}.0', f'{i + 1}\n')
 
     
-    def __scrollBoth(self, action, position, type=None):
+    def _scrollBoth(self, action, position, type=None):
         self._text.yview_moveto(position)
         self._numberedText.yview_moveto(position)
 
-    def __updateScroll(self, first, last, type=None):
+    def _updateScroll(self, first, last, type=None):
         self._text.yview_moveto(first)
         self._numberedText.yview_moveto(first)
         self._vbar.set(first, last)
@@ -147,22 +171,6 @@ class NewTextEditor(ttk.Frame):
             relx = (text_width - vbar_width) / text_width
             self._hbar.place(rely=1.0, relwidth=relx)
 
-
-class textEditor(ScrolledFrame):
-
-    def __init__(self, master, defaultFont=0, defaultFontSize=18):
-            super().__init__(master=master, autohide=True, padding=0)
-
-            self.columnconfigure(index=0, weight=1)
-            self.rowconfigure(index=0, weight=1)
-
-            self.numberedLines = ttk.Text(master=self, width=3)
-            self.numberedLines.tag_configure('line', justify='right')
-            #self.numberedLines.config(state=DISABLED)
-            #self.numberedLines.pack(fill=BOTH, expand=YES, side=LEFT)
-
-            self.scrolledText = ttk.Text(master=self)
-            self.scrolledText.grid(row=0,column=0, sticky=NSEW)
 
 def CreateApp(master):
 
@@ -323,6 +331,7 @@ def CreateApp(master):
         master=ccoLabelFrame,
         text='Select Font',
         padding=9, width=18,
+        command=selectFont
     )
     selectFontButton.pack(side=TOP, padx=6, pady=6)
 
@@ -357,6 +366,10 @@ def selectFolder():
 
 def selectFile(stringVar:tk.StringVar, filetype):
     stringVar.set(fd.askopenfilename(filetypes=(filetype,("All files","*.*"))))
+
+def selectFont():
+    x = FontDialog()
+    x.show()
 
 
 if __name__ == "__main__":
