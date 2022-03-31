@@ -11,6 +11,7 @@ from ttkbootstrap.scrolled import ScrolledFrame
 from ttkbootstrap.dialogs.dialogs import FontDialog
 
 from widgets import *
+from textEditor import TextEditor
 
 class FontChooser(ttk.Frame):
     def __init__(self, master, defaultFontSize=18, maxFontSize=50):
@@ -308,7 +309,7 @@ def CreateApp(master):
     fileManagerNotebook = ttk.Notebook(master=fileManagerFrame, bootstyle=(LIGHT))
     fileManagerNotebook.pack(side=TOP, expand=YES, fill=BOTH, padx=10)
     fileManagerNotebook.add(
-        NewTextEditor(fileManagerNotebook),
+        TextEditor(fileManagerNotebook),
         text="Info File", sticky=NSEW)
     fileManagerNotebook.add(
         child=ttk.Label(fileManagerNotebook, text="A notebook tab."), text="Email", sticky=NW

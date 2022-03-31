@@ -10,7 +10,6 @@ import ttkbootstrap as ttk
 from ttkbootstrap.constants import *
 
 from helperFuncs import containToRange
-import numpy as np
 
 
 
