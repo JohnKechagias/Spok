@@ -309,10 +309,9 @@ def CreateApp(master):
     fileManagerNotebook = ttk.Notebook(master=fileManagerFrame, bootstyle=(LIGHT))
     fileManagerNotebook.pack(side=TOP, expand=YES, fill=BOTH, padx=10)
     fileManagerNotebook.add(
-        TextEditor(fileManagerNotebook),
-        text="Info File", sticky=NSEW)
+        TextEditor(fileManagerNotebook), text="Info File", sticky=NSEW)
     fileManagerNotebook.add(
-        child=ttk.Label(fileManagerNotebook, text="A notebook tab."), text="Email", sticky=NW
+        ttk.Label(fileManagerNotebook, text="A notebook tab."), text="Email", sticky=NW
     )
     fileManagerNotebook.add(ttk.Frame(fileManagerNotebook), text="Emailing List")
     fileManagerNotebook.add(ttk.Frame(fileManagerNotebook), text="Tab 4")
@@ -375,6 +374,12 @@ def selectFont():
 
 if __name__ == "__main__":
     app = ttk.Window("Certificates Creation", themename="darkly")
+
+    style = ttk.Style()
+    for color_label in style.colors:
+        color = style.colors.get(color_label)
+        print(color_label, color)
+
     app.geometry('1600x800')
     app.bind_class('TEntry', "<Return>", lambda event: print(type(event)))
     CreateApp(master=app)

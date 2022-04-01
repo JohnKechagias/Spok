@@ -2,6 +2,8 @@ import ttkbootstrap as ttk
 from ttkbootstrap.constants import *
 import tkinter as tk
 
+
+
 class TextEditor(ttk.Frame):
 
     def __init__(
@@ -9,7 +11,6 @@ class TextEditor(ttk.Frame):
         master,
         padding=0,
         bootstyle=DEFAULT,
-        autohide=False,
         vbar=True,
         hbar=False,
         **kwargs,
@@ -17,17 +18,52 @@ class TextEditor(ttk.Frame):
         super().__init__(master, padding=padding)
 
         self.rowconfigure(0, weight=1)
-        self.rowconfigure(1, weight=1)
         self.columnconfigure(1, weight=1)
 
+        darkColor = '#303030'
+        secondaryColor = '#444444'
+        numFontColor = '#687273'
+        textFontColor = '#dac8d2'
+        cursorColor = '#f7d4d4'
+        selectedBackgroundColor = '#444444'
+        selectedForegroundColor = '#f7d4d4'
+
+        font = ('Arial', '14')
+        self._lastLineIndex = 0  # stores the row index of the previously selected line
+
         # setup text widget
-        self._numberedText = NumberedText(master=self)
-        self._text = CText(master=self, wrap=WORD, **kwargs)
+        self._numberedText = NumberedText(
+            master=self,
+            wrap=NONE,
+            autostyle=False,
+            font=font,
+            borderwidth=0,
+            highlightthickness=0,
+            foreground=numFontColor,
+            background=darkColor)
+
+        self._text = CText(
+            master=self,
+            wrap=NONE,
+            undo=True,
+            maxundo=-1,
+            autoseparators=True,
+            autostyle=False,
+            font=font,
+            insertwidth=3,
+            borderwidth=0,
+            highlightthickness=0,
+            background=darkColor,
+            foreground=textFontColor,
+            insertbackground=cursorColor,
+            selectbackground=secondaryColor,
+            **kwargs)
+
+        self._numberedText.tag_configure('tag_selected', foreground=selectedForegroundColor)
+        self._text.tag_configure('tag_selected', background=selectedBackgroundColor)
+
         self._hbar = None
         self._vbar = None
-
-        self._numberedText.grid(row=0, column=0, sticky=NS)
-        self._text.grid(row=0, column=1, sticky=NSEW)
 
         # delegate text methods to frame
         for method in vars(ttk.Text).keys():
@@ -44,7 +80,7 @@ class TextEditor(ttk.Frame):
                 command=self._scrollBoth,
                 orient=VERTICAL,
             )
-            self._vbar.grid(row=0, column=2, sticky=NS)
+            self._vbar.grid(row=0, rowspan=2, column=2, sticky=NS)
             self._numberedText.configure(yscrollcommand=self._updateScroll)
             self._text.configure(yscrollcommand=self._updateScroll)
 
@@ -55,41 +91,40 @@ class TextEditor(ttk.Frame):
                 command=self._text.xview,
                 orient=HORIZONTAL,
             )
-            self._hbar.grid(row=1, column=0, columnspan=3, sticky=EW)
+            self._hbar.grid(row=1, column=0, columnspan=2, sticky=EW)
             self._text.configure(xscrollcommand=self._hbar.set)
-
-        # position scrollbars
-        if self._hbar:
-            self.update_idletasks()
-            self._text_width = self.winfo_reqwidth()
-            self._scroll_width = self.winfo_reqwidth()
 
         self._text.bind('<<TextChanged>>', self._onChange)
 
-        if autohide:
-            self.autohide_scrollbar()
-            self.hide_scrollbars()
+
+        self._numberedText.grid(row=0, column=0, sticky=NS)
+        self._text.grid(row=0, column=1, sticky=NSEW)
 
     def _onChange(self, *_):
         newNumOfLines = self._text.count('1.0', END, 'displaylines')[0]
         self._numberedText.setNumOfLines(newNumOfLines)
 
+        # remove selected background from the last selected line
+        self._numberedText.tag_remove('tag_selected', f'{self._lastLineIndex}.0', f'{self._lastLineIndex}.end')
+        self._text.tag_remove('tag_selected', f'{self._lastLineIndex}.0', f'{self._lastLineIndex}.0+1lines')
+        # get current line row index
+        curRow = self._text.index('insert').split('.')[0]
+        self._lastLineIndex = curRow
+        # set background of currently selected line
+        self._numberedText.tag_add('tag_selected', f'{curRow}.0', f'{curRow}.0+1lines')
+        self._text.tag_add('tag_selected', f'{curRow}.0', f'{curRow}.0+1lines')
     
-    def _scrollBoth(self, action, position, type=None):
+    def _scrollBoth(self, action, position):
         self._text.yview_moveto(position)
         self._numberedText.yview_moveto(position)
 
-    def _updateScroll(self, first, last, type=None):
+    def _updateScroll(self, first, last):
         self._text.yview_moveto(first)
         self._numberedText.yview_moveto(first)
         self._vbar.set(first, last)
 
-    def _combinedVerticalCallback(self, *args):
-            self._text.yview(*args)
-            self._numberedText.yview(*args)
 
-
-class CText(ttk.Text):
+class CText(tk.Text):
     """Text widget which generates an event '<<TextChanged>>' whenever
     the text is modified or the view is changed.
 
@@ -111,6 +146,10 @@ class CText(ttk.Text):
         autoseparators, height, maxundo,
         spacing1, spacing2, spacing3,
         state, tabs, undo, width, wrap,
+
+    WIDGET-SPECIFIC EVENTS
+
+        <<TextChanged>>
     """
 
     def __init__(self, *args, **kwargs):
@@ -133,8 +172,12 @@ class CText(ttk.Text):
 
     def _proxy(self, *args):
         # pass the args to the original widget function
-        cmd = (self._orig,) + args
-        result = self.tk.call(cmd)
+        result = None
+        try:
+            cmd = (self._orig,) + args
+            result = self.tk.call(cmd)
+        except tk.TclError:
+            print(f'_tkinter.TclError. Command args: {args}')
 
         # generate an event if something was added or deleted,
         # or the cursor position changed
@@ -151,7 +194,7 @@ class CText(ttk.Text):
         return result
         
 
-class NumberedText(ttk.Text):
+class NumberedText(tk.Text):
     """Text widget where each line is a number. Numbers are
     sorted in ascending order.
     
@@ -175,11 +218,10 @@ class NumberedText(ttk.Text):
         state, tabs, undo, width, wrap,
     """
     
-    def __init__(self, width=3, *args, **kwargs):
-        super().__init__(width=width, border=0, *args, **kwargs)
+    def __init__(self, width=5, *args, **kwargs):
+        super().__init__(width=width, *args, **kwargs)
         # move every index to the right of the line
         self.tag_configure('tag_right', justify=RIGHT)
-        self.tag_configure('tag_selected', background='white')
         self._numOfLines = 0
 
     def setNumOfLines(self, newNumOfLines):
@@ -192,4 +234,8 @@ class NumberedText(ttk.Text):
         self.delete('1.0', END)
         # recalculate all line indexes
         for i in range(self._numOfLines):
-            self.insert(f'{i + 1}.0', f'{i + 1}\n', 'tag_right')
+            self.insert(END, f'{i + 1}  \n', 'tag_right')
+
+        # remove empty line thats constanlty added by the text widget
+        if self.get('end-1c', END) == '\n':
+            self.delete('end-1c', END)

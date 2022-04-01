@@ -622,18 +622,25 @@ class ColorChooser(ttk.Frame):
         return f'#{r:02x}{g:02x}{b:02x}'
 
     def keysPressed(topWidget, entryTextVar, event:tk.Event):
+        minValue = 0
+        maxValue = 255
+
         if event.keysym == 'Right':
             # check if the cursor is in the end of the word
             # (don't want to fire the event if the user just wants
             # to move the cursor)
             if event.widget.index(INSERT) == len(str(entryTextVar.get())):
-                entryTextVar.set(entryTextVar.get() + 1)
+                value = entryTextVar.get() + 1
+                if value <= maxValue:
+                    entryTextVar.set(value)
         elif event.keysym == 'Left':
             # check if the cursor is at the start of the word
             # (don't want to fire the event if the user just wants
             # to move the cursor)
             if event.widget.index(INSERT) == 0:
-                entryTextVar.set(entryTextVar.get() - 1)
+                value = entryTextVar.get() - 1
+                if value >= minValue:
+                    entryTextVar.set(value)
 
 
 if __name__ == "__main__":
