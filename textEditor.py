@@ -23,7 +23,7 @@ class TextEditor(ttk.Frame):
         darkColor = '#303030'
         secondaryColor = '#444444'
         numFontColor = '#687273'
-        textFontColor = '#dac8d2'
+        textFontColor = '#e8e8e8'
         cursorColor = '#f7d4d4'
         selectedBackgroundColor = '#444444'
         selectedForegroundColor = '#f7d4d4'
@@ -73,7 +73,7 @@ class TextEditor(ttk.Frame):
                 setattr(self, method, getattr(self._text, method))
 
         # setup scrollbars
-        if vbar:
+        if vbar is not None:
             self._vbar = ttk.Scrollbar(
                 master=self,
                 bootstyle=bootstyle,
@@ -84,7 +84,7 @@ class TextEditor(ttk.Frame):
             self._numberedText.configure(yscrollcommand=self._updateScroll)
             self._text.configure(yscrollcommand=self._updateScroll)
 
-        if hbar:
+        if hbar is not None:
             self._hbar = ttk.Scrollbar(
                 master=self,
                 bootstyle=bootstyle,
@@ -96,9 +96,23 @@ class TextEditor(ttk.Frame):
 
         self._text.bind('<<TextChanged>>', self._onChange)
 
-
         self._numberedText.grid(row=0, column=0, sticky=NS)
         self._text.grid(row=0, column=1, sticky=NSEW)
+
+    def loadFile(self, path:str):
+        self.reset()
+        with open(path, 'r', encoding='utf-8') as file:
+            lines = file.readlines()
+            for row in lines:
+                self._text.insert(END, row)
+
+    def reset(self):
+        # remove selected background from the last selected line
+        self._numberedText.tag_remove('tag_selected', f'{self._lastLineIndex}.0', f'{self._lastLineIndex}.end')
+        self._text.tag_remove('tag_selected', f'{self._lastLineIndex}.0', f'{self._lastLineIndex}.0+1lines')
+        self._lastLineIndex = 0
+        # clean text
+        self._text.delete('1.0', END)
 
     def _onChange(self, *_):
         newNumOfLines = self._text.count('1.0', END, 'displaylines')[0]

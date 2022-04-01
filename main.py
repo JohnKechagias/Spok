@@ -298,27 +298,29 @@ def CreateApp(master):
 
     sendEmailButton.grid(row=0, column=2, padx=10)
 
-    successBar = ttk.Floodgauge(master=fileManagerControlsFrame, bootstyle=LIGHT, text="0/100")
+    successBar = ttk.Floodgauge(master=fileManagerControlsFrame, bootstyle=LIGHT, text='0/100')
     successBar.grid(row=0, column=1, sticky=EW, padx=10)
 
 
 
     # =-=-=-=-=-=-=-=-=- File Manager -=-=-=-=-=--=-=-=-=-=
 
-    # # notebook with table and text tabs
-    fileManagerNotebook = ttk.Notebook(master=fileManagerFrame, bootstyle=(LIGHT))
+    # notebook with table and text tabs
+    fileManagerNotebook = ttk.Notebook(master=fileManagerFrame, bootstyle=LIGHT)
     fileManagerNotebook.pack(side=TOP, expand=YES, fill=BOTH, padx=10)
-    fileManagerNotebook.add(
-        TextEditor(fileManagerNotebook), text="Info File", sticky=NSEW)
-    fileManagerNotebook.add(
-        ttk.Label(fileManagerNotebook, text="A notebook tab."), text="Email", sticky=NW
-    )
-    fileManagerNotebook.add(ttk.Frame(fileManagerNotebook), text="Emailing List")
-    fileManagerNotebook.add(ttk.Frame(fileManagerNotebook), text="Tab 4")
-    fileManagerNotebook.add(ttk.Frame(fileManagerNotebook), text="Tab 5")
+
+    filemanagerChilds = {}
+    filemanagerChilds['Info File'] = TextEditor(fileManagerNotebook)
+    filemanagerChilds['Name List'] = DataViewer(fileManagerNotebook, bootstyle=DARK)
+    filemanagerChilds['Email'] = ttk.Label(fileManagerNotebook, text='A notebook tab.')
+    filemanagerChilds['Logger'] = ttk.Frame(fileManagerNotebook)
+
+    for key, value in filemanagerChilds.items():
+        fileManagerNotebook.add(value, text=key, sticky=NSEW)
+
+    filemanagerChilds['Info File'].loadFile('requirements.txt')
 
     # =-=-=-=-=-=- Certificate Creation Options -=-=-=-=-=--=-=
-
     ccoLabelFrame = ttk.LabelFrame(
         master=rframe,
         text='Certificate Creation Options',

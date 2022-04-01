@@ -643,6 +643,84 @@ class ColorChooser(ttk.Frame):
                     entryTextVar.set(value)
 
 
+class DataViewer(ttk.Frame):
+    """A custom Ttk Treeview widget displays a hierarchical collection of items.
+
+    Each item has a textual label, an optional image, and an optional list
+    of data values. The data values are displayed in successive columns
+    after the tree label."""
+
+    def __init__(
+        self,
+        master,
+        bootstyle=DEFAULT,
+        *args,
+        **kwargs,
+    ):
+        """Construct a Ttk Treeview with parent master.
+
+        STANDARD OPTIONS
+
+            class, cursor, style, takefocus, xscrollcommand,
+            yscrollcommand
+
+        WIDGET-SPECIFIC OPTIONS
+
+            columns, displaycolumns, height, padding, selectmode, show
+
+        ITEM OPTIONS
+
+            text, image, values, open, tags
+
+        TAG OPTIONS
+
+            foreground, background, font, image
+        """
+        super().__init__(master)
+
+        # make tree resizable
+        self.rowconfigure(0, weight=1)
+        self.columnconfigure(0, weight=1)
+        # define columns
+        self._columns = ('name', 'email')
+
+        self._tree = ttk.Treeview(
+            self, 
+            bootstyle=bootstyle, 
+            columns=self._columns, 
+            show=HEADINGS,
+            *args, 
+            **kwargs)
+        self._tree.grid(row=0, column=0, sticky=NSEW)
+
+        # define headings
+        self._tree.heading('name', text='Name')
+        self._tree.heading('email', text='Email')
+
+        # setup scrollbar
+        self.scrollbar = ttk.Scrollbar(
+            self, 
+            orient=VERTICAL, 
+            command=self._tree.yview)
+
+        self._tree.configure(yscroll=self.scrollbar.set)
+        self.scrollbar.grid(row=0, column=1, sticky=NS)
+
+        self._tree.bind('<<TreeviewSelect>>', self.itemSelected)
+
+    def loadList(self, list:list):
+        for value in list:
+            self.insertItem(value)
+
+    def insertItem(self, list:list):
+        self._tree.insert('', END, values=list)
+
+    def itemSelected(self, event):
+        for selected_item in self._tree.selection():
+            item = self._tree.item(selected_item)
+            record = item['values']
+
+
 if __name__ == "__main__":
 
     app = ttk.Window("Certificates Creation", themename="darkly")
