@@ -25,10 +25,14 @@ class TextEditor(ttk.Frame):
         numFontColor = '#687273'
         textFontColor = '#e8e8e8'
         cursorColor = '#f7d4d4'
+        darkBackgroundColor = '#222222'
         selectedBackgroundColor = '#444444'
         selectedForegroundColor = '#f7d4d4'
+        findBackground = '#2b2b2b'
+        lighterDarkBackgroundColor= '#363636'
 
         font = ('Arial', '14')
+        findFont = ('Arial', '13')
         self._lastLineIndex = 0  # stores the row index of the previously selected line
 
         # setup text widget
@@ -61,6 +65,7 @@ class TextEditor(ttk.Frame):
 
         self._numberedText.tag_configure('tag_selected', foreground=selectedForegroundColor)
         self._text.tag_configure('tag_selected', background=selectedBackgroundColor)
+        self._text.tag_configure('tag_found', background=selectedBackgroundColor)
 
         self._hbar = None
         self._vbar = None
@@ -99,12 +104,56 @@ class TextEditor(ttk.Frame):
         self._numberedText.grid(row=0, column=0, sticky=NS)
         self._text.grid(row=0, column=1, sticky=NSEW)
 
+        # setup search functionality
+
+        self._isSearchOpen = False
+        self._findText = ttk.StringVar(self, value='Find..')
+        self._findFrame = ttk.Frame(self._text)
+
+        self._findEntry = tk.Entry(
+            self._findFrame,
+            autostyle=False,
+            font=findFont,
+            borderwidth=0,
+            insertwidth=2,
+            highlightthickness=0,
+            background=findBackground,
+            foreground=textFontColor,
+            insertbackground=cursorColor,
+            textvariable=self._findText)
+        self._findEntry.pack(side=LEFT, pady=2, padx=(10, 8))
+
+        #Import the image using PhotoImage function
+        self._findButtonImg= ttk.PhotoImage(file='assets/x3.png')
+
+        self._findCloseButton = tk.Button(
+            self._findFrame,
+            autostyle=False,
+            image=self._findButtonImg,
+            borderwidth=0,
+            highlightthickness=0,
+            background=darkBackgroundColor,
+            activebackground=lighterDarkBackgroundColor,
+            relief=FLAT)
+        self._findCloseButton.pack(side=LEFT, expand=NO, pady=2, padx=(0, 6))
+
+        self._text.bind_all('<Control-KeyPress-f>', self._openSearch, add='+')
+        self._text.bind_all('<Escape>', self._closeSearch, add='+')
+
     def loadFile(self, path:str):
         self.reset()
         with open(path, 'r', encoding='utf-8') as file:
             lines = file.readlines()
             for row in lines:
                 self._text.insert(END, row)
+
+    def _openSearch(self, event):
+        self._findFrame.place(relx=1, rely=0, anchor=NE, bordermode=OUTSIDE)
+        self._isSearchOpen = True
+
+    def _closeSearch(self, event):
+        self._findFrame.place_forget()
+        self._isSearchOpen = False
 
     def reset(self):
         # remove selected background from the last selected line

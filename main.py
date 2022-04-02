@@ -319,6 +319,17 @@ def CreateApp(master):
         fileManagerNotebook.add(value, text=key, sticky=NSEW)
 
     filemanagerChilds['Info File'].loadFile('requirements.txt')
+    filemanagerChilds['Name List'].insertItem(['John Kechagias', 'nice@gmai.com'])
+    filemanagerChilds['Name List'].insertItem(['John Kechagias', 'nice@gmai.com'])
+    filemanagerChilds['Name List'].insertItem(['John Kechagias', 'nice@gmai.com'])
+    filemanagerChilds['Name List'].insertItem(['John Kechagias', 'nice@gmai.com'])
+    filemanagerChilds['Name List'].insertItem(['John Kechagias', 'nice@gmai.com'])
+    filemanagerChilds['Name List'].insertItem(['John Kechagias', 'nice@gmai.com'])
+    filemanagerChilds['Name List'].insertItem(['John Kechagias', 'nice@gmai.com'])
+    filemanagerChilds['Name List'].insertItem(['John Kechagias', 'nice@gmai.com'])
+    filemanagerChilds['Name List'].insertItem(['John Kechagias', 'nice@gmai.com'])
+    filemanagerChilds['Name List'].insertItem(['John Kechagias', 'nice@gmai.com'])
+    filemanagerChilds['Name List'].insertItem(['John Kechagias', 'nice@gmai.com'])
 
     # =-=-=-=-=-=- Certificate Creation Options -=-=-=-=-=--=-=
     ccoLabelFrame = ttk.LabelFrame(
