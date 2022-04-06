@@ -197,7 +197,7 @@ def CreateApp(master):
     filemanagerChilds['Info File'] = TextEditor(fileManagerNotebook)
     filemanagerChilds['Name List'] = DataViewer(fileManagerNotebook, bootstyle=DARK)
     filemanagerChilds['Email'] = EmailCreator(fileManagerNotebook)
-    filemanagerChilds['Logger'] = ttk.Frame(fileManagerNotebook)
+    filemanagerChilds['Logger'] = Logger(fileManagerNotebook) 
 
     for key, value in filemanagerChilds.items():
         fileManagerNotebook.add(value, text=key, sticky=NSEW)

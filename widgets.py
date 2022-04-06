@@ -1,4 +1,5 @@
 import math
+import time
 import tkinter as tk
 import warnings
 
@@ -811,7 +812,6 @@ class EntryWithPlaceholder(ttk.Entry):
             self.putPlaceholder()
 
 
-
 class tkEntryWithPlaceholder(tk.Entry):
     def __init__(self, master=None, placeholder='placeholder', placeholderColor='gray', *args, **kwargs):
         super().__init__(master, *args, **kwargs)
@@ -1119,7 +1119,7 @@ class NumberedText(tk.Text):
     """
     
     def __init__(self, width=5, *args, **kwargs):
-        super().__init__(width=width, *args, **kwargs)
+        super().__init__(width=width, state=DISABLED, *args, **kwargs)
         # move every index to the right of the line
         self.tag_configure('tag_right', justify=RIGHT)
         self._numOfLines = 0
@@ -1130,6 +1130,7 @@ class NumberedText(tk.Text):
             self._recalculateNumbers()
 
     def _recalculateNumbers(self):
+        self.configure(state=NORMAL)
         # clear all indexes
         self.delete('1.0', END)
         # recalculate all line indexes
@@ -1139,6 +1140,193 @@ class NumberedText(tk.Text):
         # remove empty line thats constanlty added by the text widget
         if self.get('end-1c', END) == '\n':
             self.delete('end-1c', END)
+        self.configure(state=DISABLED)
+
+DEBUG = 'debug'
+INFO = 'info'
+WARNING = 'warning'
+ERROR = 'error'
+SUCCESS = 'success'
+
+
+class Logger(ttk.Frame):
+    """Logger widget used to display custom logs and errors."""
+    def __init__(
+        self,
+        master,
+        padding=0,
+        timestamp=True,
+        logLevel=1,
+        bootstyle=DEFAULT,
+        vbar=True,
+        hbar=False,
+        **kwargs,
+    ):
+        """Contract a Logger widget with a parent master.
+
+        STANDARD OPTIONS
+        
+        timestamp: If true every log will have a timestamp
+        logLevel: the minimum level of logLevel to be displayed
+
+        0 = DEBUG, 1 = INFO, 2=WARNING, 3=ERROR/SUCCESS
+        
+        0 should never be used on a live version
+        """
+        super().__init__(master, padding=padding)
+
+        self.rowconfigure(0, weight=1)
+        self.columnconfigure(1, weight=1)
+
+        infoColor = '#ADB5BD'
+        warningColor = '#f39c12'
+        errorColor = '#e74c3c'
+        SuccessColor  = '#00bc8c'
+
+        
+        darkColor = '#303030'
+        secondaryColor = '#444444'
+        numFontColor = '#687273'
+        textFontColor = '#e8e8e8'
+        cursorColor = '#f7d4d4'
+        darkBackgroundColor = '#222222'
+        selectedBackgroundColor = '#444444'
+        selectedForegroundColor = '#f7d4d4'
+        findBackground = '#2b2b2b'
+        lighterDarkBackgroundColor= '#363636'
+
+        font = ('Arial', '14')
+        findFont = ('Arial', '13')
+
+        self._lastLineIndex = 0  # stores the row index of the previously selected line
+        self.logLevel = logLevel  # store logLevel as a public var
+        self._timestamp = timestamp
+
+        self._text = CText(
+            master=self,
+            state=DISABLED,
+            wrap=NONE,
+            undo=True,
+            maxundo=-1,
+            autoseparators=True,
+            autostyle=False,
+            font=font,
+            insertwidth=3,
+            borderwidth=0,
+            highlightthickness=0,
+            background=darkColor,
+            foreground=textFontColor,
+            insertbackground=cursorColor,
+            selectbackground=secondaryColor,
+            **kwargs)
+
+        self._text.tag_configure('tag_selected', foreground=selectedBackgroundColor)
+        self._text.tag_configure('tag_found', foreground=selectedBackgroundColor)
+
+        self._text.tag_configure('tag_debug', foreground=infoColor)
+        self._text.tag_configure('tag_info', foreground=infoColor)
+        self._text.tag_configure('tag_warning', foreground=warningColor)
+        self._text.tag_configure('tag_error', foreground=errorColor)
+        self._text.tag_configure('tag_success', foreground=SuccessColor)
+
+        self._hbar = None
+        self._vbar = None
+
+        # delegate text methods to frame
+        for method in vars(ttk.Text).keys():
+            if any(['pack' in method, 'grid' in method, 'place' in method]):
+                pass
+            else:
+                setattr(self, method, getattr(self._text, method))
+
+        # setup scrollbars
+        if vbar is not None:
+            self._vbar = AutoScrollbar(
+                master=self,
+                bootstyle=bootstyle,
+                command=self._text.yview,
+                orient=VERTICAL,
+            )
+            self._vbar.grid(row=0, rowspan=2, column=2, sticky=NS)
+            self._text.configure(yscrollcommand=self._vbar.set)
+
+        if hbar is not None:
+            self._hbar = AutoScrollbar(
+                master=self,
+                bootstyle=bootstyle,
+                command=self._text.xview,
+                orient=HORIZONTAL,
+            )
+            self._hbar.grid(row=1, column=0, columnspan=2, sticky=EW)
+            self._text.configure(xscrollcommand=self._hbar.set)
+
+        self._text.bind('<<TextChanged>>', self._onChange)
+
+        self._text.grid(row=0, column=1, sticky=NSEW)
+
+        # setup search functionality
+        self._isSearchOpen = False
+        self._findText = ttk.StringVar(self)
+        self._findFrame = ttk.Frame(self._text)
+
+        self._findEntry = tkEntryWithPlaceholder(
+            self._findFrame,
+            placeholder='Find..',
+            autostyle=False,
+            font=findFont,
+            borderwidth=0,
+            insertwidth=2,
+            highlightthickness=0,
+            background=findBackground,
+            foreground=textFontColor,
+            insertbackground=cursorColor,
+            textvariable=self._findText)
+        self._findEntry.pack(side=LEFT, pady=2, padx=(10, 4))
+
+        #Import the image using PhotoImage function
+        self._findButtonImg= ttk.PhotoImage(file='assets/x1.png')
+
+        self._findCloseButton = tk.Button(
+            self._findFrame,
+            autostyle=False,
+            image=self._findButtonImg,
+            borderwidth=0,
+            highlightthickness=0,
+            background=darkBackgroundColor,
+            activebackground=lighterDarkBackgroundColor,
+            relief=FLAT,
+            command=self._closeSearch)
+        self._findCloseButton.pack(side=LEFT, expand=NO, pady=2, padx=(0, 4))
+
+        self._text.bind_all('<Control-KeyPress-f>', lambda e: self._openSearch(), add='+')
+        self._text.bind_all('<Escape>', lambda e: self._closeSearch(), add='+')
+
+        self.log('<<LOGGER INITIALIZED>>',INFO)
+
+    def log(self, message:str, logLevel):
+        """Add a message to the logger. Each message has a logLevel assosiated
+        with it.
+
+        LOG LEVEL OPTIONS
+
+        DEBUG, INFO, WARNING, ERROR, SUCCESS
+        """
+
+        tag = f'tag_{logLevel}'
+        self._text.configure(state=NORMAL)
+        self._text.insert(END, message, tag)
+        self._text.configure(state=DISABLED)
+
+    def _onChange(self, _):
+        pass
+
+    def _openSearch(self):
+        self._findFrame.place(relx=0.98, rely=0, anchor=NE, bordermode=OUTSIDE)
+        self._isSearchOpen = True
+
+    def _closeSearch(self):
+        self._findFrame.place_forget()
+        self._isSearchOpen = False
 
 
 
