@@ -1,4 +1,5 @@
 import math
+from sqlite3 import Timestamp
 import time
 import tkinter as tk
 import warnings
@@ -15,7 +16,7 @@ from helperFuncs import containToRange
 
 
 class ImageLoader(ttk.LabelFrame):
-    def __init__(self, master=None, gifImagePath=None, imagePath=None, zoom=0.5):
+    def __init__(self, master=None, bootstyle=DEFAULT, gifImagePath=None, imagePath=None, zoom=0.5):
         super().__init__(master, text='Template Image')
 
         self.imageContainer = ttk.Label(self)
@@ -174,7 +175,7 @@ class ImageViewer(ttk.Frame):
         self.topFrame = ttk.Frame(self)
         self.topFrame.pack(side=TOP, fill=X, pady=5)
 
-        self.imageCanvas = CanvasImage(self, imagePath)
+        self.imageCanvas = CanvasImage(self, bootstyle=(DEFAULT, ROUND), path=imagePath)
         self.imageCanvas.pack(side=TOP, expand=YES, fill=BOTH)
 
         self.xCoordLabel = ttk.Label(self.topFrame, text='X: ')
@@ -208,7 +209,7 @@ class AutoScrollbar(ttk.Scrollbar):
 
 class CanvasImage(ttk.Frame):
     """ Display and zoom image """
-    def __init__(self, master=None, path=None, x=None, y=None):
+    def __init__(self, master=None, bootstyle=DEFAULT, path=None, x=None, y=None):
         super().__init__(master)
         """ Initialize the ImageFrame """
         self.imScale = 1.0  # scale for the canvas image zoom, public for outer classes
@@ -221,8 +222,8 @@ class CanvasImage(ttk.Frame):
         # Vertical and horizontal scrollbars for canvas
         self.rowconfigure(0, weight=1)  # make the CanvasImage widget expandable
         self.columnconfigure(0, weight=1)
-        hbar = AutoScrollbar(self, orient=HORIZONTAL)
-        vbar = AutoScrollbar(self, orient=VERTICAL)
+        hbar = AutoScrollbar(self, bootstyle=bootstyle, orient=HORIZONTAL)
+        vbar = AutoScrollbar(self, bootstyle=bootstyle, orient=VERTICAL)
         hbar.grid(row=1, column=0, sticky=EW)
         vbar.grid(row=0, column=1, sticky=NS)
 
@@ -1178,6 +1179,7 @@ class Logger(ttk.Frame):
         self.rowconfigure(0, weight=1)
         self.columnconfigure(1, weight=1)
 
+        timestampColor = 'white'
         infoColor = '#ADB5BD'
         warningColor = '#f39c12'
         errorColor = '#e74c3c'
@@ -1220,6 +1222,7 @@ class Logger(ttk.Frame):
             selectbackground=secondaryColor,
             **kwargs)
 
+        self._text.tag_configure('timestamp_tag', foreground=timestampColor)
         self._text.tag_configure('tag_selected', foreground=selectedBackgroundColor)
         self._text.tag_configure('tag_found', foreground=selectedBackgroundColor)
 
@@ -1312,9 +1315,14 @@ class Logger(ttk.Frame):
         DEBUG, INFO, WARNING, ERROR, SUCCESS
         """
 
+        timestamp = ''
+        if self._timestamp:
+            timestamp = time.strftime(f'%H:%M:%S::', time.localtime())
+
         tag = f'tag_{logLevel}'
         self._text.configure(state=NORMAL)
-        self._text.insert(END, message, tag)
+        self._text.insert(END, timestamp, 'timestamp_tag')
+        self._text.insert(END, f'{message}\n', tag)
         self._text.configure(state=DISABLED)
 
     def _onChange(self, _):
@@ -1332,12 +1340,12 @@ class Logger(ttk.Frame):
 
 if __name__ == "__main__":
 
-    app = ttk.Window("Certificates Creation", themename="darkly")
-    app.geometry('1600x800')
+    window = ttk.Window("Certificates Creation", themename="darkly")
+    window.geometry('1600x800')
 
-    app.rowconfigure(0, weight=1)  # make the CanvasImage widget expandable
-    app.columnconfigure(0, weight=1)
-    imageViwer = CanvasImage(app, 'assets/nice.jpg')
+    window.rowconfigure(0, weight=1)  # make the CanvasImage widget expandable
+    window.columnconfigure(0, weight=1)
+    imageViwer = CanvasImage(window, 'assets/nice.jpg')
     imageViwer.pack(fill=BOTH, expand=YES)
 
-    app.mainloop()
+    window.mainloop()
