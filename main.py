@@ -3,16 +3,14 @@ from functools import partial
 
 import tkinter as tk
 from tkinter import filedialog as fd
-from tkinter import messagebox
 
 import ttkbootstrap as ttk
 from ttkbootstrap.constants import *
 from ttkbootstrap.dialogs.dialogs import FontDialog
-
 from widgets import *
 
 class FontChooser(ttk.Frame):
-    def __init__(self, master, defaultFontSize=18, maxFontSize=50):
+    def __init__(self, master, defaultFontSize=18, maxFontSize=50, *args, **kwargs):
         super().__init__(master)
         
         self.meter = ttk.Meter(
@@ -22,8 +20,9 @@ class FontChooser(ttk.Frame):
             amountused=defaultFontSize,
             stripethickness=8,
             subtext="Font Size",
-            bootstyle=WARNING,
-            interactive=False
+            interactive=False,
+            *args,
+            **kwargs
         )
         self.meter.pack(side=TOP, padx=6, pady=6)
 
@@ -65,7 +64,7 @@ class CertificateCreationInput(ttk.Labelframe):
 
         self.font = '-size 13'
         
-        self.templatePath = tk.StringVar()
+        self.imagePath = tk.StringVar()
         self.infoFilePath = tk.StringVar()
 
         self.selectTemplateButton = ttk.Button(
@@ -73,12 +72,12 @@ class CertificateCreationInput(ttk.Labelframe):
             bootstyle=(DEFAULT),
             text='Select Template Image', 
             padding=9, width=20,
-            command=partial(selectFile,
-            self.templatePath, ("Image files",".img .png .jpeg .jpg"))
+            command=partial(self.selectFile,
+            self.imagePath, ("Image files",".img .png .jpeg .jpg"))
         )
         self.selectTemplateButton.grid(row=0, column=0, padx=6, pady=6)
 
-        self.templatePathEntry = ttk.Entry(master=self, font=self.font, textvariable=self.templatePath)
+        self.templatePathEntry = ttk.Entry(master=self, font=self.font, textvariable=self.imagePath)
         self.templatePathEntry.grid(row=0, column=1, columnspan=2, padx=6, pady=6, sticky=EW)
 
         self.selectInfoFileButton = ttk.Button(
@@ -86,7 +85,7 @@ class CertificateCreationInput(ttk.Labelframe):
             bootstyle=(DEFAULT),
             text='Select Info File',
             padding=9, width=20,
-            command=partial(selectFile,
+            command=partial(self.selectFile,
             self.infoFilePath, ("Info files",".txt .exel .xlsx"))
         )
         self.selectInfoFileButton.grid(row=1, column=0, padx=6, pady=6)
@@ -118,6 +117,12 @@ class CertificateCreationInput(ttk.Labelframe):
         )
         self.cleanInfoFileButton.grid(row=3, rowspan=2, column=2, sticky=E, padx=6)
 
+    def selectFolder(self):
+        folderpath = fd.askdirectory(initialdir=os.getcwd(), title='Select folder', mustexist=1)
+
+    def selectFile(self, stringVar:tk.StringVar, filetype):
+        stringVar.set(fd.askopenfilename(filetypes=(filetype,("All files","*.*"))))
+
 
 class App(ttk.Frame):
     def __init__(self, master):
@@ -125,128 +130,136 @@ class App(ttk.Frame):
 
         self.rowconfigure(2, weight=1)
 
-        self.columnconfigure(0, weight=1)
+        self.columnconfigure(0, weight=2, minsize=400)
         self.columnconfigure(1, weight=1)
 
-        # =-=-=-=-=-=- SETUP EVENTS -=-=-=-=-=-=-=-=
         self.modeSelection = ttk.Frame(self)
         self.modeSelection.grid(row=0, column=0, columnspan=3, sticky=NSEW)
 
-        selectedModeLabel = ttk.Label(
+        self.selectedModeLabel = ttk.Label(
 
             master=self.modeSelection, text="Certificates Creator", font="-size 24 -weight bold"
         )
-        selectedModeLabel.pack(side=LEFT)
+        self.selectedModeLabel.pack(side=LEFT)
 
-        modesSelectionLabel = ttk.Label(master=self.modeSelection, text="Select a mode:")
-        modes = ('Certificates Creator', 'Email Sender')
-        modesComboBox= ttk.Combobox(
+        self.modesSelectionLabel = ttk.Label(master=self.modeSelection, text="Select a mode:")
+        self.modes = ('Certificates Creator', 'Email Sender')
+        self.modesComboBox= ttk.Combobox(
             master=self.modeSelection,
-            bootstyle=(DANGER),
+            bootstyle=(LIGHT),
             state=READONLY,
             width=20,
-            values=modes
+            values=self.modes
         )
-        modesComboBox.current(0)
-        modesComboBox.pack(padx=10, side=RIGHT)
-        modesSelectionLabel.pack(side=RIGHT)
+        self.modesComboBox.current(0)
+        self.modesComboBox.pack(padx=10, side=RIGHT)
+        self.modesSelectionLabel.pack(side=RIGHT)
 
         def changeMode(e):
-            t = modesComboBox.get()
-            selectedModeLabel.configure(text=t)
+            t = self.modesComboBox.get()
+            self.selectedModeLabel.configure(text=t)
 
-        modesComboBox.bind("<<ComboboxSelected>>", changeMode)
+        self.modesComboBox.bind("<<ComboboxSelected>>", changeMode)
 
-        #ttk.Progressbar(root, orient=HORIZONTAL, bootstyle=(DARK), value=100).pack(fill=X, pady=10, padx=10)
-        ttk.Separator(self).grid(row=1, column=0, columnspan=3, sticky=EW, pady=(0, 4))
+        ttk.Separator(self).grid(row=1, column=0, columnspan=3, sticky=EW, pady=6)
 
-        lFrame = ttk.Frame(self, padding=5)
-        lFrame.grid(row=2, column=0, sticky=NSEW)
+        self.lFrame = ttk.Frame(self, padding=5)
+        self.lFrame.grid(row=2, column=0, sticky=NSEW)
 
-        mFrame = ttk.Frame(self, padding=5)
-        mFrame.grid(row=2, column=1, sticky=NSEW)
+        self.mFrame = ttk.Frame(self, padding=5)
+        self.mFrame.grid(row=2, column=1, sticky=NSEW)
 
-        rFrame = ttk.Frame(self, padding=5)
-        rFrame.grid(row=2, column=2, sticky=NSEW)
+        self.rFrame = ttk.Frame(self, padding=5)
+        self.rFrame.grid(row=2, column=2, sticky=NSEW)
 
         # =-=-=-=-=-=- Default Options -=-=-=-=-=--=-=
+
         #topFrame = ttk.Frame(master=rframe)
         #topFrame.pack(side=TOP, expand=YES, fill=X, padx=10)
 
         #progressBar = ttk.Progressbar(master=topFrame, value=50)
         #progressBar.pack(side=BOTTOM, expand=YES, fill=X)
+        self.lFrame.rowconfigure(1, weight=1)
 
-        self.certificateOptions= CertificateCreationInput(lFrame)
-        self.certificateOptions.pack(expand=YES, fill=X, side=TOP)
+        self.lFrame.columnconfigure(0, weight=1)
+        
+        self.certificateOptions= CertificateCreationInput(self.lFrame)
+        self.certificateOptions.grid(row=0, column=0, sticky=EW)
+
+        self.certificateOptions.imagePath.trace('w', 
+            partial(self.loadImage, self.certificateOptions.imagePath))
+
+        self.certificateOptions.infoFilePath.trace('w', 
+            partial(self.loadFile, self.certificateOptions.infoFilePath))
+
+        self.canvas = ImageViewer(self.lFrame, 'assets/nice.jpg')  # create widget
+        self.canvas.grid(row=1, column=0, sticky=NSEW)
 
         # =-=-=-=-=-=-=-=-=- File Manager -=-=-=-=-=--=-=-=-=-=
 
         # notebook with table and text tabs
-        fileManagerNotebook = ttk.Notebook(master=mFrame, bootstyle=LIGHT)
-        fileManagerNotebook.pack(expand=YES, fill=BOTH, pady=(8, 0), padx=10)
+        self.fileManagerNotebook = ttk.Notebook(master=self.mFrame, bootstyle=LIGHT)
+        self.fileManagerNotebook.pack(expand=YES, fill=BOTH, pady=(8, 0), padx=10)
 
-        filemanagerChilds = {}
-        filemanagerChilds['Info File'] = TextEditor(fileManagerNotebook)
-        filemanagerChilds['Name List'] = DataViewer(fileManagerNotebook, bootstyle=DARK)
-        filemanagerChilds['Email'] = EmailCreator(fileManagerNotebook)
-        filemanagerChilds['Logger'] = Logger(fileManagerNotebook) 
+        self.filemanagerChildren = {}
+        self.filemanagerChildren['Info File'] = TextEditor(self.fileManagerNotebook)
+        self.filemanagerChildren['Name List'] = DataViewer(self.fileManagerNotebook, bootstyle=DARK)
+        self.filemanagerChildren['Email'] = EmailCreator(self.fileManagerNotebook)
+        self.filemanagerChildren['Logger'] = Logger(self.fileManagerNotebook) 
 
-        for key, value in filemanagerChilds.items():
-            fileManagerNotebook.add(value, text=key, sticky=NSEW)
+        for key, value in self.filemanagerChildren.items():
+            self.fileManagerNotebook.add(value, text=key, sticky=NSEW)
 
-        filemanagerChilds['Info File'].loadFile('requirements.txt')
+        self.filemanagerChildren['Info File'].loadFile('requirements.txt')
 
-        for i in range(30):
-            filemanagerChilds['Name List'].insertItem(['John Kechagias', 'nice@gmail.com'])
+        for _ in range(30):
+            self.filemanagerChildren['Name List'].insertItem(['John Kechagias', 'nice@gmail.com'])
 
         # =-=-=-=-=-=- Certificate Creation Options -=-=-=-=-=--=-=
-        ccoLabelFrame = ttk.LabelFrame(
-            master=rFrame,
+
+        self.ccoLabelFrame = ttk.LabelFrame(
+            master=self.rFrame,
             text='Certificate Creation Options',
             padding=10,
-            width=300
+            width=340
         )
-        ccoLabelFrame.pack(anchor=NE, side=RIGHT)
+        self.ccoLabelFrame.pack(anchor=NE, side=RIGHT)
 
-        selectFontButton = ttk.Button(
-            master=ccoLabelFrame,
+        self.selectFontButton = ttk.Button(
+            master=self.ccoLabelFrame,
+            bootstyle=(OUTLINE, WARNING),
             text='Select Font',
-            padding=9, width=18,
+            padding=9,
             command=selectFont
         )
-        selectFontButton.pack(side=TOP, padx=6, pady=6)
+        self.selectFontButton.pack(expand=YES, fill=X, side=TOP, pady=6)
 
         # =-=-=-=-=-=- Colors Options -=-=-=-=-=--=-=
 
-        colorLabel = ttk.Label(master=ccoLabelFrame, text='Select Font Color', bootstyle=(INVERSE, LIGHT), anchor=CENTER, font="-size 13")
-        colorLabel.pack(expand=YES, fill=X, pady=(7, 10), padx=6)
+        self.colorLabel = ttk.Label(master=self.ccoLabelFrame, text='Select Font Color', bootstyle=(INVERSE, SECONDARY), anchor=CENTER, font="-size 13")
+        self.colorLabel.pack(expand=YES, fill=X, pady=(7, 10))
 
-        colorChooser = ColorChooser(master=ccoLabelFrame)
-        colorChooser.pack(expand=YES, fill=X)
+        self.colorChooser = ColorChooser(master=self.ccoLabelFrame)
+        self.colorChooser.pack(expand=YES, fill=X)
 
-        fontChooser = FontChooser(master=ccoLabelFrame)
-        fontChooser.pack(expand=YES, fill=X)
+        self.fontChooser = FontChooser(master=self.ccoLabelFrame, bootstyle=WARNING)
+        self.fontChooser.pack(expand=YES, fill=X)
 
-        meterFrame = ttk.Frame(master=ccoLabelFrame)
-        meterFrame.pack(expand=YES)
+        self.meterFrame = ttk.Frame(master=self.ccoLabelFrame)
+        self.meterFrame.pack(expand=YES, fill=X)
 
-        # =-=-=-=-=-=- Image Options -=-=-=-=-=--=-=
-        #templateLoader = ImageLoader(master=lframe, gifImagePath='assets/loading6.gif')
-        #templateLoader.pack(expand=YES, anchor=SW)
+    def loadFile(self, path:str, *_):
+        """Load text file in the Text editor widget"""
+        if path.get() != '':
+            self.filemanagerChildren['Info File'].loadFile(path.get())
 
-        canvas = ImageViewer(lFrame, 'assets/nice.jpg')  # create widget
-        canvas.pack(expand=YES, fill=BOTH, pady=(7, 0), anchor=SW)
+    def loadImage(self, path, *_):
+        """Load image in the canvas widget"""
+        # if the user closes the gui before selecting 
+        # a file the path will be empty
+        if path.get() != '':
+            self.canvas.loadImage(path.get())
 
-
-def about():
-    messagebox.showinfo('PythonGuides', 'Python Guides aims at providing best practical tutorials')
-
-def selectFolder():
-    folderpath = fd.askdirectory(initialdir=os.getcwd(), title='Select folder', mustexist=1)
-    print(folderpath)
-
-def selectFile(stringVar:tk.StringVar, filetype):
-    stringVar.set(fd.askopenfilename(filetypes=(filetype,("All files","*.*"))))
 
 def selectFont():
     x = FontDialog()
@@ -254,8 +267,8 @@ def selectFont():
 
 
 if __name__ == "__main__":
-    window = ttk.Window("Certificates Creation", themename="darkly")
 
+    window = ttk.Window("Certificates Creation", themename="darkly", minsize=(600, 400))
     style = ttk.Style()
     for color_label in style.colors:
         color = style.colors.get(color_label)
