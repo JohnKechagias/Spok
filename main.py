@@ -3,6 +3,8 @@ from functools import partial
 
 import tkinter as tk
 from tkinter import filedialog as fd
+from matplotlib.pyplot import grid
+from pyparsing import col
 
 import ttkbootstrap as ttk
 from ttkbootstrap.constants import *
@@ -55,14 +57,15 @@ class FontChooser(ttk.Frame):
         return self.meter.amountusedvar.get()
 
 
-class CertificateCreationInput(ttk.Labelframe):
+class InfoInput(ttk.Labelframe):
     def __init__(self, master):
-        super().__init__(master, text='Options', padding=10)
+        super().__init__(master, text='Certificate Options', padding=10)
 
         self.columnconfigure(1, weight=1)        
         self.columnconfigure(2, weight=1)
 
         self.font = '-size 13'
+        self.infoFileType = ''
         
         self.imagePath = tk.StringVar()
         self.infoFilePath = tk.StringVar()
@@ -72,7 +75,7 @@ class CertificateCreationInput(ttk.Labelframe):
             bootstyle=(DEFAULT),
             text='Select Template Image', 
             padding=9, width=20,
-            command=partial(self.selectFile,
+            command=partial(self._selectFile,
             self.imagePath, ("Image files",".img .png .jpeg .jpg"))
         )
         self.selectTemplateButton.grid(row=0, column=0, padx=6, pady=6)
@@ -85,8 +88,7 @@ class CertificateCreationInput(ttk.Labelframe):
             bootstyle=(DEFAULT),
             text='Select Info File',
             padding=9, width=20,
-            command=partial(self.selectFile,
-            self.infoFilePath, ("Info files",".txt .exel .xlsx"))
+            command=self._selectInfoFile
         )
         self.selectInfoFileButton.grid(row=1, column=0, padx=6, pady=6)
 
@@ -117,12 +119,73 @@ class CertificateCreationInput(ttk.Labelframe):
         )
         self.cleanInfoFileButton.grid(row=3, rowspan=2, column=2, sticky=E, padx=6)
 
-    def selectFolder(self):
+    def _selectInfoFile(self):
+        self._selectFile(self.infoFilePath, ("Info files",".txt .exel .xlsx"))
+        fileExtension = self.infoFilePath.get().split('.')[-1]
+
+        if fileExtension in {'txt'}:
+            self.infoFileType = 'txt'
+        elif fileExtension in {'exel', 'xlsx'}:
+            self.infoFileType = 'exel'
+
+    def _selectFolder(self):
         folderpath = fd.askdirectory(initialdir=os.getcwd(), title='Select folder', mustexist=1)
 
-    def selectFile(self, stringVar:tk.StringVar, filetype):
+    def _selectFile(self, stringVar:tk.StringVar, filetype):
         stringVar.set(fd.askopenfilename(filetypes=(filetype,("All files","*.*"))))
 
+
+class EmailInput(ttk.Labelframe):
+    def __init__(self, master):
+        super().__init__(master, text='Emailing Options', padding=10)
+
+        self.columnconfigure(0, weight=1)        
+        self.columnconfigure(1, weight=1)
+
+        self.font = '-size 13'
+        
+        self.testEmail = tk.StringVar()
+        self.realEmail = tk.StringVar()
+
+        self._testEmailEntry = EntryWithPlaceholder(
+            master=self,
+            placeholder='Testing Email',
+            font=self.font,
+            textvariable=self.testEmail
+        )
+        self._testEmailEntry.grid(row=0, column=0, columnspan=2, padx=6, pady=6, sticky=EW)
+
+        self._realEmailEntry = EntryWithPlaceholder(
+            master=self,
+            placeholder='Real Email',
+            font=self.font,
+            textvariable=self.realEmail
+        )
+        self._realEmailEntry.grid(row=1, column=0, columnspan=2, padx=6, pady=6, sticky=EW)
+
+        ttk.Separator(self).grid(row=2, column=0, columnspan=2, pady=10, sticky=EW)
+
+        self.errorCheckModeCheckButton = ttk.Checkbutton(
+            master=self,
+            bootstyle=(SUCCESS, TOGGLE, ROUND),
+            text='Error Checking'
+        )
+        self.errorCheckModeCheckButton.grid(row=3, column=0, sticky=W, pady=6)
+
+        self.cleanModeCheckButton = ttk.Checkbutton(
+            master=self,
+            bootstyle=(SUCCESS, TOGGLE, ROUND),
+            text='Logging'
+        )
+        self.cleanModeCheckButton.grid(row=4, column=0, sticky=W, pady=6)
+
+        self.cleanInfoFileButton = ttk.Button(
+            master=self,
+            bootstyle=(LIGHT),
+            text='Clean Info File',
+            padding=9, width=18,
+        )
+        self.cleanInfoFileButton.grid(row=3, rowspan=2, column=1, sticky=E, padx=6)
 
 class App(ttk.Frame):
     def __init__(self, master):
@@ -173,26 +236,23 @@ class App(ttk.Frame):
         self.rFrame.grid(row=2, column=2, sticky=NSEW)
 
         # =-=-=-=-=-=- Default Options -=-=-=-=-=--=-=
-
-        #topFrame = ttk.Frame(master=rframe)
-        #topFrame.pack(side=TOP, expand=YES, fill=X, padx=10)
-
-        #progressBar = ttk.Progressbar(master=topFrame, value=50)
-        #progressBar.pack(side=BOTTOM, expand=YES, fill=X)
         self.lFrame.rowconfigure(1, weight=1)
-
         self.lFrame.columnconfigure(0, weight=1)
         
-        self.certificateOptions= CertificateCreationInput(self.lFrame)
-        self.certificateOptions.grid(row=0, column=0, sticky=EW)
+        self.certificateOptions= InfoInput(master=self.lFrame)
+        #self.certificateOptions.grid(row=0, column=0, sticky=EW)
 
+        self.emailingOptions = EmailInput(master=self.lFrame)
+        self.emailingOptions.grid(row=0, column=0, sticky=EW)
+
+        # trace the image and file paths vars so we automatically load them when they change
         self.certificateOptions.imagePath.trace('w', 
             partial(self.loadImage, self.certificateOptions.imagePath))
 
         self.certificateOptions.infoFilePath.trace('w', 
             partial(self.loadFile, self.certificateOptions.infoFilePath))
 
-        self.canvas = ImageViewer(self.lFrame, 'assets/nice.jpg')  # create widget
+        self.canvas = ImageViewer(self.lFrame, 'assets/example.jpg', disableZoomOut=False)  # create widget
         self.canvas.grid(row=1, column=0, sticky=NSEW)
 
         # =-=-=-=-=-=-=-=-=- File Manager -=-=-=-=-=--=-=-=-=-=
@@ -223,7 +283,7 @@ class App(ttk.Frame):
             padding=10,
             width=340
         )
-        self.ccoLabelFrame.pack(anchor=NE, side=RIGHT)
+        self.ccoLabelFrame.pack(expand=YES, fill=Y, anchor=NE, side=RIGHT)
 
         self.selectFontButton = ttk.Button(
             master=self.ccoLabelFrame,
@@ -232,21 +292,27 @@ class App(ttk.Frame):
             padding=9,
             command=selectFont
         )
-        self.selectFontButton.pack(expand=YES, fill=X, side=TOP, pady=6)
+        self.selectFontButton.grid(row=0, column=0, sticky=EW, pady=6)
 
         # =-=-=-=-=-=- Colors Options -=-=-=-=-=--=-=
 
-        self.colorLabel = ttk.Label(master=self.ccoLabelFrame, text='Select Font Color', bootstyle=(INVERSE, SECONDARY), anchor=CENTER, font="-size 13")
-        self.colorLabel.pack(expand=YES, fill=X, pady=(7, 10))
+        self.colorLabel = ttk.Label(
+            master=self.ccoLabelFrame,
+            text='Select Font Color',
+            bootstyle=(INVERSE, SECONDARY),
+            anchor=CENTER, 
+            font="-size 13"
+        )
+        self.colorLabel.grid(row=1, column=0, sticky=EW, pady=(7, 10))
 
         self.colorChooser = ColorChooser(master=self.ccoLabelFrame)
-        self.colorChooser.pack(expand=YES, fill=X)
+        self.colorChooser.grid(row=2, column=0, sticky=EW)
 
         self.fontChooser = FontChooser(master=self.ccoLabelFrame, bootstyle=WARNING)
-        self.fontChooser.pack(expand=YES, fill=X)
+        self.fontChooser.grid(row=3, column=0, sticky=EW)
 
         self.meterFrame = ttk.Frame(master=self.ccoLabelFrame)
-        self.meterFrame.pack(expand=YES, fill=X)
+        self.meterFrame.grid(row=4, column=0, sticky=EW)
 
     def loadFile(self, path:str, *_):
         """Load text file in the Text editor widget"""
@@ -259,7 +325,6 @@ class App(ttk.Frame):
         # a file the path will be empty
         if path.get() != '':
             self.canvas.loadImage(path.get())
-
 
 def selectFont():
     x = FontDialog()

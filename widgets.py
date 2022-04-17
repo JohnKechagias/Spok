@@ -168,13 +168,13 @@ class ImageLoader(ttk.LabelFrame):
 
 
 class ImageViewer(ttk.Frame):
-    def __init__(self, master=None, imagePath=None, *args, **kw_args):
+    def __init__(self, master=None, imagePath=None, *args, **kwArgs):
         super().__init__(master)
 
         self.topFrame = ttk.Frame(self)
         self.topFrame.pack(side=TOP, fill=X, pady=5)
 
-        self.imageCanvas = CanvasImage(self, bootstyle=(DEFAULT, ROUND), path=imagePath)
+        self.imageCanvas = CanvasImage(self, bootstyle=(DEFAULT, ROUND), path=imagePath, *args, **kwArgs)
         self.imageCanvas.pack(side=TOP, expand=YES, fill=BOTH)
 
         self.xCoordLabel = ttk.Label(self.topFrame, text='X: ')
