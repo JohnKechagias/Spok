@@ -2,12 +2,14 @@ import os
 
 import tkinter as tk
 from tkinter import filedialog as fd
+from matplotlib import image
 
 import ttkbootstrap as ttk
 from ttkbootstrap.constants import *
 from ttkbootstrap.dialogs.dialogs import FontDialog
-from ttkbootstrap.validation import validator, add_validation
 from widgets import *
+
+import validators
 
 class FontChooser(ttk.Frame):
     def __init__(self, master, defaultFontSize=18, maxFontSize=50, *args, **kwargs):
@@ -54,10 +56,14 @@ class FontChooser(ttk.Frame):
     def getFontSize(self) -> int:
         return self.meter.amountusedvar.get()
 
-
 class InfoInput(ttk.Labelframe):
-    def __init__(self, master):
-        super().__init__(master, text='Certificate Options', padding=10)
+    def __init__(
+        self, 
+        master,
+        enableErrorChecking=True,
+        enableLogging=True
+        ):
+        super().__init__(master, text='Certificate Options', padding=(16, 10))
 
         self.columnconfigure(1, weight=1)        
         self.columnconfigure(2, weight=1)
@@ -65,8 +71,11 @@ class InfoInput(ttk.Labelframe):
         self.font = '-size 13'
         self.infoFileType = ''
         
-        self._imagePath = tk.StringVar()
-        self._infoFilePath = tk.StringVar()
+        self._imagePath = ttk.StringVar()
+        self._infoFilePath = ttk.StringVar()
+
+        self.enableErrorChecking = ttk.BooleanVar(value=enableErrorChecking)
+        self.enableLogging = ttk.BooleanVar(value=enableLogging)
 
         # We manually call the hanlders instead of tracing the vars because
         # we want to call the handlers whenever the complete path is given
@@ -83,46 +92,56 @@ class InfoInput(ttk.Labelframe):
             master=self,
             bootstyle=(DEFAULT),
             text='Select Template Image',
-            padding=9, 
-            width=20,
+            padding=8, 
+            width=19,
             command=self._selectImageFile
         )
-        self.selectTemplateButton.grid(row=0, column=0, padx=6, pady=4)
+        self.selectTemplateButton.grid(row=0, column=0, padx=(0, 8), pady=4)
 
-        self.imagePathEntry = ttk.Entry(master=self, font=self.font, textvariable=self._imagePath)
-        self.imagePathEntry.grid(row=0, column=1, columnspan=2, padx=6, pady=6, sticky=EW)
+        self.imagePathEntry = ttk.Entry(
+            master=self,
+            font=self.font,
+            textvariable=self._imagePath)
+        self.imagePathEntry.grid(row=0, column=1, columnspan=2, pady=6, sticky=EW)
 
         self.imagePathEntry.bind('<Return>', lambda _: self._callImagePathHandler(), add='+')
-        add_validation(self.imagePathEntry, self.validateFilePath)
+
+        validators.addFileTypeValidation(self.imagePathEntry, 
+            filetypes={'img', 'png', 'jpeg', 'jpg'})
 
         self.selectInfoFileButton = ttk.Button(
             master=self,
             bootstyle=(DEFAULT),
             text='Select Info File',
-            padding=9, width=20,
+            padding=8, 
+            width=19,
             command=self._selectInfoFile
         )
-        self.selectInfoFileButton.grid(row=1, column=0, padx=6, pady=4)
+        self.selectInfoFileButton.grid(row=1, column=0, padx=(0, 8), pady=4)
 
         self.infoPathEntry = ttk.Entry(master=self, font=self.font, textvariable=self._infoFilePath)
-        self.infoPathEntry.grid(row=1, column=1, columnspan=2, padx=6, pady=6, sticky=EW)
+        self.infoPathEntry.grid(row=1, column=1, columnspan=2, pady=6, sticky=EW)
 
         self.infoPathEntry.bind('<Return>', lambda _: self._callInfoFilePathHandler(), add='+')
-        add_validation(self.infoPathEntry, self.validateFilePath, when='key')
+
+        validators.addFileTypeValidation(self.infoPathEntry,
+            filetypes={'txt', 'exel', 'xlsx'})
 
         ttk.Separator(self).grid(row=2, column=0, columnspan=3, pady=10, sticky=EW)
 
         self.errorCheckModeCheckButton = ttk.Checkbutton(
             master=self,
             bootstyle=(WARNING, TOGGLE, SQUARE),
-            text=' Error Checking'
+            text=' Error Checking',
+            variable=self.enableErrorChecking
         )
         self.errorCheckModeCheckButton.grid(row=3, column=0, sticky=W, pady=6)
 
         self.cleanModeCheckButton = ttk.Checkbutton(
             master=self,
             bootstyle=(WARNING, TOGGLE, SQUARE),
-            text=' Logging'
+            text=' Logging',
+            variable=self.enableLogging
         )
         self.cleanModeCheckButton.grid(row=4, column=0, sticky=W, pady=6)
 
@@ -132,7 +151,7 @@ class InfoInput(ttk.Labelframe):
             text='Create Certificates',
             padding=9, width=18,
         )
-        self.createCertificatesButton.grid(row=3, rowspan=2, column=2, sticky=E, padx=6)
+        self.createCertificatesButton.grid(row=3, rowspan=2, column=2, sticky=E)
 
     def _selectImageFile(self):
         self._selectFile(self._imagePath, ("Image files",".img .png .jpeg .jpg"))
@@ -150,71 +169,78 @@ class InfoInput(ttk.Labelframe):
         self._callInfoFilePathHandler()
 
     def _callImagePathHandler(self):
-        if self.imageFunctionToCall is not None:
-            try:            
-                self.imagePathEntry.validate()
-                self.imageFunctionToCall(self._imagePath)
-            except:
-                pass
+        if self.imageFunctionToCall is not None and self.imagePathEntry.validate():
+            self.imageFunctionToCall(self._imagePath)
 
     def _callInfoFilePathHandler(self):
-        if self.infoFileFunctionToCall is not None:
+        if self.infoFileFunctionToCall is not None and self.infoPathEntry.validate():
             self.infoFileFunctionToCall(self._infoFilePath, self.infoFileType)
     
     def _selectFile(self, stringVar:tk.StringVar, filetype):
         stringVar.set(fd.askopenfilename(filetypes=(filetype,("All files","*.*"))))
+ 
 
-    @validator
-    def validateFilePath(event):
-        if not os.path.exists(event.postchangetext):
-            return False
-        else:
-            return True
 
 
 class EmailInput(ttk.Labelframe):
-    def __init__(self, master):
-        super().__init__(master, text='Emailing Options', padding=10)
+    def __init__(
+        self, 
+        master, 
+        enableTestMode=True,
+        enableTwoLevelAuth=True
+        ):
+        super().__init__(master, text='Emailing Options', padding=(16, 10))
 
         self.columnconfigure(0, weight=1)        
         self.columnconfigure(1, weight=1)
 
         self.font = '-size 13'
         
-        self.testEmail = tk.StringVar()
-        self.realEmail = tk.StringVar()
+        self.testEmail = ttk.StringVar()
+        self.realEmail = ttk.StringVar()
 
-        self._testEmailEntry = EntryWithPlaceholder(
+        self.enableTestMode = ttk.BooleanVar(value=enableTestMode)
+        self.enableTwoLevelAuth = ttk.BooleanVar(value=enableTwoLevelAuth)
+
+        self.testEmailEntry = EntryWithPlaceholder(
             master=self,
             placeholder='Testing Email',
             font=self.font,
             textvariable=self.testEmail
         )
-        self._testEmailEntry.grid(row=0, column=0, columnspan=2, padx=6, pady=6, sticky=EW)
+        self.testEmailEntry.grid(row=0, column=0, columnspan=2, pady=6, sticky=EW)
 
-        self._realEmailEntry = EntryWithPlaceholder(
+        self.testEmailEntry.bind('<Return>', lambda _: self.testEmailEntry.validate(), add='+')
+        validators.addEmailValidation(self.testEmailEntry)
+
+        self.realEmailEntry = EntryWithPlaceholder(
             master=self,
             placeholder='Real Email',
             font=self.font,
             textvariable=self.realEmail
         )
-        self._realEmailEntry.grid(row=1, column=0, columnspan=2, padx=6, pady=6, sticky=EW)
+        self.realEmailEntry.grid(row=1, column=0, columnspan=2, pady=6, sticky=EW)
+
+        self.realEmailEntry.bind('<Return>', lambda _: self.realEmailEntry.validate(), add='+')
+        validators.addEmailValidation(self.realEmailEntry)
 
         ttk.Separator(self).grid(row=2, column=0, columnspan=2, pady=10, sticky=EW)
 
-        self.errorCheckModeCheckButton = ttk.Checkbutton(
+        self.testModeCheckButton = ttk.Checkbutton(
             master=self,
             bootstyle=(DANGER, TOGGLE, SQUARE),
-            text=' Use Test Email'
+            text=' Use Test Email',
+            variable=self.enableTestMode
         )
-        self.errorCheckModeCheckButton.grid(row=3, column=0, sticky=W, pady=6)
+        self.testModeCheckButton.grid(row=3, column=0, sticky=W, pady=6)
 
-        self.cleanModeCheckButton = ttk.Checkbutton(
+        self.twoLevelAuthCheckButton = ttk.Checkbutton(
             master=self,
             bootstyle=(WARNING, TOGGLE, SQUARE),
-            text=' Two level Auth'
+            text=' Two level Auth',
+            variable=self.enableTwoLevelAuth
         )
-        self.cleanModeCheckButton.grid(row=4, column=0, sticky=W, pady=6)
+        self.twoLevelAuthCheckButton.grid(row=4, column=0, sticky=W, pady=6)
 
         self.sendEmailsButton = ttk.Button(
             master=self,
@@ -222,7 +248,7 @@ class EmailInput(ttk.Labelframe):
             text='Send Emails',
             padding=9, width=18,
         )
-        self.sendEmailsButton.grid(row=3, rowspan=2, column=1, sticky=E, padx=6)
+        self.sendEmailsButton.grid(row=3, rowspan=2, column=1, sticky=E)
 
 
 class FontConfiguration(ttk.Frame):
