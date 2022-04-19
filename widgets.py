@@ -713,6 +713,9 @@ class DataViewer(ttk.Frame):
             **kwargs)
         self._tree.grid(row=0, column=0, sticky=NSEW)
 
+        self._tree.tag_configure('flaggedEmail', background='#CA9242', foreground='white')
+        self._tree.tag_configure('flaggedName', background='#ca5f42', foreground='white')
+
         # define headings
         self._tree.heading('name', text='Name')
         self._tree.heading('email', text='Email')
@@ -732,8 +735,19 @@ class DataViewer(ttk.Frame):
         for value in list:
             self.insertItem(value)
 
-    def insertItem(self, list:list):
-        self._tree.insert('', END, values=list)
+    def insertItem(self, lis:list):
+        self._tree.insert('', END, values=lis)
+
+    def insertFlaggedItem(self, lis:list, tag:str):
+        """insert an item with a flag (tag).
+        
+        POSSIBLE TAGS
+        
+        flaggedEmail, flaggedName
+
+        !!! only one flag can be used at a time !!!
+        """
+        self._tree.insert('', END, values=lis, tags=[tag])
 
     def itemSelected(self, event):
         for selected_item in self._tree.selection():

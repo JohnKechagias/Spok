@@ -10,6 +10,7 @@ from ttkbootstrap.dialogs.dialogs import FontDialog
 from widgets import *
 
 import validators
+import dataFiltering
 
 class FontChooser(ttk.Frame):
     def __init__(self, master, defaultFontSize=18, maxFontSize=50, *args, **kwargs):
@@ -376,7 +377,7 @@ class App(ttk.Frame):
         self.emailingOptions = EmailInput(master=self.lFrame)
         
         self.certificateOptions.imageFunctionToCall = self.loadImage
-        self.certificateOptions.infoFileFunctionToCall = self.loadFile
+        self.certificateOptions.infoFileFunctionToCall = self.proccessTxtFile
 
         self.canvas = ImageViewer(self.lFrame, 'assets/example.jpg', disableZoomOut=True)  # create widget
         self.canvas.grid(row=1, column=0, sticky=NSEW)
@@ -398,24 +399,56 @@ class App(ttk.Frame):
 
         self.filemanagerChildren['Info File'].loadFile('requirements.txt')
 
-        for _ in range(30):
-            self.filemanagerChildren['Name List'].insertItem(['John Kechagias', 'nice@gmail.com'])
-
         # =-=-=-=-=-=- Certificate Creation Options -=-=-=-=-=--=-=
 
         self.fontChooser = FontConfiguration(master=self.rFrame)
         self.fontChooser.pack(expand=YES, fill=Y, side=RIGHT)
 
+    def proccessTxtFile(self, path:str, *_):
+        logging = self.certificateOptions.enableLogging.get()
+        # create and sort user list based on user name
+        userList = sorted(dataFiltering.txtToList(path.get()), key=lambda a: a[1])
+        # list with valid users
+        self.userList = []
+        # list with flagged users
+        self.flaggedUserList = []
+
+        # filter users based on their flags
+        for item in userList:
+            if item[2] == '':
+                self.userList.append(item)
+            else:
+                self.flaggedUserList.append(item)
+
+        # sort flaggedUserList based on flagIndex
+        self.flaggedUserList = sorted(self.flaggedUserList, key=lambda a: a[2])
+
+        for item in self.userList:
+            self.filemanagerChildren['Name List'].insertItem([item[1], item[0]])
+
+        for item in self.flaggedUserList:
+            tag = ''
+            # convert item flag to tree tag
+            if item[2][0] == 'N':
+                tag = 'flaggedName'
+            elif item[2][0] == 'E':
+                tag = 'flaggedEmail'
+
+            self.filemanagerChildren['Name List'].insertFlaggedItem([item[1], item[0]], tag)
+
+        #dataFiltering.listToTxt(userList)
+        self.loadFile('cleanFile.txt')
+
     def loadFile(self, path:str, *_):
         """Load text file in the Text editor widget"""
-        if path.get() != '':
-            self.filemanagerChildren['Info File'].loadFile(path.get())
+        if os.path.exists(path):
+            self.filemanagerChildren['Info File'].loadFile(path)
 
     def loadImage(self, path, *_):
         """Load image in the canvas widget"""
         # if the user closes the gui before selecting 
         # a file the path will be empty
-        if path.get() != '':
+        if os.path.exists(path.get()):
             self.canvas.loadImage(path.get())
 
     def changeToCertificateMode(self):
