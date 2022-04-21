@@ -722,7 +722,7 @@ class DataViewer(ttk.Frame):
         self._tree.tag_configure('flaggedName', background='#ca5f42', foreground='white')
 
         # define tweak columns
-        self._tree.column("# 1", stretch=NO, width=40)
+        self._tree.column("# 1", stretch=NO, width=45)
         self._tree.heading('index', text='Index')
         self._tree.heading('name', text='Name')
         self._tree.heading('email', text='Email')
