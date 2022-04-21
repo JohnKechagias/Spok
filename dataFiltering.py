@@ -58,9 +58,9 @@ def txtToList(txtPath:str, logging=False) -> None:
     except IOError:
         print("Could not find txt file.")
 
-    for line in lines:
+    for i, line in enumerate(lines):
         # remove tabs, whitespaces and newlines
-        line = re.sub(" +", " ", line.replace('\n', '').replace('\t', ' ').replace('-', ' ').strip())
+        lines[i] = re.sub(" +", " ", line.replace('\n', '').replace('\t', ' ').replace('-', ' ').strip())
 
     # remove empty lines
     lines = filter(lambda a : a != '', lines)

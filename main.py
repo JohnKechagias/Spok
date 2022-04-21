@@ -2,7 +2,6 @@ import os
 
 import tkinter as tk
 from tkinter import filedialog as fd
-from matplotlib import image
 
 import ttkbootstrap as ttk
 from ttkbootstrap.constants import *
@@ -387,6 +386,8 @@ class App(ttk.Frame):
         # notebook with table and text tabs
         self.fileManagerNotebook = ttk.Notebook(master=self.mFrame, bootstyle=LIGHT)
         self.fileManagerNotebook.pack(expand=YES, fill=BOTH, pady=(8, 0), padx=10)
+        # enable key-binds for traversa;
+        self.fileManagerNotebook.enable_traversal()
 
         self.filemanagerChildren = {}
         self.filemanagerChildren['Info File'] = TextEditor(self.fileManagerNotebook)
@@ -434,10 +435,13 @@ class App(ttk.Frame):
             elif item[2][0] == 'E':
                 tag = 'flaggedEmail'
 
-            self.filemanagerChildren['Name List'].insertFlaggedItem([item[1], item[0]], tag)
+            self.filemanagerChildren['Name List'].insertItem([item[1], item[0]], tag)
 
         #dataFiltering.listToTxt(userList)
         self.loadFile('cleanFile.txt')
+
+        # switch to DataViewer tab
+        self.fileManagerNotebook.select(1)
 
     def loadFile(self, path:str, *_):
         """Load text file in the Text editor widget"""

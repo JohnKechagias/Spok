@@ -702,7 +702,12 @@ class DataViewer(ttk.Frame):
         self.rowconfigure(0, weight=1)
         self.columnconfigure(0, weight=1)
         # define columns
-        self._columns = ('name', 'email')
+        self._columns = ('index','name', 'email')
+        # current max row intex
+        self.currIndex = 1
+
+        # true if we are editing a row
+        self._editMode = False
 
         self._tree = ttk.Treeview(
             self, 
@@ -716,7 +721,9 @@ class DataViewer(ttk.Frame):
         self._tree.tag_configure('flaggedEmail', background='#CA9242', foreground='white')
         self._tree.tag_configure('flaggedName', background='#ca5f42', foreground='white')
 
-        # define headings
+        # define tweak columns
+        self._tree.column("# 1", stretch=NO, width=40)
+        self._tree.heading('index', text='Index')
         self._tree.heading('name', text='Name')
         self._tree.heading('email', text='Email')
 
@@ -729,16 +736,31 @@ class DataViewer(ttk.Frame):
         self._tree.configure(yscroll=self.scrollbar.set)
         self.scrollbar.grid(row=0, column=1, sticky=NS)
 
-        self._tree.bind('<<TreeviewSelect>>', self.itemSelected)
+        self._editName = ttk.StringVar()
+        self._editEmail = ttk.StringVar()
+
+        self._editFrame = ttk.Frame(self._tree)
+        self._editFrame.columnconfigure(0, weight=1)
+        self._editFrame.columnconfigure(1, weight=1)
+
+        self._editNameEntry = ttk.Entry(self._editFrame, textvariable=self._editName)
+        self._editNameEntry.grid(row=0, column=0, sticky=EW)
+
+        self._editEmailEntry = ttk.Entry(self._editFrame, textvariable=self._editEmail)
+        self._editEmailEntry.grid(row=0, column=1, sticky=EW)
+
+        self._tree.bind('<<TreeviewSelect>>', self.itemSelected, add='+')
+        self._tree.bind('<Double-Button-1>', self.enterEditMode, add='+')
+        self.bind_all('<Escape>', self.escapeEditMode, add='+')
+        self.bind_all('<Return>', self.leaveEditMode, add='+')
+        self.bind_all('<Button-3>', self.leaveEditMode, add='+')
+        self.bind_all('<Delete>', self.deleteEntry, add='+')
 
     def loadList(self, list:list):
         for value in list:
             self.insertItem(value)
 
-    def insertItem(self, lis:list):
-        self._tree.insert('', END, values=lis)
-
-    def insertFlaggedItem(self, lis:list, tag:str):
+    def insertItem(self, lis:list, tag:str=None):
         """insert an item with a flag (tag).
         
         POSSIBLE TAGS
@@ -747,13 +769,57 @@ class DataViewer(ttk.Frame):
 
         !!! only one flag can be used at a time !!!
         """
-        self._tree.insert('', END, values=lis, tags=[tag])
+        # add item index
+        lis.insert(0, self.currIndex)
+        self.currIndex += 1
 
-    def itemSelected(self, event):
-        for selected_item in self._tree.selection():
-            item = self._tree.item(selected_item)
-            record = item['values']
+        if tag is not None:
+            self._tree.insert('', END, values=lis, tags=[tag])
+        else:
+            self._tree.insert('', END, values=lis)
 
+    def itemSelected(self, event:tk.Event):
+        if self._editMode:
+            self._tree.selection_clear()
+    
+    def enterEditMode(self, event:tk.Event):
+        self._editMode = True
+
+        self._itemToEdit =self._tree.selection()[0]
+        user = self._tree.item(self._itemToEdit)['values']
+        self._itemToEditIndex = user[0]
+        self._editName.set(user[1])
+        self._editEmail.set(user[2])
+
+        self._editFrame.place(relwidth=0.9, anchor=CENTER, relx=0.5, rely=0.5) 
+
+    def leaveEditMode(self, event:tk.Event):
+        """Save changes and leave edit mode"""
+        if self._editMode:
+            newItemValues = [self._itemToEditIndex, self._editName.get(), self._editEmail.get()]
+            self._tree.item(self._itemToEdit, values=newItemValues)
+
+            self._editMode = False
+            self._editFrame.place_forget()
+    
+    def escapeEditMode(self, event:tk.Event):
+        """Leave edit mode without saving the changes"""
+        if self._editMode:
+            self._editMode = False
+            self._editFrame.place_forget()
+
+    def deleteEntry(self, event:tk.Event):
+        if not self._editMode:
+            itemToDelete =self._tree.selection()[0]
+            self._tree.delete(itemToDelete)
+            self.recalculateIndexes()
+
+    def recalculateIndexes(self):
+        for index, item in enumerate(self._tree.get_children()):
+            newItemvalues = self._tree.item(item)['values']
+            newItemvalues[0] = index + 1
+            
+            self._tree.item(item, values=newItemvalues)
 
 class EmailCreator(ttk.Frame):
     def __init__(self, master=None, *args, **kwargs):
