@@ -255,16 +255,15 @@ class FontConfiguration(ttk.Frame):
     def __init__(self, master, font:ttk.font.Font=None):
         super().__init__(master)
         self.fontDialog = FontDialog(parent=master.master, title='Font Selection')
-
         self.showButton = ttk.Button(self, bootstyle=(DARK))
 
         self.ccoLabelFrame = ttk.Labelframe(
             master=self,
             text='Certificate Creation Options',
-            padding=(14, 10, 0 ,10),
+            padding=10,
             width=330
         )
-        self.ccoLabelFrame.pack(expand=YES, fill=Y, anchor=NE, side=RIGHT)
+        self.ccoLabelFrame.pack(expand=YES, fill=BOTH)
 
         self.ccoLabelFrame.rowconfigure(5, weight=1)
 
@@ -272,7 +271,7 @@ class FontConfiguration(ttk.Frame):
             master=self.ccoLabelFrame,
             bootstyle=(OUTLINE, WARNING),
             text='Select Font',
-            padding=9,
+            padding=10,
             command=self._showFontDialog
         )
         self.selectFontButton.grid(row=0, column=0, sticky=EW, pady=6)
@@ -286,7 +285,7 @@ class FontConfiguration(ttk.Frame):
             anchor=CENTER, 
             font="-size 13"
         )
-        self.colorLabel.grid(row=1, column=0, sticky=EW, pady=(7, 10))
+        self.colorLabel.grid(row=1, column=0, sticky=EW, pady=(6, 10))
 
         self.colorChooser = ColorChooser(master=self.ccoLabelFrame)
         self.colorChooser.grid(row=2, column=0, sticky=EW)
