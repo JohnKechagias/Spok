@@ -1,3 +1,4 @@
+from optparse import Values
 import os
 
 import tkinter as tk
@@ -427,7 +428,7 @@ class App(ttk.Frame):
         self.filemanagerChildren['Name List']._reset()
 
         for item in self.userList:
-            self.filemanagerChildren['Name List'].insertEntry([item[1], item[0]], saveEdit=False)
+            self.filemanagerChildren['Name List'].insertEntry(values=[item[1], item[0]], saveEdit=False)
 
         for item in self.flaggedUserList:
             tag = ''
@@ -437,7 +438,7 @@ class App(ttk.Frame):
             elif item[2][0] == 'E':
                 tag = 'flaggedEmail'
 
-            self.filemanagerChildren['Name List'].insertEntry([item[1], item[0]], (tag), saveEdit=False)
+            self.filemanagerChildren['Name List'].insertEntry(values=[item[1], item[0]], tags=(tag), saveEdit=False)
 
         #dataFiltering.listToTxt(userList)
         self.loadFile('cleanFile.txt')

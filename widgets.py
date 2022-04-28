@@ -714,8 +714,6 @@ class DataViewer(ttk.Frame):
         self.columnconfigure(0, weight=1)
         # define columns
         self._columns = ('index', 'name', 'email')
-        # internal var, used in adding the appropriate index to each tree entry
-        self._currIndex = 1
         # used to track where the next valid item (without a tag) should be inserted
         self._currValidIndex = 0
         # stacks that stores edits. (used in undo and redo)
@@ -770,25 +768,24 @@ class DataViewer(ttk.Frame):
 
         self._tree.bind('<<TreeviewSelect>>', self._itemSelected, add='+')
         self._tree.bind('<Double-Button-1>', self._enterEditMode, add='+')
-        self.bind_all('<space>', self._createEntry, add='+')
+        self.bind_all('<space>', self.createEntry, add='+')
         self.bind_all('<Escape>', self._cancelEditMode, add='+')
         self.bind_all('<Return>', self._leaveEditMode, add='+')
         self.bind_all('<Button-3>', self._leaveEditMode, add='+')
         self.bind_all('<Delete>', self._deleteSelectedEntry, add='+')
         self.bind_all('<Control-z>', self._undo, add='+')
+        self.bind_all('<u>', self._redo, add='+')
 
     def notOnEditMode(func):
         @wraps(func)
         def wrapperFunc(self, *args, **kwargs):
             if not self._editMode:
-                func(self, *args, **kwargs)
+                return func(self, *args, **kwargs)
         return wrapperFunc
 
     def loadList(self, itemList:list):
         for item in itemList:
-            self.insertEntry(item, saveEdit=False)
-
-        self._recalculateIndexes()
+            self.insertEntry(values=item, saveEdit=False)
         # select top entry
         self._clearTreeviewSelection()
         self._tree.selection_add(self._tree.get_children()[0])
@@ -796,59 +793,73 @@ class DataViewer(ttk.Frame):
     @notOnEditMode
     def insertEntry(
         self,
-        values:list,
-        tags:tuple=None,
         index:int=END,
+        values:list=None,
+        tags:list|tuple=None,
         focus:bool=False,
         saveEdit=True
-        ):
+        ) -> str:
         """insert an item.
 
         POSSIBLE TAGS
 
         flaggedEmail, flaggedName
         """
-        # add items index to items values
-        values.insert(0, self._currIndex)
-        self._currIndex += 1
+        # default initialize values
+        if values is None:
+            values = ['', '']
 
-        if tags is not None:
-            item = self._tree.insert('', index, values=values, tags=tags)
+        if index is END:
+            itemIndex = len(self._tree.get_children()) + 1
+            values.insert(0, itemIndex)
+        else:
+            values.insert(0, index + 1)
+
+        if tags is not None and len(tags) > 0:
+            entry = self._tree.insert('', index, values=values, tags=tags)
         else:
             self._currValidIndex += 1
-            item = self._tree.insert('', index, values=values)
+            entry = self._tree.insert('', index, values=values)
 
         if saveEdit:
-            self._pushEdit(('insert', item))
+            self._pushEdit(['insert', entry, index, values, tags])
 
         if focus:
             # select entry
             self._clearTreeviewSelection()
-            self._tree.selection_add(item)
+            self._tree.selection_add(entry)
 
-    def _createEntry(self, event:tk.Event=None):
+        # recalculate entries indexes if entry wasn't inserted in the end
+        if index != END or index != itemIndex - 1:
+            self._recalculateIndexes()
+
+        return entry
+
+    def createEntry(self, event:tk.Event=None):
         """create a new treeview entry and add it just before the
         entries with a tag"""
-        self.insertEntry(['', ''], index=self._currValidIndex, focus=True)
-        self._recalculateIndexes()
+        self.insertEntry(self._currValidIndex, focus=True)
 
     def _deleteSelectedEntry(self, event:tk.Event=None):
         try:
             entryToDelete = self._tree.selection()[0]
         except:
             return
-        self._deleteEntry(entryToDelete)
+        self.deleteEntry(entryToDelete)
 
     @notOnEditMode
-    def _deleteEntry(self, entry, saveEdit=True):
+    def deleteEntry(self, entry:str, saveEdit=True):
         # get item index in the tree
-        itemIndex = int(self._tree.item(entry, 'values')[0]) - 1
+        index = int(self._tree.item(entry, 'values')[0]) - 1
 
         if self._tree.item(entry, 'tags') == '':
             self._currValidIndex -= 1
 
         if saveEdit:
-            self._pushEdit(('delete', self._tree.item(entry), itemIndex))
+            values = self._tree.item(entry, 'values')
+            tags = self._tree.item(entry, 'tags')
+            print(entry)
+            self._pushEdit(['delete', entry, index, values, tags])
 
         self._tree.delete(entry)
         self._recalculateIndexes()
@@ -861,11 +872,18 @@ class DataViewer(ttk.Frame):
 
         if numOfItems == 0:
             return
-        elif numOfItems == itemIndex:
-            itemIndex -= 1
+        elif numOfItems == index:
+            index -= 1
 
-        temp = self._tree.get_children()[itemIndex]
+        temp = self._tree.get_children()[index]
         self._tree.selection_add(temp)
+
+    def editEntry(self, entry, values:tuple, saveEdit=True):
+        oldValues = self._tree.item(entry, 'values')
+        newValues = (oldValues[0], values[0], values[1])
+        if saveEdit:
+            self._pushEdit(['edit', entry, oldValues, newValues])
+        self._tree.item(entry, values=newValues)
 
     def _itemSelected(self, event:tk.Event=None):
         pass
@@ -882,16 +900,9 @@ class DataViewer(ttk.Frame):
         """Save changes and leave edit mode"""
         if not self._editMode: return
         newValues = (self._editName.get(), self._editEmail.get())
-        self._editEntryValues(self._itemToEdit, newValues)
+        self.editEntry(self._itemToEdit, newValues)
         self._editMode = False
         self._editFrame.place_forget()
-
-    def _editEntryValues(self, item, values:tuple, saveEdit=True):
-        oldValues = self._tree.item(item, 'values')
-        if saveEdit:
-            self._pushEdit(('edit', item, oldValues))
-        newItemValues = (oldValues[0], values[0], values[1])
-        self._tree.item(item, values=newItemValues)
 
     def _cancelEditMode(self, event:tk.Event=None):
         """Leave edit mode without saving the changes"""
@@ -907,46 +918,45 @@ class DataViewer(ttk.Frame):
 
         edit = self.editStack[self.stackIndex]
         if edit[0] == 'insert':
-            self._deleteEntry(edit[1], saveEdit=False)
+            self.deleteEntry(edit[1], saveEdit=False)
         elif edit[0] == 'delete':
-            values = edit[1]['values']
-            values.pop(0)  # remove entry index
-            tags = edit[1]['tags']
-            self.insertEntry(values=values, tags=tags,
-                index=edit[2], saveEdit=False)
-            if edit[1]['tags'] == '':
-                self._currValidIndex += 1
+            values = list(edit[3])
+            del values[0]  # remove entry index
+            tags = edit[4]
+            entry = self.insertEntry(edit[2], values, tags, saveEdit=False)
+            # because we insert a new entry, the entrys ID has
+            # changed, so we need to update it
+            edit[1] = entry
         elif edit[0] == 'edit':
             values = list(edit[2])
             values.pop(0)
-            self._editEntryValues(edit[1], values, saveEdit=False)
+            self.editEntry(edit[1], values, saveEdit=False)
         self.stackIndex -= 1
 
     @notOnEditMode
-    def _redo(self):
+    def _redo(self, event:tk.Event=None):
         """redo the latest edit"""
-        if self.stackIndex == self.stackSize - 1:
+        if self.stackIndex == len(self.editStack) - 1 or self.stackIndex < -1:
             return
 
         self.stackIndex += 1
         edit = self.editStack[self.stackIndex]
         if edit[0] == 'insert':
-            self._deleteEntry(edit[1], saveEdit=False)
+            values = list(edit[3])
+            del values[0]  # remove entry index
+            tags = edit[4]
+            entry = self.insertEntry(edit[2], values, tags, saveEdit=False)
+            # because we insert a new entry, the entrys ID has
+            # changed, so we need to update it
+            edit[1] = entry
         elif edit[0] == 'delete':
-            values = edit[1]['values']
-            values.pop(0)  # remove entry index
-            tags = edit[1]['tags']
-            self.insertEntry(values=values, tags=tags,
-                index=edit[2], saveEdit=False)
-            if edit[1]['tags'] == '':
-                self._currValidIndex += 1
+            self.deleteEntry(edit[1], saveEdit=False)
         elif edit[0] == 'edit':
-            values = list(edit[2])
-            values.pop(0)
-            self._editEntryValues(edit[1], values, saveEdit=False)
-        self.stackIndex -= 1
+            values = list(edit[3])
+            del values[0]
+            self.editEntry(edit[1], values, saveEdit=False)
 
-    def _pushEdit(self, edit):
+    def _pushEdit(self, edit:list):
         self.editStack.insert(self.stackIndex + 1, edit)
         if self.stackSize < len(self.editStack):
             self._deleteOldestEdit()
@@ -978,7 +988,6 @@ class DataViewer(ttk.Frame):
 
         if len(items) != 0:
             self._tree.delete(*items)
-        self._currIndex = 1
         self._currValidIndex = 0
         self.editStack = []
         self._cancelEditMode()
