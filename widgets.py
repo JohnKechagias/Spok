@@ -1,12 +1,13 @@
 import math
 import time
-import tkinter as tk
+
 import warnings
 
 from PIL import Image, ImageTk, ImageSequence
 from itertools import cycle
-from functools import partial
+from functools import partial, wraps
 
+import tkinter as tk
 import ttkbootstrap as ttk
 from ttkbootstrap.constants import *
 
@@ -98,11 +99,11 @@ class ImageLoader(ttk.LabelFrame):
         self.imageEdits.append(coords)
 
         zoomedInImage = self.currentImage.resize(
-            self.imageSize, 
-            resample=Image.NEAREST, 
+            self.imageSize,
+            resample=Image.NEAREST,
             box=box
         )
-        
+
         self._setCurrentImage(zoomedInImage)
         self.zoomLevel += 1
 
@@ -137,8 +138,8 @@ class ImageLoader(ttk.LabelFrame):
             box = self._getBox(coords[0], coords[1], zoomLevel)
 
             zoomedOutImage = self.originalImage.resize(
-                self.imageSize, 
-                resample=Image.NEAREST, 
+                self.imageSize,
+                resample=Image.NEAREST,
                 box=box
             )
 
@@ -248,13 +249,13 @@ class CanvasImage(ttk.Frame):
         # Handle keystrokes in idle mode, because program slows down on a weak computers,
         # when too many key stroke events in the same time
         self.canvas.bind('<Key>', lambda event: self.canvas.after_idle(self._keystroke, event))
-        
+
         # Decide if this image huge or not
         self._huge = False  # huge or not
         self._hugeSize = 14000  # define size of the huge image
         self._bandWidth = 1024  # width of the tile band
         Image.MAX_IMAGE_PIXELS = 1000000000  # suppress DecompressionBombError for the big image
-        
+
         self.xCoord = tk.IntVar(value=0)
         self.yCoord = tk.IntVar(value=0)
 
@@ -377,7 +378,7 @@ class CanvasImage(ttk.Frame):
             if self.canvas.canvasy(self.canvas.winfo_height()) > int(y2 - y1):
                 self._imageCoversYaxis = FALSE
                 self._currCenter[1] = self.canvas.canvasy(0) - box_scroll[1]
-            else: 
+            else:
                 self._imageCoversYaxis = TRUE
                 self._currCenter[1] = int(y1 / self._scale)
 
@@ -610,7 +611,7 @@ class ColorChooser(ttk.Frame):
         # round the float value
         self.color[colorName]['value'].set(round(tempValue))
         self.updateColoredButton()
-        
+
         self.update_in_progress = False
 
     def updateColoredButton(self):
@@ -623,10 +624,10 @@ class ColorChooser(ttk.Frame):
         else:
             self.coloredButton.configure(foreground='white', activeforeground='white')
         self.coloredButton.configure(background=colorCode, activebackground=colorCode, text=colorCode)
-    
+
     def getColorTuple(self):
         return (i['value'].get() for i in self.color.values())
-    
+
     def setColor(self, color:tuple):
         for i, channel in enumerate(self.color.values()):
             channel['value'].set(color[i])
@@ -664,11 +665,21 @@ class ColorChooser(ttk.Frame):
 
 
 class DataViewer(ttk.Frame):
-    """A custom Ttk Treeview widget displays a hierarchical collection of items.
+    """A custom 2D Ttk Treeview widget that displays a hierarchical collection of items.
 
-    Each item has a textual label, an optional image, and an optional list
-    of data values. The data values are displayed in successive columns
-    after the tree label."""
+    Each item has a textual label and an optional list of data values.
+    The data values are displayed in successive columns
+    after the tree label. Entries have 2 values, name and email.
+
+    The treeview supports 3 types of entries:
+
+    1. Entries without a 'flaggedEmail' or 'flaggedName' tag\n
+    2. Entries with a 'flaggedEmail' tag\n
+    3. Entries with a 'flaggedName' tag\n
+
+    Each type of entry has a distinct background color.
+    Entries are grouped together based on their tag and each group
+    is shown in the order thats specified above."""
 
     def __init__(
         self,
@@ -690,7 +701,7 @@ class DataViewer(ttk.Frame):
 
         ITEM OPTIONS
 
-            text, image, values, open, tags
+            text, values, open, tags
 
         TAG OPTIONS
 
@@ -702,26 +713,34 @@ class DataViewer(ttk.Frame):
         self.rowconfigure(0, weight=1)
         self.columnconfigure(0, weight=1)
         # define columns
-        self._columns = ('index','name', 'email')
-        # current max row intex
-        self.currIndex = 1
-
+        self._columns = ('index', 'name', 'email')
+        # internal var, used in adding the appropriate index to each tree entry
+        self._currIndex = 1
+        # used to track where the next valid item (without a tag) should be inserted
+        self._currValidIndex = 0
+        # stacks that stores edits. (used in undo and redo)
+        self.editStack = []
+        # stack size
+        self.stackSize = 25
+        # stack index that points to the current edit
+        self.stackIndex = -1
         # true if we are editing a row
         self._editMode = False
+        self._itemToEdit = None
 
         self._tree = ttk.Treeview(
-            self, 
-            bootstyle=bootstyle, 
-            columns=self._columns, 
+            self,
+            bootstyle=bootstyle,
+            columns=self._columns,
             show=HEADINGS,
-            *args, 
+            *args,
             **kwargs)
         self._tree.grid(row=0, column=0, sticky=NSEW)
 
         self._tree.tag_configure('flaggedEmail', background='#CA9242', foreground='white')
         self._tree.tag_configure('flaggedName', background='#ca5f42', foreground='white')
 
-        # define tweak columns
+        # define and tweak columns
         self._tree.column("# 1", stretch=NO, width=45)
         self._tree.heading('index', text='Index')
         self._tree.heading('name', text='Name')
@@ -729,8 +748,8 @@ class DataViewer(ttk.Frame):
 
         # setup scrollbar
         self.scrollbar = AutoScrollbar(
-            self, 
-            orient=VERTICAL, 
+            self,
+            orient=VERTICAL,
             command=self._tree.yview)
 
         self._tree.configure(yscroll=self.scrollbar.set)
@@ -749,77 +768,221 @@ class DataViewer(ttk.Frame):
         self._editEmailEntry = ttk.Entry(self._editFrame, textvariable=self._editEmail)
         self._editEmailEntry.grid(row=0, column=1, sticky=EW)
 
-        self._tree.bind('<<TreeviewSelect>>', self.itemSelected, add='+')
-        self._tree.bind('<Double-Button-1>', self.enterEditMode, add='+')
-        self.bind_all('<Escape>', self.escapeEditMode, add='+')
-        self.bind_all('<Return>', self.leaveEditMode, add='+')
-        self.bind_all('<Button-3>', self.leaveEditMode, add='+')
-        self.bind_all('<Delete>', self.deleteEntry, add='+')
+        self._tree.bind('<<TreeviewSelect>>', self._itemSelected, add='+')
+        self._tree.bind('<Double-Button-1>', self._enterEditMode, add='+')
+        self.bind_all('<space>', self._createEntry, add='+')
+        self.bind_all('<Escape>', self._cancelEditMode, add='+')
+        self.bind_all('<Return>', self._leaveEditMode, add='+')
+        self.bind_all('<Button-3>', self._leaveEditMode, add='+')
+        self.bind_all('<Delete>', self._deleteSelectedEntry, add='+')
+        self.bind_all('<Control-z>', self._undo, add='+')
 
-    def loadList(self, list:list):
-        for value in list:
-            self.insertItem(value)
+    def notOnEditMode(func):
+        @wraps(func)
+        def wrapperFunc(self, *args, **kwargs):
+            if not self._editMode:
+                func(self, *args, **kwargs)
+        return wrapperFunc
 
-    def insertItem(self, lis:list, tag:str=None):
-        """insert an item with a flag (tag).
-        
+    def loadList(self, itemList:list):
+        for item in itemList:
+            self.insertEntry(item, saveEdit=False)
+
+        self._recalculateIndexes()
+        # select top entry
+        self._clearTreeviewSelection()
+        self._tree.selection_add(self._tree.get_children()[0])
+
+    @notOnEditMode
+    def insertEntry(
+        self,
+        values:list,
+        tags:tuple=None,
+        index:int=END,
+        focus:bool=False,
+        saveEdit=True
+        ):
+        """insert an item.
+
         POSSIBLE TAGS
-        
+
         flaggedEmail, flaggedName
-
-        !!! only one flag can be used at a time !!!
         """
-        # add item index
-        lis.insert(0, self.currIndex)
-        self.currIndex += 1
+        # add items index to items values
+        values.insert(0, self._currIndex)
+        self._currIndex += 1
 
-        if tag is not None:
-            self._tree.insert('', END, values=lis, tags=[tag])
+        if tags is not None:
+            item = self._tree.insert('', index, values=values, tags=tags)
         else:
-            self._tree.insert('', END, values=lis)
+            self._currValidIndex += 1
+            item = self._tree.insert('', index, values=values)
 
-    def itemSelected(self, event:tk.Event):
-        if self._editMode:
-            self._tree.selection_clear()
-    
-    def enterEditMode(self, event:tk.Event):
+        if saveEdit:
+            self._pushEdit(('insert', item))
+
+        if focus:
+            # select entry
+            self._clearTreeviewSelection()
+            self._tree.selection_add(item)
+
+    def _createEntry(self, event:tk.Event=None):
+        """create a new treeview entry and add it just before the
+        entries with a tag"""
+        self.insertEntry(['', ''], index=self._currValidIndex, focus=True)
+        self._recalculateIndexes()
+
+    def _deleteSelectedEntry(self, event:tk.Event=None):
+        try:
+            entryToDelete = self._tree.selection()[0]
+        except:
+            return
+        self._deleteEntry(entryToDelete)
+
+    @notOnEditMode
+    def _deleteEntry(self, entry, saveEdit=True):
+        # get item index in the tree
+        itemIndex = int(self._tree.item(entry, 'values')[0]) - 1
+
+        if self._tree.item(entry, 'tags') == '':
+            self._currValidIndex -= 1
+
+        if saveEdit:
+            self._pushEdit(('delete', self._tree.item(entry), itemIndex))
+
+        self._tree.delete(entry)
+        self._recalculateIndexes()
+
+        # select the item with the same index as the one we deleted
+        # ex. if we deleted item with index 42 select the new item with
+        # index 42
+        items = self._tree.get_children()
+        numOfItems = len(items)
+
+        if numOfItems == 0:
+            return
+        elif numOfItems == itemIndex:
+            itemIndex -= 1
+
+        temp = self._tree.get_children()[itemIndex]
+        self._tree.selection_add(temp)
+
+    def _itemSelected(self, event:tk.Event=None):
+        pass
+
+    def _enterEditMode(self, event:tk.Event=None):
         self._editMode = True
-
-        self._itemToEdit =self._tree.selection()[0]
+        self._itemToEdit = self._tree.selection()[0]
         user = self._tree.item(self._itemToEdit)['values']
-        self._itemToEditIndex = user[0]
         self._editName.set(user[1])
         self._editEmail.set(user[2])
+        self._editFrame.place(relwidth=0.9, anchor=CENTER, relx=0.5, rely=0.5)
 
-        self._editFrame.place(relwidth=0.9, anchor=CENTER, relx=0.5, rely=0.5) 
-
-    def leaveEditMode(self, event:tk.Event):
+    def _leaveEditMode(self, event:tk.Event=None):
         """Save changes and leave edit mode"""
-        if self._editMode:
-            newItemValues = [self._itemToEditIndex, self._editName.get(), self._editEmail.get()]
-            self._tree.item(self._itemToEdit, values=newItemValues)
+        if not self._editMode: return
+        newValues = (self._editName.get(), self._editEmail.get())
+        self._editEntryValues(self._itemToEdit, newValues)
+        self._editMode = False
+        self._editFrame.place_forget()
 
-            self._editMode = False
-            self._editFrame.place_forget()
-    
-    def escapeEditMode(self, event:tk.Event):
+    def _editEntryValues(self, item, values:tuple, saveEdit=True):
+        oldValues = self._tree.item(item, 'values')
+        if saveEdit:
+            self._pushEdit(('edit', item, oldValues))
+        newItemValues = (oldValues[0], values[0], values[1])
+        self._tree.item(item, values=newItemValues)
+
+    def _cancelEditMode(self, event:tk.Event=None):
         """Leave edit mode without saving the changes"""
         if self._editMode:
             self._editMode = False
             self._editFrame.place_forget()
 
-    def deleteEntry(self, event:tk.Event):
-        if not self._editMode:
-            itemToDelete =self._tree.selection()[0]
-            self._tree.delete(itemToDelete)
-            self.recalculateIndexes()
+    @notOnEditMode
+    def _undo(self, event:tk.Event=None):
+        """undo the latest edit"""
+        if self.stackIndex < 0:
+            return
 
-    def recalculateIndexes(self):
+        edit = self.editStack[self.stackIndex]
+        if edit[0] == 'insert':
+            self._deleteEntry(edit[1], saveEdit=False)
+        elif edit[0] == 'delete':
+            values = edit[1]['values']
+            values.pop(0)  # remove entry index
+            tags = edit[1]['tags']
+            self.insertEntry(values=values, tags=tags,
+                index=edit[2], saveEdit=False)
+            if edit[1]['tags'] == '':
+                self._currValidIndex += 1
+        elif edit[0] == 'edit':
+            values = list(edit[2])
+            values.pop(0)
+            self._editEntryValues(edit[1], values, saveEdit=False)
+        self.stackIndex -= 1
+
+    @notOnEditMode
+    def _redo(self):
+        """redo the latest edit"""
+        if self.stackIndex == self.stackSize - 1:
+            return
+
+        self.stackIndex += 1
+        edit = self.editStack[self.stackIndex]
+        if edit[0] == 'insert':
+            self._deleteEntry(edit[1], saveEdit=False)
+        elif edit[0] == 'delete':
+            values = edit[1]['values']
+            values.pop(0)  # remove entry index
+            tags = edit[1]['tags']
+            self.insertEntry(values=values, tags=tags,
+                index=edit[2], saveEdit=False)
+            if edit[1]['tags'] == '':
+                self._currValidIndex += 1
+        elif edit[0] == 'edit':
+            values = list(edit[2])
+            values.pop(0)
+            self._editEntryValues(edit[1], values, saveEdit=False)
+        self.stackIndex -= 1
+
+    def _pushEdit(self, edit):
+        self.editStack.insert(self.stackIndex + 1, edit)
+        if self.stackSize < len(self.editStack):
+            self._deleteOldestEdit()
+        else:
+            self.stackIndex += 1
+
+    def _deleteOldestEdit(self):
+        if self.stackSize - (self.stackIndex + 1) >=\
+            (self.stackIndex + 1):
+            del self.editStack[-1]
+            # update editStack index
+            self.stackIndex += 1
+        elif self.stackSize - (self.stackIndex + 1) <\
+            (self.stackIndex + 1):
+            del self.editStack[0]
+
+    def _recalculateIndexes(self):
         for index, item in enumerate(self._tree.get_children()):
             newItemvalues = self._tree.item(item)['values']
             newItemvalues[0] = index + 1
-            
             self._tree.item(item, values=newItemvalues)
+
+    def _clearTreeviewSelection(self):
+        for i in self._tree.selection():
+            self._tree.selection_remove(i)
+
+    def _reset(self):
+        items = self._tree.get_children()
+
+        if len(items) != 0:
+            self._tree.delete(*items)
+        self._currIndex = 1
+        self._currValidIndex = 0
+        self.editStack = []
+        self._cancelEditMode()
+
 
 class EmailCreator(ttk.Frame):
     def __init__(self, master=None, *args, **kwargs):
@@ -827,13 +990,13 @@ class EmailCreator(ttk.Frame):
 
         self.rowconfigure(2, weight=1)
         self.columnconfigure(0, weight=1)
-        
+
         # Default behavior is batch sending of emails.
         # Disables batch sending and enables the sending
         # of personal emails (with a single recipient).
         self.personalEmail = False
         self.emailSignature = ''
-        
+
         self._title = EntryWithPlaceholder(self, placeholder='Title')
         self._title.grid(row=0,  column=0, sticky=EW, pady=(0, 5))
 
@@ -1112,7 +1275,7 @@ class TextEditor(ttk.Frame):
         # set background of currently selected line
         self._numberedText.tag_add('tag_selected', f'{curRow}.0', f'{curRow}.0+1lines')
         self._text.tag_add('tag_selected', f'{curRow}.0', f'{curRow}.0+1lines')
-    
+
     def _scrollBoth(self, action, position):
         self._text.yview_moveto(position)
         self._numberedText.yview_moveto(position)
@@ -1180,7 +1343,7 @@ class CText(tk.Text):
 
         # generate an event if something was added or deleted,
         # or the cursor position changed
-        if (args[0] in ("insert", "replace", "delete") or 
+        if (args[0] in ("insert", "replace", "delete") or
             args[0:3] == ("mark", "set", "insert") or
             args[0:2] == ("xview", "moveto") or
             args[0:2] == ("xview", "scroll") or
@@ -1191,12 +1354,12 @@ class CText(tk.Text):
 
         # return what the actual widget returned
         return result
-        
+
 
 class NumberedText(tk.Text):
     """Text widget where each line is a number. Numbers are
     sorted in ascending order.
-    
+
     STANDARD OPTIONS
 
         background, borderwidth, cursor,
@@ -1216,7 +1379,7 @@ class NumberedText(tk.Text):
         spacing1, spacing2, spacing3,
         state, tabs, undo, width, wrap,
     """
-    
+
     def __init__(self, width=5, *args, **kwargs):
         super().__init__(width=width, state=DISABLED, *args, **kwargs)
         # move every index to the right of the line
@@ -1264,12 +1427,12 @@ class Logger(ttk.Frame):
         """Contract a Logger widget with a parent master.
 
         STANDARD OPTIONS
-        
+
         timestamp: If true every log will have a timestamp
         logLevel: the minimum level of logLevel to be displayed
 
         0 = DEBUG, 1 = INFO, 2=WARNING, 3=ERROR/SUCCESS
-        
+
         0 should never be used on a live version
         """
         super().__init__(master, padding=padding)
@@ -1283,7 +1446,7 @@ class Logger(ttk.Frame):
         errorColor = '#e74c3c'
         SuccessColor  = '#00bc8c'
 
-        
+
         darkColor = '#303030'
         secondaryColor = '#444444'
         numFontColor = '#687273'

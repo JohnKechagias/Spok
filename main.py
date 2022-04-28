@@ -14,7 +14,7 @@ import dataFiltering
 class FontChooser(ttk.Frame):
     def __init__(self, master, defaultFontSize=18, maxFontSize=50, *args, **kwargs):
         super().__init__(master)
-        
+
         self.meter = ttk.Meter(
             master=self,
             amounttotal=maxFontSize,
@@ -39,7 +39,7 @@ class FontChooser(ttk.Frame):
         # make sure new value isn't out of bounds
         if newValue <= self.meter.amounttotalvar.get():
             self.meter.configure(amountused=newValue)
-        
+
     def _decrementMeter(self):
         newValue = self.meter.amountusedvar.get() - 1
         # make sure new value isn't out of bounds
@@ -58,19 +58,19 @@ class FontChooser(ttk.Frame):
 
 class InfoInput(ttk.Labelframe):
     def __init__(
-        self, 
+        self,
         master,
         enableErrorChecking=True,
         enableLogging=True
         ):
         super().__init__(master, text='Certificate Options', padding=(16, 10))
 
-        self.columnconfigure(1, weight=1)        
+        self.columnconfigure(1, weight=1)
         self.columnconfigure(2, weight=1)
 
         self.font = '-size 13'
         self.infoFileType = ''
-        
+
         self._imagePath = ttk.StringVar()
         self._infoFilePath = ttk.StringVar()
 
@@ -92,7 +92,7 @@ class InfoInput(ttk.Labelframe):
             master=self,
             bootstyle=(DEFAULT),
             text='Select Template Image',
-            padding=8, 
+            padding=8,
             width=19,
             command=self._selectImageFile
         )
@@ -106,14 +106,14 @@ class InfoInput(ttk.Labelframe):
 
         self.imagePathEntry.bind('<Return>', lambda _: self._callImagePathHandler(), add='+')
 
-        validators.addFileTypeValidation(self.imagePathEntry, 
+        validators.addFileTypeValidation(self.imagePathEntry,
             filetypes={'img', 'png', 'jpeg', 'jpg'})
 
         self.selectInfoFileButton = ttk.Button(
             master=self,
             bootstyle=(DEFAULT),
             text='Select Info File',
-            padding=8, 
+            padding=8,
             width=19,
             command=self._selectInfoFile
         )
@@ -175,27 +175,27 @@ class InfoInput(ttk.Labelframe):
     def _callInfoFilePathHandler(self):
         if self.infoFileFunctionToCall is not None and self.infoPathEntry.validate():
             self.infoFileFunctionToCall(self._infoFilePath, self.infoFileType)
-    
+
     def _selectFile(self, stringVar:tk.StringVar, filetype):
         stringVar.set(fd.askopenfilename(filetypes=(filetype,("All files","*.*"))))
- 
+
 
 
 
 class EmailInput(ttk.Labelframe):
     def __init__(
-        self, 
-        master, 
+        self,
+        master,
         enableTestMode=True,
         enableTwoLevelAuth=True
         ):
         super().__init__(master, text='Emailing Options', padding=(16, 10))
 
-        self.columnconfigure(0, weight=1)        
+        self.columnconfigure(0, weight=1)
         self.columnconfigure(1, weight=1)
 
         self.font = '-size 13'
-        
+
         self.testEmail = ttk.StringVar()
         self.realEmail = ttk.StringVar()
 
@@ -282,7 +282,7 @@ class FontConfiguration(ttk.Frame):
             master=self.ccoLabelFrame,
             text='Select Font Color',
             bootstyle=(INVERSE, SECONDARY),
-            anchor=CENTER, 
+            anchor=CENTER,
             font="-size 13"
         )
         self.colorLabel.grid(row=1, column=0, sticky=EW, pady=(6, 10))
@@ -309,7 +309,7 @@ class FontConfiguration(ttk.Frame):
     def _hideWidget(self):
         self.ccoLabelFrame.pack_forget()
         self.showButton.pack(expand=YES, fill=BOTH)
-    
+
     def _showWidget(self):
         self.showButton.pack_forget()
         self.ccoLabelFrame.pack(expand=YES, fill=Y, anchor=NE, side=RIGHT)
@@ -368,12 +368,12 @@ class App(ttk.Frame):
         # =-=-=-=-=-=- Default Options -=-=-=-=-=--=-=
         self.lFrame.rowconfigure(1, weight=1)
         self.lFrame.columnconfigure(0, weight=1)
-        
+
         self.certificateOptions= InfoInput(master=self.lFrame)
         self.certificateOptions.grid(row=0, column=0, sticky=EW)
 
         self.emailingOptions = EmailInput(master=self.lFrame)
-        
+
         self.certificateOptions.imageFunctionToCall = self.loadImage
         self.certificateOptions.infoFileFunctionToCall = self.proccessTxtFile
 
@@ -392,7 +392,7 @@ class App(ttk.Frame):
         self.filemanagerChildren['Info File'] = TextEditor(self.fileManagerNotebook)
         self.filemanagerChildren['Name List'] = DataViewer(self.fileManagerNotebook, bootstyle=DARK)
         self.filemanagerChildren['Email'] = EmailCreator(self.fileManagerNotebook)
-        self.filemanagerChildren['Logger'] = Logger(self.fileManagerNotebook) 
+        self.filemanagerChildren['Logger'] = Logger(self.fileManagerNotebook)
 
         for key, value in self.filemanagerChildren.items():
             self.fileManagerNotebook.add(value, text=key, sticky=NSEW)
@@ -423,8 +423,11 @@ class App(ttk.Frame):
         # sort flaggedUserList based on flagIndex
         self.flaggedUserList = sorted(self.flaggedUserList, key=lambda a: a[2])
 
+        # clean dataViewer widgets
+        self.filemanagerChildren['Name List']._reset()
+
         for item in self.userList:
-            self.filemanagerChildren['Name List'].insertItem([item[1], item[0]])
+            self.filemanagerChildren['Name List'].insertEntry([item[1], item[0]], saveEdit=False)
 
         for item in self.flaggedUserList:
             tag = ''
@@ -434,7 +437,7 @@ class App(ttk.Frame):
             elif item[2][0] == 'E':
                 tag = 'flaggedEmail'
 
-            self.filemanagerChildren['Name List'].insertItem([item[1], item[0]], tag)
+            self.filemanagerChildren['Name List'].insertEntry([item[1], item[0]], (tag), saveEdit=False)
 
         #dataFiltering.listToTxt(userList)
         self.loadFile('cleanFile.txt')
@@ -449,7 +452,7 @@ class App(ttk.Frame):
 
     def loadImage(self, path, *_):
         """Load image in the canvas widget"""
-        # if the user closes the gui before selecting 
+        # if the user closes the gui before selecting
         # a file the path will be empty
         if os.path.exists(path.get()):
             self.canvas.loadImage(path.get())
@@ -459,7 +462,7 @@ class App(ttk.Frame):
         self.certificateOptions.grid(row=0, column=0, sticky=EW)
 
     def changeToEmailingMode(self):
-        self.certificateOptions.grid_remove() 
+        self.certificateOptions.grid_remove()
         self.emailingOptions.grid(row=0, column=0, sticky=EW)
 
     def changeMode(self, *args):
@@ -479,7 +482,7 @@ if __name__ == "__main__":
         print(color_label, color)
 
     window.geometry('1600x800')
-    
+
     app = App(window)
     app.pack(expand=YES, fill=BOTH, padx=10, pady=10)
 
