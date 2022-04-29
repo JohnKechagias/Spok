@@ -2,7 +2,7 @@ import os
 from ttkbootstrap.validation import validator, ValidationEvent, add_validation
 
 @validator
-def _validatePath(event:ValidationEvent):
+def _validate_path(event:ValidationEvent):
     """Contents is a valid os path."""
     if os.path.exists(event.postchangetext):
         return True
@@ -10,7 +10,7 @@ def _validatePath(event:ValidationEvent):
         return False
 
 @validator
-def _validateFileType(event:ValidationEvent, filetypes=None):
+def _validate_file_type(event:ValidationEvent, filetypes=None):
     """Contents is a valid os path to a file of a type thats included in `filetypes`"""
 
     fileExtension = event.postchangetext.split('.')[-1]
@@ -21,14 +21,14 @@ def _validateFileType(event:ValidationEvent, filetypes=None):
         return False
 
 @validator
-def _validateEmail(event:ValidationEvent):
+def _validate_email(event:ValidationEvent):
     """Contents is a valid email"""
     if '@' in event.postchangetext and '.' in event.postchangetext:
         return True
     else:
         return False
 
-def addPathValidation(widget, when="focusout"):
+def add_path_validation(widget, when="focusout"):
     """Check if widget contents is a valid os path. Sets the state to 'Invalid'
     if not an os path.
 
@@ -41,10 +41,10 @@ def addPathValidation(widget, when="focusout"):
             Specifies when to apply validation. See the `add_validation`
             method docstring for a full list of options.
     """
-    add_validation(widget, _validatePath, when=when)
+    add_validation(widget, _validate_path, when=when)
 
-def addFileTypeValidation(widget, when="focusout", filetypes:set=None):
-    """Check if widget contents is a valid os path to a file of a type thats 
+def add_file_type_validation(widget, when="focusout", filetypes:set=None):
+    """Check if widget contents is a valid os path to a file of a type thats
     included n `filetypes`. Sets the state to 'Invalid' if not an os path.
 
     Parameters:
@@ -56,9 +56,9 @@ def addFileTypeValidation(widget, when="focusout", filetypes:set=None):
             Specifies when to apply validation. See the `add_validation`
             method docstring for a full list of options.
     """
-    add_validation(widget, _validateFileType, when=when, filetypes=filetypes)
+    add_validation(widget, _validate_file_type, when=when, filetypes=filetypes)
 
-def addEmailValidation(widget, when="focusout"):
+def add_email_validation(widget, when="focusout"):
     """Check if widget contents is a valid email. Sets the state to
     'Invalid' if not an os path.
 
@@ -71,4 +71,4 @@ def addEmailValidation(widget, when="focusout"):
             Specifies when to apply validation. See the `add_validation`
             method docstring for a full list of options.
     """
-    add_validation(widget, _validateEmail, when=when)
+    add_validation(widget, _validate_email, when=when)

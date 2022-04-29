@@ -1,4 +1,3 @@
-from optparse import Values
 import os
 
 import tkinter as tk
@@ -7,20 +6,30 @@ from tkinter import filedialog as fd
 import ttkbootstrap as ttk
 from ttkbootstrap.constants import *
 from ttkbootstrap.dialogs.dialogs import FontDialog
-from widgets import *
+
+from widgets.logger import Logger
+from widgets.canvas_image import ImageViewer
+from widgets.color_selector import ColorSelector
+from widgets.data_viewer import DataViewer
+from widgets.email_creator import EmailCreator
+from widgets.placeholder_entry import PlaceholderEntry
+from widgets.text_editor import TextEditor
+from widgets.constants import *
 
 import validators
 import dataFiltering
 
+
+
 class FontChooser(ttk.Frame):
-    def __init__(self, master, defaultFontSize=18, maxFontSize=50, *args, **kwargs):
+    def __init__(self, master, fontsize=18, maxfontsize=50, *args, **kwargs):
         super().__init__(master)
 
         self.meter = ttk.Meter(
             master=self,
-            amounttotal=maxFontSize,
+            amounttotal=maxfontsize,
             metersize=150,
-            amountused=defaultFontSize,
+            amountused=fontsize,
             stripethickness=8,
             subtext="Font Size",
             interactive=False,
@@ -30,39 +39,40 @@ class FontChooser(ttk.Frame):
         self.meter.pack(side=TOP, padx=6, pady=6)
 
         # get label child of meter widget
-        meterChild = self.meter.winfo_children()[0].winfo_children()[0]
-        meterChild.bind('<Button-5>', self._wheelScroll) # Linux, wheel scroll down
-        meterChild.bind('<Button-4>', self._wheelScroll)  # Linux, wheel scroll up
-        meterChild.bind('<MouseWheel>', self._wheelScroll) # windows wheel scroll keybind
+        meter_child = self.meter.winfo_children()[0].winfo_children()[0]
+        meter_child.bind('<Button-5>', self._wheelScroll) # Linux, wheel scroll down
+        meter_child.bind('<Button-4>', self._wheelScroll)  # Linux, wheel scroll up
+        meter_child.bind('<MouseWheel>', self._wheelScroll) # windows wheel scroll keybind
 
-    def _incrementMeter(self):
-        newValue = self.meter.amountusedvar.get() + 1
+    def _increment_meter(self):
+        new_value = self.meter.amountusedvar.get() + 1
         # make sure new value isn't out of bounds
-        if newValue <= self.meter.amounttotalvar.get():
-            self.meter.configure(amountused=newValue)
+        if new_value <= self.meter.amounttotalvar.get():
+            self.meter.configure(amountused=new_value)
 
-    def _decrementMeter(self):
-        newValue = self.meter.amountusedvar.get() - 1
+    def _decrement_meter(self):
+        new_value = self.meter.amountusedvar.get() - 1
         # make sure new value isn't out of bounds
-        if newValue >= 0:
-            self.meter.configure(amountused=newValue)
+        if new_value >= 0:
+            self.meter.configure(amountused=new_value)
 
     def _wheelScroll(self, event:tk.Event):
         # Respond to Linux (event.num) or Windows (event.delta) wheel event
         if event.num == 4 or event.delta == 120: # scroll up
-            self._incrementMeter()
+            self._increment_meter()
         if event.num == 5 or event.delta == -120: # scroll down
-            self._decrementMeter()
+            self._decrement_meter()
 
     def getFontSize(self) -> int:
         return self.meter.amountusedvar.get()
+
 
 class InfoInput(ttk.Labelframe):
     def __init__(
         self,
         master,
-        enableErrorChecking=True,
-        enableLogging=True
+        errorchecking=True,
+        logging=True
         ):
         super().__init__(master, text='Certificate Options', padding=(16, 10))
 
@@ -70,13 +80,13 @@ class InfoInput(ttk.Labelframe):
         self.columnconfigure(2, weight=1)
 
         self.font = '-size 13'
-        self.infoFileType = ''
+        self.info_file_type = ''
 
-        self._imagePath = ttk.StringVar()
-        self._infoFilePath = ttk.StringVar()
+        self._image_path = ttk.StringVar()
+        self._info_file_path = ttk.StringVar()
 
-        self.enableErrorChecking = ttk.BooleanVar(value=enableErrorChecking)
-        self.enableLogging = ttk.BooleanVar(value=enableLogging)
+        self.error_checking = ttk.BooleanVar(value=errorchecking)
+        self.logging = ttk.BooleanVar(value=logging)
 
         # We manually call the hanlders instead of tracing the vars because
         # we want to call the handlers whenever the complete path is given
@@ -86,109 +96,107 @@ class InfoInput(ttk.Labelframe):
         # constantly change and the handler will be called multiple
         # times with an incompete path. To avoid this we will decide when
         # to call the handler
-        self.imageFunctionToCall = None
-        self.infoFileFunctionToCall = None
+        self.image_changed_handler = None
+        self.info_file_changed_handler = None
 
-        self.selectTemplateButton = ttk.Button(
+        self.select_template_button = ttk.Button(
             master=self,
             bootstyle=(DEFAULT),
             text='Select Template Image',
             padding=8,
             width=19,
-            command=self._selectImageFile
+            command=self._select_image_file
         )
-        self.selectTemplateButton.grid(row=0, column=0, padx=(0, 8), pady=4)
+        self.select_template_button.grid(row=0, column=0, padx=(0, 8), pady=4)
 
-        self.imagePathEntry = ttk.Entry(
+        self.image_path_entry = ttk.Entry(
             master=self,
             font=self.font,
-            textvariable=self._imagePath)
-        self.imagePathEntry.grid(row=0, column=1, columnspan=2, pady=6, sticky=EW)
+            textvariable=self._image_path)
+        self.image_path_entry.grid(row=0, column=1, columnspan=2, pady=6, sticky=EW)
 
-        self.imagePathEntry.bind('<Return>', lambda _: self._callImagePathHandler(), add='+')
+        self.image_path_entry.bind('<Return>', lambda _: self._invoke_image_handler(), add='+')
 
-        validators.addFileTypeValidation(self.imagePathEntry,
+        validators.add_file_type_validation(self.image_path_entry,
             filetypes={'img', 'png', 'jpeg', 'jpg'})
 
-        self.selectInfoFileButton = ttk.Button(
+        self.select_info_file_button = ttk.Button(
             master=self,
             bootstyle=(DEFAULT),
             text='Select Info File',
             padding=8,
             width=19,
-            command=self._selectInfoFile
+            command=self._select_info_file
         )
-        self.selectInfoFileButton.grid(row=1, column=0, padx=(0, 8), pady=4)
+        self.select_info_file_button.grid(row=1, column=0, padx=(0, 8), pady=4)
 
-        self.infoPathEntry = ttk.Entry(master=self, font=self.font, textvariable=self._infoFilePath)
-        self.infoPathEntry.grid(row=1, column=1, columnspan=2, pady=6, sticky=EW)
+        self.info_path_entry = ttk.Entry(master=self, font=self.font, textvariable=self._info_file_path)
+        self.info_path_entry.grid(row=1, column=1, columnspan=2, pady=6, sticky=EW)
 
-        self.infoPathEntry.bind('<Return>', lambda _: self._callInfoFilePathHandler(), add='+')
+        self.info_path_entry.bind('<Return>', lambda _: self._invoke_info_file_handler(), add='+')
 
-        validators.addFileTypeValidation(self.infoPathEntry,
+        validators.add_file_type_validation(self.info_path_entry,
             filetypes={'txt', 'exel', 'xlsx'})
 
         ttk.Separator(self).grid(row=2, column=0, columnspan=3, pady=10, sticky=EW)
 
-        self.errorCheckModeCheckButton = ttk.Checkbutton(
+        self.error_checking_mode_checkbutton = ttk.Checkbutton(
             master=self,
             bootstyle=(WARNING, TOGGLE, SQUARE),
             text=' Error Checking',
-            variable=self.enableErrorChecking
+            variable=self.error_checking
         )
-        self.errorCheckModeCheckButton.grid(row=3, column=0, sticky=W, pady=6)
+        self.error_checking_mode_checkbutton.grid(row=3, column=0, sticky=W, pady=6)
 
-        self.cleanModeCheckButton = ttk.Checkbutton(
+        self.clean_mode_button = ttk.Checkbutton(
             master=self,
             bootstyle=(WARNING, TOGGLE, SQUARE),
             text=' Logging',
-            variable=self.enableLogging
+            variable=self.logging
         )
-        self.cleanModeCheckButton.grid(row=4, column=0, sticky=W, pady=6)
+        self.clean_mode_button.grid(row=4, column=0, sticky=W, pady=6)
 
-        self.createCertificatesButton = ttk.Button(
+        self.create_certificates_button = ttk.Button(
             master=self,
             bootstyle=(DANGER, OUTLINE),
             text='Create Certificates',
             padding=9, width=18,
         )
-        self.createCertificatesButton.grid(row=3, rowspan=2, column=2, sticky=E)
+        self.create_certificates_button.grid(row=3, rowspan=2, column=2, sticky=E)
 
-    def _selectImageFile(self):
-        self._selectFile(self._imagePath, ("Image files",".img .png .jpeg .jpg"))
-        self._callImagePathHandler()
+    def _select_image_file(self):
+        self._selectFile(self._image_path, ("Image files",".img .png .jpeg .jpg"))
+        self._invoke_image_handler()
 
-    def _selectInfoFile(self):
-        self._selectFile(self._infoFilePath, ("Info files",".txt .exel .xlsx"))
-        fileExtension = self._infoFilePath.get().split('.')[-1]
+    def _select_info_file(self):
+        self._selectFile(self._info_file_path, ("Info files",".txt .exel .xlsx"))
+        file_extension = self._info_file_path.get().split('.')[-1]
 
-        if fileExtension in {'txt'}:
-            self.infoFileType = 'txt'
-        elif fileExtension in {'exel', 'xlsx'}:
-            self.infoFileType = 'exel'
+        if file_extension in {'txt'}:
+            self.info_file_type = 'txt'
+        elif file_extension in {'exel', 'xlsx'}:
+            self.info_file_type = 'exel'
 
-        self._callInfoFilePathHandler()
+        self._invoke_info_file_handler()
 
-    def _callImagePathHandler(self):
-        if self.imageFunctionToCall is not None and self.imagePathEntry.validate():
-            self.imageFunctionToCall(self._imagePath)
+    def _invoke_image_handler(self):
+        if self.image_changed_handler is not None and self.image_path_entry.validate():
+            self.image_changed_handler(self._image_path)
 
-    def _callInfoFilePathHandler(self):
-        if self.infoFileFunctionToCall is not None and self.infoPathEntry.validate():
-            self.infoFileFunctionToCall(self._infoFilePath, self.infoFileType)
+    def _invoke_info_file_handler(self):
+        if self.info_file_changed_handler is not None and self.info_path_entry.validate():
+            self.info_file_changed_handler(self._info_file_path, self.info_file_type)
 
     def _selectFile(self, stringVar:tk.StringVar, filetype):
         stringVar.set(fd.askopenfilename(filetypes=(filetype,("All files","*.*"))))
-
-
 
 
 class EmailInput(ttk.Labelframe):
     def __init__(
         self,
         master,
-        enableTestMode=True,
-        enableTwoLevelAuth=True
+        testmode=True,
+        twolevelauth=True
         ):
         super().__init__(master, text='Emailing Options', padding=(16, 10))
 
@@ -197,123 +205,123 @@ class EmailInput(ttk.Labelframe):
 
         self.font = '-size 13'
 
-        self.testEmail = ttk.StringVar()
-        self.realEmail = ttk.StringVar()
+        self.test_email = ttk.StringVar()
+        self.real_email = ttk.StringVar()
 
-        self.enableTestMode = ttk.BooleanVar(value=enableTestMode)
-        self.enableTwoLevelAuth = ttk.BooleanVar(value=enableTwoLevelAuth)
+        self.test_mode = ttk.BooleanVar(value=testmode)
+        self.two_level_auth = ttk.BooleanVar(value=twolevelauth)
 
-        self.testEmailEntry = EntryWithPlaceholder(
+        self.test_email_entry = PlaceholderEntry(
             master=self,
             placeholder='Testing Email',
             font=self.font,
-            textvariable=self.testEmail
+            textvariable=self.test_email
         )
-        self.testEmailEntry.grid(row=0, column=0, columnspan=2, pady=6, sticky=EW)
+        self.test_email_entry.grid(row=0, column=0, columnspan=2, pady=6, sticky=EW)
 
-        self.testEmailEntry.bind('<Return>', lambda _: self.testEmailEntry.validate(), add='+')
-        validators.addEmailValidation(self.testEmailEntry)
+        self.test_email_entry.bind('<Return>', lambda _: self.test_email_entry.validate(), add='+')
+        validators.add_email_validation(self.test_email_entry)
 
-        self.realEmailEntry = EntryWithPlaceholder(
+        self.real_email_entry = PlaceholderEntry(
             master=self,
             placeholder='Real Email',
             font=self.font,
-            textvariable=self.realEmail
+            textvariable=self.real_email
         )
-        self.realEmailEntry.grid(row=1, column=0, columnspan=2, pady=6, sticky=EW)
+        self.real_email_entry.grid(row=1, column=0, columnspan=2, pady=6, sticky=EW)
 
-        self.realEmailEntry.bind('<Return>', lambda _: self.realEmailEntry.validate(), add='+')
-        validators.addEmailValidation(self.realEmailEntry)
+        self.real_email_entry.bind('<Return>', lambda _: self.real_email_entry.validate(), add='+')
+        validators.add_email_validation(self.real_email_entry)
 
         ttk.Separator(self).grid(row=2, column=0, columnspan=2, pady=10, sticky=EW)
 
-        self.testModeCheckButton = ttk.Checkbutton(
+        self.test_mode_checkbutton = ttk.Checkbutton(
             master=self,
             bootstyle=(DANGER, TOGGLE, SQUARE),
             text=' Use Test Email',
-            variable=self.enableTestMode
+            variable=self.test_mode
         )
-        self.testModeCheckButton.grid(row=3, column=0, sticky=W, pady=6)
+        self.test_mode_checkbutton.grid(row=3, column=0, sticky=W, pady=6)
 
-        self.twoLevelAuthCheckButton = ttk.Checkbutton(
+        self.two_level_auth_checkbutton = ttk.Checkbutton(
             master=self,
             bootstyle=(WARNING, TOGGLE, SQUARE),
             text=' Two level Auth',
-            variable=self.enableTwoLevelAuth
+            variable=self.two_level_auth
         )
-        self.twoLevelAuthCheckButton.grid(row=4, column=0, sticky=W, pady=6)
+        self.two_level_auth_checkbutton.grid(row=4, column=0, sticky=W, pady=6)
 
-        self.sendEmailsButton = ttk.Button(
+        self.send_emails_button = ttk.Button(
             master=self,
             bootstyle=(DANGER, OUTLINE),
             text='Send Emails',
             padding=9, width=18,
         )
-        self.sendEmailsButton.grid(row=3, rowspan=2, column=1, sticky=E)
+        self.send_emails_button.grid(row=3, rowspan=2, column=1, sticky=E)
 
 
 class FontConfiguration(ttk.Frame):
     def __init__(self, master, font:ttk.font.Font=None):
         super().__init__(master)
-        self.fontDialog = FontDialog(parent=master.master, title='Font Selection')
-        self.showButton = ttk.Button(self, bootstyle=(DARK))
+        self.font_dialog = FontDialog(parent=master.master, title='Font Selection')
+        self.show_button = ttk.Button(self, bootstyle=(DARK))
 
-        self.ccoLabelFrame = ttk.Labelframe(
+        self.cco_labelframe = ttk.Labelframe(
             master=self,
             text='Certificate Creation Options',
             padding=10,
             width=330
         )
-        self.ccoLabelFrame.pack(expand=YES, fill=BOTH)
+        self.cco_labelframe.pack(expand=YES, fill=BOTH)
 
-        self.ccoLabelFrame.rowconfigure(5, weight=1)
+        self.cco_labelframe.rowconfigure(5, weight=1)
 
-        self.selectFontButton = ttk.Button(
-            master=self.ccoLabelFrame,
+        self.select_font_button = ttk.Button(
+            master=self.cco_labelframe,
             bootstyle=(OUTLINE, WARNING),
             text='Select Font',
             padding=10,
             command=self._showFontDialog
         )
-        self.selectFontButton.grid(row=0, column=0, sticky=EW, pady=6)
+        self.select_font_button.grid(row=0, column=0, sticky=EW, pady=6)
 
         # =-=-=-=-=-=- Colors Options -=-=-=-=-=--=-=
 
-        self.colorLabel = ttk.Label(
-            master=self.ccoLabelFrame,
+        self.color_Label = ttk.Label(
+            master=self.cco_labelframe,
             text='Select Font Color',
             bootstyle=(INVERSE, SECONDARY),
             anchor=CENTER,
             font="-size 13"
         )
-        self.colorLabel.grid(row=1, column=0, sticky=EW, pady=(6, 10))
+        self.color_Label.grid(row=1, column=0, sticky=EW, pady=(6, 10))
 
-        self.colorChooser = ColorChooser(master=self.ccoLabelFrame)
-        self.colorChooser.grid(row=2, column=0, sticky=EW)
+        self.color_chooser = ColorSelector(master=self.cco_labelframe)
+        self.color_chooser.grid(row=2, column=0, sticky=EW)
 
-        self.fontChooser = FontChooser(master=self.ccoLabelFrame, bootstyle=WARNING)
-        self.fontChooser.grid(row=3, column=0, sticky=EW)
+        self.font_chooser = FontChooser(master=self.cco_labelframe, bootstyle=WARNING)
+        self.font_chooser.grid(row=3, column=0, sticky=EW)
 
-        self.selectFontButton = ttk.Button(
-            master=self.ccoLabelFrame,
+        self.select_font_button = ttk.Button(
+            master=self.cco_labelframe,
             bootstyle=(OUTLINE, WARNING),
             text='Close',
             padding=9
         )
-        self.selectFontButton.grid(row=6, column=0, sticky=EW, pady=6)
+        self.select_font_button.grid(row=6, column=0, sticky=EW, pady=6)
 
     def _showFontDialog(self):
-        self.fontDialog.show()
-        self.font = self.fontDialog._result
-        self.fontChooser.meter.configure(amountused=self.font.cget('size'))
+        self.font_dialog.show()
+        self.font = self.font_dialog._result
+        self.font_chooser.meter.configure(amountused=self.font.cget('size'))
 
     def _hideWidget(self):
-        self.ccoLabelFrame.pack_forget()
-        self.showButton.pack(expand=YES, fill=BOTH)
+        self.cco_labelframe.pack_forget()
+        self.show_button.pack(expand=YES, fill=BOTH)
 
     def _showWidget(self):
-        self.showButton.pack_forget()
-        self.ccoLabelFrame.pack(expand=YES, fill=Y, anchor=NE, side=RIGHT)
+        self.show_button.pack_forget()
+        self.cco_labelframe.pack(expand=YES, fill=Y, anchor=NE, side=RIGHT)
 
 
 class App(ttk.Frame):
@@ -325,112 +333,112 @@ class App(ttk.Frame):
         self.columnconfigure(0, weight=1, minsize=450)
         self.columnconfigure(1, weight=1)
 
-        self.modeSelection = ttk.Frame(self)
-        self.modeSelection.grid(row=0, column=0, columnspan=3, sticky=NSEW)
+        self.modes_selection = ttk.Frame(self)
+        self.modes_selection.grid(row=0, column=0, columnspan=3, sticky=NSEW)
 
-        self.selectedModeLabel = ttk.Label(
-            master=self.modeSelection, text="Certificates Creator", font="-size 24 -weight bold"
+        self.modes_selection_label = ttk.Label(
+            master=self.modes_selection, text="Certificates Creator", font="-size 24 -weight bold"
         )
-        self.selectedModeLabel.pack(side=LEFT)
+        self.modes_selection_label.pack(side=LEFT)
 
         self.mode = ttk.StringVar()
-        self.modesSelectionLabel = ttk.Label(master=self.modeSelection, text="Select a mode:")
+        self.modes_selection_label = ttk.Label(master=self.modes_selection, text="Select a mode:")
         self.modes = ('Certificates Creator', 'Email Sender')
-        self.modesComboBox= ttk.Combobox(
-            master=self.modeSelection,
+        self.modes_combobox= ttk.Combobox(
+            master=self.modes_selection,
             bootstyle=(LIGHT),
             state=READONLY,
             textvariable=self.mode,
             width=20,
             values=self.modes
         )
-        self.modesComboBox.current(0)
-        self.modesComboBox.pack(padx=10, side=RIGHT)
-        self.modesSelectionLabel.pack(side=RIGHT)
+        self.modes_combobox.current(0)
+        self.modes_combobox.pack(padx=10, side=RIGHT)
+        self.modes_selection_label.pack(side=RIGHT)
 
-        def changeMode(e):
-            t = self.modesComboBox.get()
-            self.selectedModeLabel.configure(text=t)
+        def change_mode(e):
+            t = self.modes_combobox.get()
+            self.modes_selection_label.configure(text=t)
 
-        self.modesComboBox.bind("<<ComboboxSelected>>", changeMode, add='+')
-        self.mode.trace_add('write', self.changeMode)
+        self.modes_combobox.bind("<<ComboboxSelected>>", change_mode, add='+')
+        self.mode.trace_add('write', self.change_mode)
 
         ttk.Separator(self).grid(row=1, column=0, columnspan=3, sticky=EW, pady=6)
 
-        self.lFrame = ttk.Frame(self, padding=5)
-        self.lFrame.grid(row=2, column=0, sticky=NSEW)
+        self.lframe = ttk.Frame(self, padding=5)
+        self.lframe.grid(row=2, column=0, sticky=NSEW)
 
-        self.mFrame = ttk.Frame(self, padding=5)
-        self.mFrame.grid(row=2, column=1, sticky=NSEW)
+        self.mframe = ttk.Frame(self, padding=5)
+        self.mframe.grid(row=2, column=1, sticky=NSEW)
 
-        self.rFrame = ttk.Frame(self, padding=5)
-        self.rFrame.grid(row=2, column=2, sticky=NSEW)
+        self.rframe = ttk.Frame(self, padding=5)
+        self.rframe.grid(row=2, column=2, sticky=NSEW)
 
         # =-=-=-=-=-=- Default Options -=-=-=-=-=--=-=
-        self.lFrame.rowconfigure(1, weight=1)
-        self.lFrame.columnconfigure(0, weight=1)
+        self.lframe.rowconfigure(1, weight=1)
+        self.lframe.columnconfigure(0, weight=1)
 
-        self.certificateOptions= InfoInput(master=self.lFrame)
-        self.certificateOptions.grid(row=0, column=0, sticky=EW)
+        self.certificate_options= InfoInput(master=self.lframe)
+        self.certificate_options.grid(row=0, column=0, sticky=EW)
 
-        self.emailingOptions = EmailInput(master=self.lFrame)
+        self.emailing_options = EmailInput(master=self.lframe)
 
-        self.certificateOptions.imageFunctionToCall = self.loadImage
-        self.certificateOptions.infoFileFunctionToCall = self.proccessTxtFile
+        self.certificate_options.image_changed_handler = self.load_image
+        self.certificate_options.info_file_changed_handler = self.proccess_txt_file
 
-        self.canvas = ImageViewer(self.lFrame, 'assets/example.jpg', disableZoomOut=True)  # create widget
+        self.canvas = ImageViewer(self.lframe, 'assets/example.jpg', disable_zoom_out=True)  # create widget
         self.canvas.grid(row=1, column=0, sticky=NSEW)
 
         # =-=-=-=-=-=-=-=-=- File Manager -=-=-=-=-=--=-=-=-=-=
 
         # notebook with table and text tabs
-        self.fileManagerNotebook = ttk.Notebook(master=self.mFrame, bootstyle=LIGHT)
-        self.fileManagerNotebook.pack(expand=YES, fill=BOTH, pady=(8, 0), padx=10)
+        self.file_manager_notebook = ttk.Notebook(master=self.mframe, bootstyle=LIGHT)
+        self.file_manager_notebook.pack(expand=YES, fill=BOTH, pady=(8, 0), padx=10)
         # enable key-binds for traversa;
-        self.fileManagerNotebook.enable_traversal()
+        self.file_manager_notebook.enable_traversal()
 
-        self.filemanagerChildren = {}
-        self.filemanagerChildren['Info File'] = TextEditor(self.fileManagerNotebook)
-        self.filemanagerChildren['Name List'] = DataViewer(self.fileManagerNotebook, bootstyle=DARK)
-        self.filemanagerChildren['Email'] = EmailCreator(self.fileManagerNotebook)
-        self.filemanagerChildren['Logger'] = Logger(self.fileManagerNotebook)
+        self.filemanager_children = {}
+        self.filemanager_children['Info File'] = TextEditor(self.file_manager_notebook)
+        self.filemanager_children['Name List'] = DataViewer(self.file_manager_notebook, bootstyle=DARK)
+        self.filemanager_children['Email'] = EmailCreator(self.file_manager_notebook)
+        self.filemanager_children['Logger'] = Logger(self.file_manager_notebook)
 
-        for key, value in self.filemanagerChildren.items():
-            self.fileManagerNotebook.add(value, text=key, sticky=NSEW)
+        for key, value in self.filemanager_children.items():
+            self.file_manager_notebook.add(value, text=key, sticky=NSEW)
 
-        self.filemanagerChildren['Info File'].loadFile('requirements.txt')
+        self.filemanager_children['Info File'].load_file('requirements.txt')
 
         # =-=-=-=-=-=- Certificate Creation Options -=-=-=-=-=--=-=
 
-        self.fontChooser = FontConfiguration(master=self.rFrame)
-        self.fontChooser.pack(expand=YES, fill=Y, side=RIGHT)
+        self.font_chooser = FontConfiguration(master=self.rframe)
+        self.font_chooser.pack(expand=YES, fill=Y, side=RIGHT)
 
-    def proccessTxtFile(self, path:str, *_):
-        logging = self.certificateOptions.enableLogging.get()
+    def proccess_txt_file(self, path:str, *_):
+        logging = self.certificate_options.logging.get()
         # create and sort user list based on user name
-        userList = sorted(dataFiltering.txtToList(path.get()), key=lambda a: a[1])
+        user_list = sorted(dataFiltering.txt_to_list(path.get()), key=lambda a: a[1])
         # list with valid users
-        self.userList = []
+        self.user_list = []
         # list with flagged users
-        self.flaggedUserList = []
+        self.flagged_user_list = []
 
         # filter users based on their flags
-        for item in userList:
+        for item in user_list:
             if item[2] == '':
-                self.userList.append(item)
+                self.user_list.append(item)
             else:
-                self.flaggedUserList.append(item)
+                self.flagged_user_list.append(item)
 
         # sort flaggedUserList based on flagIndex
-        self.flaggedUserList = sorted(self.flaggedUserList, key=lambda a: a[2])
+        self.flagged_user_list = sorted(self.flagged_user_list, key=lambda a: a[2])
 
         # clean dataViewer widgets
-        self.filemanagerChildren['Name List']._reset()
+        self.filemanager_children['Name List']._reset()
 
-        for item in self.userList:
-            self.filemanagerChildren['Name List'].insertEntry(values=[item[1], item[0]], saveEdit=False)
+        for item in self.user_list:
+            self.filemanager_children['Name List'].insert_entry(values=[item[1], item[0]], save_edit=False)
 
-        for item in self.flaggedUserList:
+        for item in self.flagged_user_list:
             tag = ''
             # convert item flag to tree tag
             if item[2][0] == 'N':
@@ -438,20 +446,20 @@ class App(ttk.Frame):
             elif item[2][0] == 'E':
                 tag = 'flaggedEmail'
 
-            self.filemanagerChildren['Name List'].insertEntry(values=[item[1], item[0]], tags=(tag), saveEdit=False)
+            self.filemanager_children['Name List'].insert_entry(values=[item[1], item[0]], tags=(tag), save_edit=False)
 
         #dataFiltering.listToTxt(userList)
-        self.loadFile('cleanFile.txt')
+        self.load_file('cleanFile.txt')
 
         # switch to DataViewer tab
-        self.fileManagerNotebook.select(1)
+        self.file_manager_notebook.select(1)
 
-    def loadFile(self, path:str, *_):
+    def load_file(self, path:str, *_):
         """Load text file in the Text editor widget"""
         if os.path.exists(path):
-            self.filemanagerChildren['Info File'].loadFile(path)
+            self.filemanager_children['Info File'].load_file(path)
 
-    def loadImage(self, path, *_):
+    def load_image(self, path, *_):
         """Load image in the canvas widget"""
         # if the user closes the gui before selecting
         # a file the path will be empty
@@ -459,14 +467,14 @@ class App(ttk.Frame):
             self.canvas.loadImage(path.get())
 
     def changeToCertificateMode(self):
-        self.emailingOptions.grid_remove()
-        self.certificateOptions.grid(row=0, column=0, sticky=EW)
+        self.emailing_options.grid_remove()
+        self.certificate_options.grid(row=0, column=0, sticky=EW)
 
     def changeToEmailingMode(self):
-        self.certificateOptions.grid_remove()
-        self.emailingOptions.grid(row=0, column=0, sticky=EW)
+        self.certificate_options.grid_remove()
+        self.emailing_options.grid(row=0, column=0, sticky=EW)
 
-    def changeMode(self, *args):
+    def change_mode(self, *args):
 
         if self.mode.get() == 'Email Sender':
             self.changeToEmailingMode()
@@ -475,12 +483,10 @@ class App(ttk.Frame):
 
 
 if __name__ == "__main__":
-
     window = ttk.Window("Certificates Creation", themename="darkly", minsize=(600, 565))
     style = ttk.Style()
     for color_label in style.colors:
         color = style.colors.get(color_label)
-        print(color_label, color)
 
     window.geometry('1600x800')
 

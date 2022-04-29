@@ -7,11 +7,11 @@ from itertools import permutations
 
 
 
-def SplitNameAndEmail(row:str) -> tuple:
+def split_name_and_email(row:str) -> tuple:
     """Strips the email from a text
-    
+
     RETURNS
-    
+
     (text without email, email)"""
     words = row.split()
     email = ''
@@ -26,29 +26,29 @@ def remove_nonspacing_marks(s):
     return ''.join(c for c in unicodedata.normalize('NFKD', s)
                    if unicodedata.category(c) != 'Mn')
 
-def txtToList(txtPath:str, logging=False) -> None:
+def txt_to_list(txtPath:str, logging=False) -> None:
     """Convert a txt file to a list. Each row in the txt must contain an email and a name.
     If an entry is missing a name or an email and logging is disabled, it will be deleted
 
     Entries that are missing a name or an email will be deleted.
-    TIF loggin is enabled entries will be checked for duplicate emails and names. 
-    
+    TIF loggin is enabled entries will be checked for duplicate emails and names.
+
     If duplicates are found, each entry with a duplicate will be marked with an error
     Flag and a number. The number will be the same for all entries with the same
     duplicates (is used as a common reference).
-    
+
 
     ERROR FLAGS
 
     E: duplicate email,
     N: duplicate name
-    
+
     TXT FORMAT
-    
+
     each row must have an email and a name
-    
+
     RETURNS
-    
+
     a list where each entry is [email, name, errorFlag]"""
 
     try:
@@ -65,52 +65,53 @@ def txtToList(txtPath:str, logging=False) -> None:
     # remove empty lines
     lines = filter(lambda a : a != '', lines)
 
-    userList = []
-    flagErrorIndex = 0
-    userIsDuplicate = False
+    user_list = []
+    flag_error_index = 0
+    # true if the the exact item is already in the list
+    duplicate = False
 
     for line in lines:
-        name, email = SplitNameAndEmail(line)
+        name, email = split_name_and_email(line)
 
         flags = ''
         if name == '' or email == '':
             continue
 
         # filter name
-        filteredNameList = []
+        filtered_name_list = []
         for word in name:
             temp = word.translate(str.maketrans('', '', ')(!\'\":@#$.,')).upper()
             temp = remove_nonspacing_marks(temp)
-            filteredNameList.append(temp)
+            filtered_name_list.append(temp)
 
         # filter email
-        filteredEmail = email.translate(str.maketrans('', '', ')(\'\"'))
-        filteredName  = ' '.join(filteredNameList)
-        
+        filtered_email = email.translate(str.maketrans('', '', ')(\'\"'))
+        filtered_name  = ' '.join(filtered_name_list)
+
         # check if the user name or user email already exists in the list
-        for user in userList:
-            if filteredEmail == user[0] and filteredName == user[1]:
-                userIsDuplicate = True
+        for user in user_list:
+            if filtered_email == user[0] and filtered_name == user[1]:
+                duplicate = True
 
-            if filteredEmail == user[0]:
-                flags = flags.join(f'-N{flagErrorIndex}')
-                user[2] = user[2].join(f'-N{flagErrorIndex}')
-                flagErrorIndex += 1
-            if filteredName == user[1]:
-                flags = flags.join(f'-E{flagErrorIndex}')
-                user[2] = user[2].join(f'-E{flagErrorIndex}')
-                flagErrorIndex += 1
+            if filtered_email == user[0]:
+                flags = flags.join(f'-N{flag_error_index}')
+                user[2] = user[2].join(f'-N{flag_error_index}')
+                flag_error_index += 1
+            if filtered_name == user[1]:
+                flags = flags.join(f'-E{flag_error_index}')
+                user[2] = user[2].join(f'-E{flag_error_index}')
+                flag_error_index += 1
 
-        if not userIsDuplicate:
-            userList.append([filteredEmail, filteredName, flags])
-        userIsDuplicate = False
+        if not duplicate:
+            user_list.append([filtered_email, filtered_name, flags])
+        duplicate = False
 
-    for user in userList:
+    for user in user_list:
         user[2] = user[2].removeprefix('-')
 
-    return userList
+    return user_list
 
-def listToTxt(list:list):
+def list_to_txt(list:list):
     with open('cleanFile.txt', 'w', encoding='utf-8') as file:
         for item in list:
             file.write(f'{item[2]} | {item[0]} {item[1]}\n')
