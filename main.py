@@ -21,7 +21,79 @@ import dataFiltering
 
 
 
-class FontChooser(ttk.Frame):
+class FontSelector(ttk.Frame):
+    def __init__(self, master, font:ttk.font.Font=None):
+        super().__init__(master)
+        self.font_dialog = FontDialog(parent=master.master, title='Font Selection')
+        self.show_button = ttk.Button(self, bootstyle=(DARK))
+        self.font = font
+
+        self.cco_labelframe = ttk.Labelframe(
+            master=self,
+            text='Certificate Creation Options',
+            padding=10,
+            width=330
+        )
+        self.cco_labelframe.pack(expand=YES, fill=BOTH)
+
+        self.cco_labelframe.rowconfigure(5, weight=1)
+
+        self.select_font_button = ttk.Button(
+            master=self.cco_labelframe,
+            bootstyle=(OUTLINE, WARNING),
+            text='Select Font',
+            padding=10,
+            command=self._showFontDialog
+        )
+        self.select_font_button.grid(row=0, column=0, sticky=EW, pady=6)
+
+        # =-=-=-=-=-=- Colors Options -=-=-=-=-=--=-=
+
+        self.color_Label = ttk.Label(
+            master=self.cco_labelframe,
+            text='Select Font Color',
+            bootstyle=(INVERSE, SECONDARY),
+            anchor=CENTER,
+            font="-size 13"
+        )
+        self.color_Label.grid(row=1, column=0, sticky=EW, pady=(6, 10))
+
+        self.color_selector = ColorSelector(master=self.cco_labelframe)
+        self.color_selector.grid(row=2, column=0, sticky=EW)
+
+        self.font_size_selector = FontSizeSelector(master=self.cco_labelframe, bootstyle=WARNING)
+        self.font_size_selector.grid(row=3, column=0, sticky=EW)
+
+        self.font_size_selector.meter.amountusedvar.trace_add(
+            'write', self._update_font_size)
+
+        self.select_font_button = ttk.Button(
+            master=self.cco_labelframe,
+            bootstyle=(OUTLINE, WARNING),
+            text='Close',
+            padding=9
+        )
+        self.select_font_button.grid(row=6, column=0, sticky=EW, pady=6)
+
+    def _update_font_size(self, *args):
+        new_size = self.font_size_selector.meter.amountusedvar.get()
+        self.font.configure(size=new_size)
+
+    def _showFontDialog(self):
+        self.font_dialog.show()
+        self.font = self.font_dialog._result
+        self.font_size_selector.meter.configure(amountused=self.font.cget('size'))
+
+    def _hideWidget(self):
+        self.cco_labelframe.pack_forget()
+        self.show_button.pack(expand=YES, fill=BOTH)
+
+    def _showWidget(self):
+        self.show_button.pack_forget()
+        self.cco_labelframe.pack(expand=YES, fill=Y, anchor=NE, side=RIGHT)
+
+
+class FontSizeSelector(ttk.Frame):
     def __init__(self, master, fontsize=18, maxfontsize=50, *args, **kwargs):
         super().__init__(master)
 
@@ -112,7 +184,7 @@ class InfoInput(ttk.Labelframe):
         self.image_path_entry = ttk.Entry(
             master=self,
             font=self.font,
-            textvariable=self._image_path)
+            textvariable=self.image_path)
         self.image_path_entry.grid(row=0, column=1, columnspan=2, pady=6, sticky=EW)
 
         self.image_path_entry.bind('<Return>', lambda _: self._invoke_image_handler(), add='+')
@@ -130,7 +202,7 @@ class InfoInput(ttk.Labelframe):
         )
         self.select_info_file_button.grid(row=1, column=0, padx=(0, 8), pady=4)
 
-        self.info_path_entry = ttk.Entry(master=self, font=self.font, textvariable=self._info_file_path)
+        self.info_path_entry = ttk.Entry(master=self, font=self.font, textvariable=self.info_file_path)
         self.info_path_entry.grid(row=1, column=1, columnspan=2, pady=6, sticky=EW)
 
         self.info_path_entry.bind('<Return>', lambda _: self._invoke_info_file_handler(), add='+')
@@ -219,7 +291,8 @@ class EmailInput(ttk.Labelframe):
         )
         self.test_email_entry.grid(row=0, column=0, columnspan=2, pady=6, sticky=EW)
 
-        self.test_email_entry.bind('<Return>', lambda _: self.test_email_entry.validate(), add='+')
+        self.test_email_entry.bind('<Return>',
+            lambda _: self.test_email_entry.validate(), add='+')
         validators.add_email_validation(self.test_email_entry)
 
         self.real_email_entry = PlaceholderEntry(
@@ -230,7 +303,8 @@ class EmailInput(ttk.Labelframe):
         )
         self.real_email_entry.grid(row=1, column=0, columnspan=2, pady=6, sticky=EW)
 
-        self.real_email_entry.bind('<Return>', lambda _: self.real_email_entry.validate(), add='+')
+        self.real_email_entry.bind('<Return>',
+            lambda _: self.real_email_entry.validate(), add='+')
         validators.add_email_validation(self.real_email_entry)
 
         ttk.Separator(self).grid(row=2, column=0, columnspan=2, pady=10, sticky=EW)
@@ -260,69 +334,6 @@ class EmailInput(ttk.Labelframe):
         self.send_emails_button.grid(row=3, rowspan=2, column=1, sticky=E)
 
 
-class FontConfiguration(ttk.Frame):
-    def __init__(self, master, font:ttk.font.Font=None):
-        super().__init__(master)
-        self.font_dialog = FontDialog(parent=master.master, title='Font Selection')
-        self.show_button = ttk.Button(self, bootstyle=(DARK))
-
-        self.cco_labelframe = ttk.Labelframe(
-            master=self,
-            text='Certificate Creation Options',
-            padding=10,
-            width=330
-        )
-        self.cco_labelframe.pack(expand=YES, fill=BOTH)
-
-        self.cco_labelframe.rowconfigure(5, weight=1)
-
-        self.select_font_button = ttk.Button(
-            master=self.cco_labelframe,
-            bootstyle=(OUTLINE, WARNING),
-            text='Select Font',
-            padding=10,
-            command=self._showFontDialog
-        )
-        self.select_font_button.grid(row=0, column=0, sticky=EW, pady=6)
-
-        # =-=-=-=-=-=- Colors Options -=-=-=-=-=--=-=
-
-        self.color_Label = ttk.Label(
-            master=self.cco_labelframe,
-            text='Select Font Color',
-            bootstyle=(INVERSE, SECONDARY),
-            anchor=CENTER,
-            font="-size 13"
-        )
-        self.color_Label.grid(row=1, column=0, sticky=EW, pady=(6, 10))
-
-        self.color_chooser = ColorSelector(master=self.cco_labelframe)
-        self.color_chooser.grid(row=2, column=0, sticky=EW)
-
-        self.font_chooser = FontChooser(master=self.cco_labelframe, bootstyle=WARNING)
-        self.font_chooser.grid(row=3, column=0, sticky=EW)
-
-        self.select_font_button = ttk.Button(
-            master=self.cco_labelframe,
-            bootstyle=(OUTLINE, WARNING),
-            text='Close',
-            padding=9
-        )
-        self.select_font_button.grid(row=6, column=0, sticky=EW, pady=6)
-
-    def _showFontDialog(self):
-        self.font_dialog.show()
-        self.font = self.font_dialog._result
-        self.font_chooser.meter.configure(amountused=self.font.cget('size'))
-
-    def _hideWidget(self):
-        self.cco_labelframe.pack_forget()
-        self.show_button.pack(expand=YES, fill=BOTH)
-
-    def _showWidget(self):
-        self.show_button.pack_forget()
-        self.cco_labelframe.pack(expand=YES, fill=Y, anchor=NE, side=RIGHT)
-
 
 class App(ttk.Frame):
     def __init__(self, master):
@@ -333,19 +344,21 @@ class App(ttk.Frame):
         self.columnconfigure(0, weight=1, minsize=450)
         self.columnconfigure(1, weight=1)
 
-        self.modes_selection = ttk.Frame(self)
-        self.modes_selection.grid(row=0, column=0, columnspan=3, sticky=NSEW)
+        # =-=-=-=-=-=-=-=-=- Top Frame -=-=-=-=-=--=-=-=-=-=-=
 
-        self.modes_selection_label = ttk.Label(
-            master=self.modes_selection, text="Certificates Creator", font="-size 24 -weight bold"
+        self.topframe = ttk.Frame(self)
+        self.topframe.grid(row=0, column=0, columnspan=3, sticky=NSEW)
+
+        self.modes_selection_title = ttk.Label(
+            master=self.topframe, text="Certificates Creator", font="-size 24 -weight bold"
         )
-        self.modes_selection_label.pack(side=LEFT)
+        self.modes_selection_title.pack(side=LEFT)
 
         self.mode = ttk.StringVar()
-        self.modes_selection_label = ttk.Label(master=self.modes_selection, text="Select a mode:")
+        self.modes_selection_label = ttk.Label(master=self.topframe, text="Select a mode:")
         self.modes = ('Certificates Creator', 'Email Sender')
         self.modes_combobox= ttk.Combobox(
-            master=self.modes_selection,
+            master=self.topframe,
             bootstyle=(LIGHT),
             state=READONLY,
             textvariable=self.mode,
@@ -357,8 +370,8 @@ class App(ttk.Frame):
         self.modes_selection_label.pack(side=RIGHT)
 
         def change_mode(e):
-            t = self.modes_combobox.get()
-            self.modes_selection_label.configure(text=t)
+            mode = self.modes_combobox.get()
+            self.modes_selection_title.configure(text=mode)
 
         self.modes_combobox.bind("<<ComboboxSelected>>", change_mode, add='+')
         self.mode.trace_add('write', self.change_mode)
@@ -374,7 +387,8 @@ class App(ttk.Frame):
         self.rframe = ttk.Frame(self, padding=5)
         self.rframe.grid(row=2, column=2, sticky=NSEW)
 
-        # =-=-=-=-=-=- Default Options -=-=-=-=-=--=-=
+        # =-=-=-=-=-=-=-=-=- Left Frame -=-=-=-=-=--=-=-=-=-=-=
+
         self.lframe.rowconfigure(1, weight=1)
         self.lframe.columnconfigure(0, weight=1)
 
@@ -386,15 +400,15 @@ class App(ttk.Frame):
         self.certificate_options.image_changed_handler = self.load_image
         self.certificate_options.info_file_changed_handler = self.proccess_txt_file
 
-        self.canvas = ImageViewer(self.lframe, 'assets/example.jpg', disable_zoom_out=True)  # create widget
-        self.canvas.grid(row=1, column=0, sticky=NSEW)
+        self.image_viewer = ImageViewer(self.lframe, disable_zoom_out=False)  # create widget
+        self.image_viewer.grid(row=1, column=0, sticky=NSEW)
 
         # =-=-=-=-=-=-=-=-=- File Manager -=-=-=-=-=--=-=-=-=-=
 
         # notebook with table and text tabs
         self.file_manager_notebook = ttk.Notebook(master=self.mframe, bootstyle=LIGHT)
         self.file_manager_notebook.pack(expand=YES, fill=BOTH, pady=(8, 0), padx=10)
-        # enable key-binds for traversa;
+        # enable key-binds for traversal
         self.file_manager_notebook.enable_traversal()
 
         self.filemanager_children = {}
@@ -410,8 +424,8 @@ class App(ttk.Frame):
 
         # =-=-=-=-=-=- Certificate Creation Options -=-=-=-=-=--=-=
 
-        self.font_chooser = FontConfiguration(master=self.rframe)
-        self.font_chooser.pack(expand=YES, fill=Y, side=RIGHT)
+        self.font_configuration = FontSelector(master=self.rframe)
+        self.font_configuration.pack(expand=YES, fill=Y, side=RIGHT)
 
     def proccess_txt_file(self, path:str, *_):
         logging = self.certificate_options.logging.get()
@@ -484,10 +498,6 @@ class App(ttk.Frame):
 
 if __name__ == "__main__":
     window = ttk.Window("Certificates Creation", themename="darkly", minsize=(600, 565))
-    style = ttk.Style()
-    for color_label in style.colors:
-        color = style.colors.get(color_label)
-
     window.geometry('1600x800')
 
     app = App(window)

@@ -6,7 +6,7 @@ import ttkbootstrap as ttk
 from ttkbootstrap.constants import *
 import tkinter as tk
 
-from widgets.auto_scrollbar import AutoScrollbar
+from .auto_scrollbar import AutoScrollbar
 
 
 
@@ -17,19 +17,22 @@ class ImageViewer(ttk.Frame):
         self.top_frame = ttk.Frame(self)
         self.top_frame.pack(side=TOP, fill=X, pady=5)
 
-        self.image_canvas = CanvasImage(self, bootstyle=(DEFAULT, ROUND), path=imagepath, *args, **kwArgs)
+        self.image_canvas = CanvasImage(self,
+            bootstyle=(DEFAULT, ROUND), path=imagepath, *args, **kwArgs)
         self.image_canvas.pack(side=TOP, expand=YES, fill=BOTH)
 
         self.x_coord_label = ttk.Label(self.top_frame, text='X: ')
         self.x_coord_label.pack(side=LEFT, padx=(0, 3))
 
-        self.x_coord_entry = ttk.Entry(self.top_frame, textvariable=self.image_canvas.x_coord, width=4, bootstyle=DARK)
+        self.x_coord_entry = ttk.Entry(self.top_frame,
+            textvariable=self.image_canvas.temp_x_coord, width=4, bootstyle=DARK)
         self.x_coord_entry.pack(side=LEFT, padx=(0, 15))
 
         self.y_coord_label = ttk.Label(self.top_frame, text='Y: ')
         self.y_coord_label.pack(side=LEFT, padx=(0, 3))
 
-        self.y_coord_entry = ttk.Entry(self.top_frame, textvariable=self.image_canvas.y_coord, width=4, bootstyle=DARK)
+        self.y_coord_entry = ttk.Entry(self.top_frame,
+            textvariable=self.image_canvas.temp_y_coord, width=4, bootstyle=DARK)
         self.y_coord_entry.pack(side=LEFT)
 
     def loadImage(self, path:str):
@@ -65,13 +68,14 @@ class CanvasImage(ttk.Frame):
         vbar.configure(command=self._scroll_Y)
 
         # Bind events to the Canvas
-        self.canvas.bind('<Configure>', lambda _: self._show_image())  # canvas is resized
+        self.canvas.bind('<Configure>', lambda _: self._show_image)  # canvas is resized
         self.canvas.bind('<ButtonPress-1>', self._move_from)  # remember canvas position
         self.canvas.bind('<B1-Motion>',     self._move_to)  # move canvas to the new position
         self.canvas.bind('<MouseWheel>', self._wheel)  # zoom for Windows and MacOS, but not Linux
         self.canvas.bind('<Button-5>',   self._wheel)  # zoom for Linux, wheel scroll down
         self.canvas.bind('<Button-4>',   self._wheel)  # zoom for Linux, wheel scroll up
         self.canvas.bind('<Motion>',     self._motion)
+        self.canvas.bind('<Button-1>',   self._save_coordinates)
         # Handle keystrokes in idle mode, because program slows down on a weak computers,
         # when too many key stroke events in the same time
         self.canvas.bind('<Key>', lambda event: self.canvas.after_idle(self._keystroke, event))
@@ -82,11 +86,19 @@ class CanvasImage(ttk.Frame):
         self._band_width = 1024  # width of the tile band
         Image.MAX_IMAGE_PIXELS = 1000000000  # suppress DecompressionBombError for the big image
 
-        self.x_coord = ttk.IntVar(value=0)
-        self.y_coord = ttk.IntVar(value=0)
+        # current pixel coords (the pixel in which the mouse is inside)
+        self.temp_x_coord = ttk.IntVar(value=0)
+        self.temp_y_coord = ttk.IntVar(value=0)
+
+        #saved pixel coords
+        self.saved_x_coord = ttk.IntVar(value=0)
+        self.saved_y_coord = ttk.IntVar(value=0)
 
         # load image in canvas
         self.load_image(path)
+
+    def get_saved_coordinates(self):
+        return (self.saved_x_coord.get(), self.saved_y_coord.get())
 
     def smaller(self):
         """ Resize image proportionally and return smaller image """
@@ -272,6 +284,10 @@ class CanvasImage(ttk.Frame):
             elif event.keycode in [83, 40, 98]:  # scroll down: keys 'S', 'Down' or 'Numpad-2'
                 self._scroll_Y('scroll',  1, 'unit', event=event)
 
+    def _save_coordinates(self, event:tk.Event):
+        self.saved_x_coord.set(self.temp_x_coord.get())
+        self.saved_y_coord.set(self.temp_y_coord.get())
+
     def _canvas_coords_to_image_coords(self, x, y):
         if self._image_covers_X_axis:
             x_coord = int(self._curr_center[0] + (x / self.im_scale))
@@ -292,8 +308,8 @@ class CanvasImage(ttk.Frame):
         if self._outside(x, y): return
 
         temp = self._canvas_coords_to_image_coords(event.x, event.y)
-        self.x_coord.set(temp[0])
-        self.y_coord.set(temp[1])
+        self.temp_x_coord.set(temp[0])
+        self.temp_y_coord.set(temp[1])
 
     def crop(self, bbox):
         """ Crop rectangle from the image and return it """

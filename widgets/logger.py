@@ -7,6 +7,7 @@ from ttkbootstrap.constants import *
 from widgets.auto_scrollbar import AutoScrollbar
 from widgets.placeholder_entry import tkPlaceholderEntry
 from widgets.custom_texts import CText
+from widgets.constants import *
 
 
 
@@ -17,7 +18,7 @@ class Logger(ttk.Frame):
         master,
         padding=0,
         timestamp=True,
-        logLevel=1,
+        log_level:LogLevel=LogLevel.INFO,
         bootstyle=DEFAULT,
         vbar=True,
         hbar=False,
@@ -61,7 +62,7 @@ class Logger(ttk.Frame):
         find_font = ('Arial', '13')
 
         self._last_line_index = 0  # stores the row index of the previously selected line
-        self.log_level = logLevel  # store logLevel as a public var
+        self.log_level = log_level  # store logLevel as a public var
         self._timestamp = timestamp
 
         self._text = CText(
@@ -164,22 +165,24 @@ class Logger(ttk.Frame):
         self._text.bind_all('<Control-KeyPress-f>', lambda e: self._openSearch(), add='+')
         self._text.bind_all('<Escape>', lambda e: self._closeSearch(), add='+')
 
-        self.log('<<LOGGER INITIALIZED>>',INFO)
+        self.log('<<LOGGER INITIALIZED>>',LogLevel.INFO)
 
-    def log(self, message:str, logLevel):
-        """Add a message to the logger. Each message has a logLevel assosiated
+    def log(self, message:str, log_level:LogLevel):
+        """Log a message. Each message has a logLevel assosiated
         with it.
 
         LOG LEVEL OPTIONS
 
         DEBUG, INFO, WARNING, ERROR, SUCCESS
         """
+        if log_level.value < self.log_level.value:
+            return
 
         timestamp = ''
         if self._timestamp:
             timestamp = time.strftime(f'%H:%M:%S::', time.localtime())
 
-        tag = f'tag_{logLevel}'
+        tag = f'tag_{log_level.name.lower()}'
         self._text.configure(state=NORMAL)
         self._text.insert(END, timestamp, 'timestamp_tag')
         self._text.insert(END, f'{message}\n', tag)

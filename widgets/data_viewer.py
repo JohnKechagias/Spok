@@ -120,7 +120,7 @@ class DataViewer(ttk.Frame):
         self.bind_all('<Control-z>', self._undo, add='+')
         self.bind_all('<u>', self._redo, add='+')
 
-    def notOnEditMode(func):
+    def _notOnEditMode(func):
         @wraps(func)
         def wrapperFunc(self, *args, **kwargs):
             if not self._edit_mode:
@@ -191,7 +191,7 @@ class DataViewer(ttk.Frame):
             return
         self.delete_entry(entry_to_delete)
 
-    @notOnEditMode
+    @_notOnEditMode
     def delete_entry(self, entry:str, save_edit=True):
         # get item index in the tree
         index = int(self._tree.item(entry, 'values')[0]) - 1
@@ -253,7 +253,7 @@ class DataViewer(ttk.Frame):
             self._edit_mode = False
             self._edit_frame.place_forget()
 
-    @notOnEditMode
+    @_notOnEditMode
     def _undo(self, event:tk.Event=None):
         """undo the latest edit"""
         if self.stack_index < 0:
@@ -276,7 +276,7 @@ class DataViewer(ttk.Frame):
             self.edit_entry(edit[1], values, save_edit=False)
         self.stack_index -= 1
 
-    @notOnEditMode
+    @_notOnEditMode
     def _redo(self, event:tk.Event=None):
         """redo the latest edit"""
         if self.stack_index == len(self.edit_stack) - 1 or self.stack_index < -1:
