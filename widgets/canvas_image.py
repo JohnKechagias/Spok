@@ -33,10 +33,31 @@ class ImageViewer(ttk.Frame):
 
         self.y_coord_entry = ttk.Entry(self.top_frame,
             textvariable=self.image_canvas.temp_y_coord, width=4, bootstyle=DARK)
-        self.y_coord_entry.pack(side=LEFT)
+        self.y_coord_entry.pack(side=LEFT, padx=(0, 40))
 
-    def loadImage(self, path:str):
-        self.image_canvas.loadImage(path)
+        self.curr_coord_frame = ttk.Frame(self.top_frame)
+        self.curr_coord_frame.pack(side=RIGHT)
+
+        self.x_curr_coord_label = ttk.Label(self.curr_coord_frame, text='X: ')
+        self.x_curr_coord_label.pack(side=LEFT, padx=(0, 3))
+
+        self.x_curr_coord_entry = ttk.Entry(self.curr_coord_frame,
+            textvariable=self.image_canvas.saved_x_coord, width=4, bootstyle=DARK)
+        self.x_curr_coord_entry.pack(side=LEFT, padx=(0, 15))
+
+        self.y_curr_coord_label = ttk.Label(self.curr_coord_frame, text='Y: ')
+        self.y_curr_coord_label.pack(side=LEFT, padx=(0, 3))
+
+        self.y_curr_coord_entry = ttk.Entry(self.curr_coord_frame,
+            textvariable=self.image_canvas.saved_y_coord, width=4, bootstyle=DARK)
+        self.y_curr_coord_entry.pack(side=LEFT)
+
+    def get_saved_coords(self):
+        return (self.image_canvas.saved_x_coord.get(),
+                self.image_canvas.saved_y_coord.get())
+
+    def load_image(self, path:str):
+        self.image_canvas.load_image(path)
 
 
 class CanvasImage(ttk.Frame):
@@ -75,7 +96,7 @@ class CanvasImage(ttk.Frame):
         self.canvas.bind('<Button-5>',   self._wheel)  # zoom for Linux, wheel scroll down
         self.canvas.bind('<Button-4>',   self._wheel)  # zoom for Linux, wheel scroll up
         self.canvas.bind('<Motion>',     self._motion)
-        self.canvas.bind('<Button-1>',   self._save_coordinates)
+        self.canvas.bind('<Button-3>',   self._save_coordinates)
         # Handle keystrokes in idle mode, because program slows down on a weak computers,
         # when too many key stroke events in the same time
         self.canvas.bind('<Key>', lambda event: self.canvas.after_idle(self._keystroke, event))
@@ -95,7 +116,11 @@ class CanvasImage(ttk.Frame):
         self.saved_y_coord = ttk.IntVar(value=0)
 
         # load image in canvas
-        self.load_image(path)
+        if path is not None:
+            self.load_image(path)
+        else:
+            self.container = self.canvas.create_rectangle(
+                (0, 0, 0, 0), width=1)
 
     def get_saved_coordinates(self):
         return (self.saved_x_coord.get(), self.saved_y_coord.get())
@@ -210,7 +235,7 @@ class CanvasImage(ttk.Frame):
                 self._curr_center[0] = self.canvas.canvasx(0) - box_scroll[0]
             else:
                 self._image_covers_X_axis = TRUE
-                self._curr_center[0] = (int(x1 / self._scale))
+                self._curr_center[0] = round(x1 / self._scale)
 
             # check if image fills the y-axis of the canvas
             if self.canvas.canvasy(self.canvas.winfo_height()) > int(y2 - y1):
@@ -218,7 +243,7 @@ class CanvasImage(ttk.Frame):
                 self._curr_center[1] = self.canvas.canvasy(0) - box_scroll[1]
             else:
                 self._image_covers_Y_axis = TRUE
-                self._curr_center[1] = int(y1 / self._scale)
+                self._curr_center[1] = round(y1 / self._scale)
 
     def _move_from(self, event:tk.Event):
         """ Remember previous coordinates for scrolling with the mouse """
@@ -252,11 +277,15 @@ class CanvasImage(ttk.Frame):
             if round(self._min_side * self.im_scale) < 30: return  # image is less than 30 pixels
             self.im_scale  = new_im_scale
             scale        /= self._delta
+            if self.im_scale < 1.0:
+                self._filter = Image.BICUBIC
         if event.num == 4 or event.delta == 120:  # scroll up, bigger
             i = min(self.canvas.winfo_width(), self.canvas.winfo_height()) >> 1
             if i < self.im_scale: return  # 1 pixel is bigger than the visible area
             self.im_scale *= self._delta
             scale        *= self._delta
+            if self.im_scale > 1.0:
+                self._filter = Image.NEAREST
         # Take appropriate image from the pyramid
         k = self.im_scale * self._ratio  # temporary coefficient
         self._curr_img = min((-1) * int(math.log(k, self._reduction)), len(self._pyramid) - 1)
