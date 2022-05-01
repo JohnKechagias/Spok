@@ -1,7 +1,7 @@
 import ttkbootstrap as ttk
 from ttkbootstrap.constants import *
 
-from widgets.placeholder_entry import PlaceholderEntry
+from .placeholder_entry import PlaceholderEntry
 
 
 

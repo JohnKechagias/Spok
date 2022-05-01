@@ -4,10 +4,10 @@ import tkinter as tk
 import ttkbootstrap as ttk
 from ttkbootstrap.constants import *
 
-from widgets.auto_scrollbar import AutoScrollbar
-from widgets.placeholder_entry import tkPlaceholderEntry
-from widgets.custom_texts import CText
-from widgets.constants import *
+from .auto_scrollbar import AutoScrollbar
+from .placeholder_entry import tkPlaceholderEntry
+from .custom_texts import CText
+from .constants import *
 
 
 

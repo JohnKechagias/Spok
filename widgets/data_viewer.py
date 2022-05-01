@@ -4,7 +4,7 @@ import tkinter as tk
 import ttkbootstrap as ttk
 from ttkbootstrap.constants import *
 
-from widgets.auto_scrollbar import AutoScrollbar
+from .auto_scrollbar import AutoScrollbar
 
 
 
