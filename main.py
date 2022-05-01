@@ -411,16 +411,25 @@ class App(ttk.Frame):
         # enable key-binds for traversal
         self.file_manager_notebook.enable_traversal()
 
+        # initialize widgets
+        self.text_editor = TextEditor(self.file_manager_notebook)
+        self.data_viewer = DataViewer(self.file_manager_notebook, bootstyle=DARK)
+        self.email_creator = EmailCreator(self.file_manager_notebook)
+        self.logger = Logger(self.file_manager_notebook)
+
         self.filemanager_children = {}
-        self.filemanager_children['Info File'] = TextEditor(self.file_manager_notebook)
-        self.filemanager_children['Name List'] = DataViewer(self.file_manager_notebook, bootstyle=DARK)
-        self.filemanager_children['Email'] = EmailCreator(self.file_manager_notebook)
-        self.filemanager_children['Logger'] = Logger(self.file_manager_notebook)
+        self.filemanager_children['Info File'] = self.text_editor
+        self.filemanager_children['Name List'] = self.data_viewer
+        self.filemanager_children['Email'] = self.email_creator
+        self.filemanager_children['Logger'] = self.logger
 
         for key, value in self.filemanager_children.items():
             self.file_manager_notebook.add(value, text=key, sticky=NSEW)
 
-        self.filemanager_children['Info File'].load_file('requirements.txt')
+        self.certificate_options.info_file_path.set(
+            f'{os.curdir}/assets/text.txt')
+        self.certificate_options.image_path.set(
+            f'{os.curdir}/assets/template.png')
 
         # =-=-=-=-=-=- Certificate Creation Options -=-=-=-=-=--=-=
 
