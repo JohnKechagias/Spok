@@ -143,7 +143,7 @@ class InfoInput(ttk.Labelframe):
     def __init__(
         self,
         master,
-        errorchecking=True,
+        test_mode=True,
         logging=True
         ):
         super().__init__(master, text='Certificate Options', padding=(16, 10))
@@ -154,10 +154,13 @@ class InfoInput(ttk.Labelframe):
         self.font = '-size 13'
         self.info_file_type = ''
 
-        self._image_path = ttk.StringVar()
-        self._info_file_path = ttk.StringVar()
+        self.image_path = ttk.StringVar()
+        self.info_file_path = ttk.StringVar()
 
-        self.error_checking = ttk.BooleanVar(value=errorchecking)
+        self.image_path.trace_add('write', self._invoke_image_handler)
+        self.info_file_path.trace_add('write', self._invoke_info_file_handler)
+
+        self.test_mode = ttk.BooleanVar(value=test_mode)
         self.logging = ttk.BooleanVar(value=logging)
 
         # We manually call the hanlders instead of tracing the vars because
@@ -215,8 +218,8 @@ class InfoInput(ttk.Labelframe):
         self.error_checking_mode_checkbutton = ttk.Checkbutton(
             master=self,
             bootstyle=(WARNING, TOGGLE, SQUARE),
-            text=' Error Checking',
-            variable=self.error_checking
+            text=' Test Mode',
+            variable=self.test_mode
         )
         self.error_checking_mode_checkbutton.grid(row=3, column=0, sticky=W, pady=6)
 
@@ -237,27 +240,24 @@ class InfoInput(ttk.Labelframe):
         self.create_certificates_button.grid(row=3, rowspan=2, column=2, sticky=E)
 
     def _select_image_file(self):
-        self._selectFile(self._image_path, ("Image files",".img .png .jpeg .jpg"))
-        self._invoke_image_handler()
+        self._selectFile(self.image_path, ("Image files",".img .png .jpeg .jpg"))
 
     def _select_info_file(self):
-        self._selectFile(self._info_file_path, ("Info files",".txt .exel .xlsx"))
-        file_extension = self._info_file_path.get().split('.')[-1]
+        self._selectFile(self.info_file_path, ("Info files",".txt .exel .xlsx"))
+        file_extension = self.info_file_path.get().split('.')[-1]
 
         if file_extension in {'txt'}:
             self.info_file_type = 'txt'
         elif file_extension in {'exel', 'xlsx'}:
             self.info_file_type = 'exel'
 
-        self._invoke_info_file_handler()
-
-    def _invoke_image_handler(self):
+    def _invoke_image_handler(self, *args):
         if self.image_changed_handler is not None and self.image_path_entry.validate():
-            self.image_changed_handler(self._image_path)
+            self.image_changed_handler(self.image_path.get())
 
-    def _invoke_info_file_handler(self):
+    def _invoke_info_file_handler(self, *args):
         if self.info_file_changed_handler is not None and self.info_path_entry.validate():
-            self.info_file_changed_handler(self._info_file_path, self.info_file_type)
+            self.info_file_changed_handler(self.info_file_path.get(), self.info_file_type)
 
     def _selectFile(self, stringVar:tk.StringVar, filetype):
         stringVar.set(fd.askopenfilename(filetypes=(filetype,("All files","*.*"))))
@@ -430,7 +430,7 @@ class App(ttk.Frame):
     def proccess_txt_file(self, path:str, *_):
         logging = self.certificate_options.logging.get()
         # create and sort user list based on user name
-        user_list = sorted(dataFiltering.txt_to_list(path.get()), key=lambda a: a[1])
+        user_list = sorted(dataFiltering.txt_to_list(path), key=lambda a: a[1])
         # list with valid users
         self.user_list = []
         # list with flagged users
@@ -473,12 +473,12 @@ class App(ttk.Frame):
         if os.path.exists(path):
             self.filemanager_children['Info File'].load_file(path)
 
-    def load_image(self, path, *_):
+    def load_image(self, path:str, *_):
         """Load image in the canvas widget"""
         # if the user closes the gui before selecting
-        # a file the path will be empty
-        if os.path.exists(path.get()):
-            self.canvas.loadImage(path.get())
+        # a file, the path will be empty
+        if os.path.exists(path):
+            self.image_viewer.load_image(path)
 
     def changeToCertificateMode(self):
         self.emailing_options.grid_remove()
