@@ -87,7 +87,7 @@ class Logger(ttk.Frame):
         self._text.tag_configure('tag_selected', foreground=selected_background_color)
         self._text.tag_configure('tag_found', foreground=selected_background_color)
 
-        self._text.tag_configure('tag_debug', foreground=info_color)
+        self._text.tag_configure('tag_debug', foreground=num_font_color)
         self._text.tag_configure('tag_info', foreground=info_color)
         self._text.tag_configure('tag_warning', foreground=warning_color)
         self._text.tag_configure('tag_error', foreground=error_color)

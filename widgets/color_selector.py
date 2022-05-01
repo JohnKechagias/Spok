@@ -44,7 +44,8 @@ class ColorSelector(ttk.Frame):
             )
             channel['scale'].pack(side=RIGHT, fill=X, expand=YES, padx=6, pady=6)
 
-            channel['value'].trace("w", partial(self.update_color_value, channel_name))
+            channel['value'].trace_add('write',
+                partial(self.update_color_value, channel_name))
             channel['entry'].bind('<Any-KeyPress>',
                 partial(self.keys_pressed, channel['value']), add='+')
 
