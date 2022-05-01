@@ -148,7 +148,7 @@ class Logger(ttk.Frame):
         self._find_entry.pack(side=LEFT, pady=2, padx=(10, 4))
 
         #Import the image using PhotoImage function
-        self._find_button_img= ttk.PhotoImage(file='assets/x1.png')
+        self._find_button_img= ttk.PhotoImage(file='assets/x.png')
 
         self._find_close_button = tk.Button(
             self._find_frame,
