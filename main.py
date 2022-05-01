@@ -6,6 +6,7 @@ from tkinter import filedialog as fd
 import ttkbootstrap as ttk
 from ttkbootstrap.constants import *
 from ttkbootstrap.dialogs.dialogs import FontDialog
+from certificateCreation import CertificateCreator
 
 from widgets.logger import Logger
 from widgets.canvas_image import ImageViewer
@@ -394,6 +395,8 @@ class App(ttk.Frame):
 
         self.certificate_options= InfoInput(master=self.lframe)
         self.certificate_options.grid(row=0, column=0, sticky=EW)
+        self.certificate_options.create_certificates_button.configure(
+            command=self.create_certificates)
 
         self.emailing_options = EmailInput(master=self.lframe)
 
@@ -498,11 +501,28 @@ class App(ttk.Frame):
         self.emailing_options.grid(row=0, column=0, sticky=EW)
 
     def change_mode(self, *args):
-
         if self.mode.get() == 'Email Sender':
             self.changeToEmailingMode()
         else:
             self.changeToCertificateMode()
+
+    def create_certificates(self):
+        certificate_creator = CertificateCreator(
+            image_path = self.certificate_options.image_path.get(),
+            output_folder_path = 'certificates',
+            font = self.font_configuration.font,
+            font_color = tuple(self.font_configuration.color_selector.get_color_tuple()),
+            image_coords = self.image_viewer.get_saved_coords(),
+            word_position = LEFT,
+            log_func = self.logger.log
+        )
+
+        if self.certificate_options.test_mode.get():
+            entries_list = (('x', 'John Kechagias', 'what@gmail.com'))
+        else:
+            entries_list = self.filemanager_children['Name List'].get_list_of_entries()
+
+        certificate_creator.create_certificates_from_list(entries_list)
 
 
 if __name__ == "__main__":

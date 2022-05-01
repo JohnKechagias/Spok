@@ -134,7 +134,17 @@ class DataViewer(ttk.Frame):
         self._clear_treeview_selection()
         self._tree.selection_add(self._tree.get_children()[0])
 
-    @notOnEditMode
+    def get_list_of_entries(self) -> tuple:
+        values = []
+        for entry in self._tree.get_children():
+            entry_tags = self._tree.item(entry, 'tags')
+            # export only entry that don't have a tag
+            if len(entry_tags) == 0 or entry_tags is None:
+                entry_values = self._tree.item(entry, 'values')
+                values.append(entry_values)
+        return tuple(values)
+
+    @_notOnEditMode
     def insert_entry(
         self,
         index:int=END,
