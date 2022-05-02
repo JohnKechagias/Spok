@@ -138,6 +138,7 @@ class TextEditor(ttk.Frame):
             highlightthickness=0,
             background=dark_background_color,
             activebackground=secondary_dark_background_color,
+            cursor='arrow',
             relief=FLAT,
             command=self._close_search)
         self._find_close_button.pack(side=LEFT, expand=NO, pady=2, padx=(0, 4))

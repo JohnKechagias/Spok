@@ -159,6 +159,7 @@ class Logger(ttk.Frame):
             background=dark_background_color,
             activebackground=secondary_dark_background_color,
             relief=FLAT,
+            cursor='arrow',
             command=self._closeSearch)
         self._find_close_button.pack(side=LEFT, expand=NO, pady=2, padx=(0, 4))
 
