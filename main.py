@@ -400,11 +400,11 @@ class App(ttk.Frame):
 
         self.emailing_options = EmailInput(master=self.lframe)
 
+        self.image_viewer = ImageViewer(self.lframe)
+        self.image_viewer.grid(row=1, column=0, sticky=NSEW)
+
         self.certificate_options.image_changed_handler = self.load_image
         self.certificate_options.info_file_changed_handler = self.proccess_txt_file
-
-        self.image_viewer = ImageViewer(self.lframe, disable_zoom_out=False)  # create widget
-        self.image_viewer.grid(row=1, column=0, sticky=NSEW)
 
         # =-=-=-=-=-=-=-=-=- File Manager -=-=-=-=-=--=-=-=-=-=
 

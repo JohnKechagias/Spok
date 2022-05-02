@@ -62,7 +62,7 @@ class ImageViewer(ttk.Frame):
 
 class CanvasImage(ttk.Frame):
     """ Display and zoom image """
-    def __init__(self, master=None, bootstyle=DEFAULT, path=None, disable_zoom_out=True):
+    def __init__(self, master=None, bootstyle=DEFAULT, path=None, disable_zoom_out=False):
         super().__init__(master)
         """ Initialize the ImageFrame """
         self.im_scale = 1.0  # scale for the canvas image zoom, public for outer classes
@@ -89,7 +89,7 @@ class CanvasImage(ttk.Frame):
         vbar.configure(command=self._scroll_Y)
 
         # Bind events to the Canvas
-        self.canvas.bind('<Configure>', lambda _: self._show_image)  # canvas is resized
+        self.canvas.bind('<Configure>', lambda _: self._show_image())  # canvas is resized
         self.canvas.bind('<ButtonPress-1>', self._move_from)  # remember canvas position
         self.canvas.bind('<B1-Motion>',     self._move_to)  # move canvas to the new position
         self.canvas.bind('<MouseWheel>', self._wheel)  # zoom for Windows and MacOS, but not Linux
@@ -124,6 +124,54 @@ class CanvasImage(ttk.Frame):
 
     def get_saved_coordinates(self):
         return (self.saved_x_coord.get(), self.saved_y_coord.get())
+
+    def load_image(self, path:str):
+        # TODO when the new image loaded is smalled than the current one, the scrollbox
+        # is out of bounds
+        if self._image is not None:
+            self._image.close()
+            self.canvas.delete(self.container)
+            map(lambda i: i.close, self._pyramid)  # close all pyramid images
+
+        self._previous_state = 0  # previous state of the keyboard
+        self.path = path  # path to the image, should be public for outer classes
+
+        self._curr_center = [0, 0]  # coordinate center
+        self._image_wider_than_canvas = False
+        self._image_taller_than_canvas = True
+
+        with warnings.catch_warnings():  # suppress DecompressionBombWarning
+            warnings.simplefilter('ignore')
+            self._image = Image.open(self.path)  # open image, but down't load it
+        self.im_width, self.im_height = self._image.size  # public for outer classes
+
+        if self.im_width * self.im_height > self._huge_size * self._huge_size and \
+           self._image.tile[0][0] == 'raw':  # only raw images could be tiled
+            self._huge = True  # image is huge
+            self._offset = self._image.tile[0][2]  # initial tile offset
+            self._tile = [self._image.tile[0][0],  # it have to be 'raw'
+                           [0, 0, self.im_width, 0],  # tile extent (a rectangle)
+                           self._offset,
+                           self._image.tile[0][3]]  # list of arguments to the decoder
+        self._min_side = min(self.im_width, self.im_height)  # get the smaller image side
+        # Create image pyramid
+        self._pyramid = [self.smaller()] if self._huge else [Image.open(self.path)]
+        # Set ratio coefficient for image pyramid
+        self._ratio = max(self.im_width, self.im_height) / self._huge_size if self._huge else 1.0
+        self._curr_img = 0  # current image from the pyramid
+        self._scale = self.im_scale * self._ratio  # image pyramide scale
+        self._reduction = 2  # reduction degree of image pyramid
+        w, h = self._pyramid[-1].size
+        while w > 512 and h > 512:  # top pyramid image is around 512 pixels in size
+            w /= self._reduction  # divide on reduction degree
+            h /= self._reduction  # divide on reduction degree
+            self._pyramid.append(self._pyramid[-1].resize((int(w), int(h)), self._filter))
+        # Put image into container rectangle and use it to set proper coordinates to the image
+        self.container = self.canvas.create_rectangle((0, 0, self.im_width, self.im_height), width=0)
+
+        self.canvas.scan_dragto(0, 0, gain=1)
+        self._show_image()  # zoom tile and show it on the canvas
+        self.canvas.focus_set()  # set focus on the canvas
 
     def smaller(self):
         """ Resize image proportionally and return smaller image """
@@ -289,7 +337,6 @@ class CanvasImage(ttk.Frame):
             self.canvas.lower(image_id)  # set image into background
             self.canvas.imagetk = image_tk  # keep an extra reference to prevent garbage-collection
 
-
     def _move_from(self, event:tk.Event):
         """ Remember previous coordinates for scrolling with the mouse """
         self.last_pos = (event.x, event.y)
@@ -399,54 +446,6 @@ class CanvasImage(ttk.Frame):
             return self._image.crop((bbox[0], 0, bbox[2], band))
         else:  # image is totally in RAM
             return self._pyramid[0].crop(bbox)
-
-    def load_image(self, path:str):
-        # TODO when the new image loaded is smalled than the current one, the scrollbox
-        # is out of bounds
-        if self._image is not None:
-            self._image.close()
-            self.canvas.delete(self.container)
-            map(lambda i: i.close, self._pyramid)  # close all pyramid images
-
-        self._previous_state = 0  # previous state of the keyboard
-        self.path = path  # path to the image, should be public for outer classes
-
-        self._curr_center = [0, 0]  # coordinate center
-        self._image_wider_than_canvas = FALSE
-        self._image_taller_than_canvas = FALSE
-
-        with warnings.catch_warnings():  # suppress DecompressionBombWarning
-            warnings.simplefilter('ignore')
-            self._image = Image.open(self.path)  # open image, but down't load it
-        self.im_width, self.im_height = self._image.size  # public for outer classes
-
-        if self.im_width * self.im_height > self._huge_size * self._huge_size and \
-           self._image.tile[0][0] == 'raw':  # only raw images could be tiled
-            self._huge = True  # image is huge
-            self._offset = self._image.tile[0][2]  # initial tile offset
-            self._tile = [self._image.tile[0][0],  # it have to be 'raw'
-                           [0, 0, self.im_width, 0],  # tile extent (a rectangle)
-                           self._offset,
-                           self._image.tile[0][3]]  # list of arguments to the decoder
-        self._min_side = min(self.im_width, self.im_height)  # get the smaller image side
-        # Create image pyramid
-        self._pyramid = [self.smaller()] if self._huge else [Image.open(self.path)]
-        # Set ratio coefficient for image pyramid
-        self._ratio = max(self.im_width, self.im_height) / self._huge_size if self._huge else 1.0
-        self._curr_img = 0  # current image from the pyramid
-        self._scale = self.im_scale * self._ratio  # image pyramide scale
-        self._reduction = 2  # reduction degree of image pyramid
-        w, h = self._pyramid[-1].size
-        while w > 512 and h > 512:  # top pyramid image is around 512 pixels in size
-            w /= self._reduction  # divide on reduction degree
-            h /= self._reduction  # divide on reduction degree
-            self._pyramid.append(self._pyramid[-1].resize((int(w), int(h)), self._filter))
-        # Put image into container rectangle and use it to set proper coordinates to the image
-        self.container = self.canvas.create_rectangle((0, 0, self.im_width, self.im_height), width=0)
-
-        self.canvas.scan_dragto(0, 0, gain=1)
-        self._show_image()  # zoom tile and show it on the canvas
-        self.canvas.focus_set()  # set focus on the canvas
 
     def destroy(self):
         """ ImageFrame destructor """
