@@ -120,7 +120,7 @@ class CanvasImage(ttk.Frame):
             self.load_image(path)
         else:
             self.container = self.canvas.create_rectangle(
-                (0, 0, 0, 0), width=1)
+                (0, 0, 0, 0), width=0)
 
     def get_saved_coordinates(self):
         return (self.saved_x_coord.get(), self.saved_y_coord.get())
@@ -198,13 +198,74 @@ class CanvasImage(ttk.Frame):
             box_scroll[1]  = box_img_int[1]
             box_scroll[3]  = box_img_int[3]
 
-        # Convert scroll region to tuple and to integer
+        # set current center value
+        # check if image fills the x-axis of the canvas
+        curr_image_width = self.im_width * self.im_scale
+        curr_image_height = self.im_height * self.im_scale
+
+        if self.canvas.winfo_width() > curr_image_width:
+            self._image_wider_than_canvas = False
+            self._curr_center[0] = self.canvas.canvasx(0) - box_scroll[0]
+        else:
+            self._image_wider_than_canvas = True
+
+            # if image is wider than the canvas move it
+            # so it occupies the whole x axis
+
+            # image distance from canvas left side
+            distance_from_left_side = math.ceil(box_scroll[0] - box_image[0])
+            # image distance from canvas right side
+            distance_from_right_side = math.ceil(box_scroll[2] - box_image[2])
+
+            if distance_from_left_side < 0:
+                self.canvas.move(self.container, distance_from_left_side, 0)
+                box_scroll[2] += distance_from_left_side
+            elif distance_from_right_side > 0:
+                self.canvas.move(self.container, distance_from_right_side, 0)
+                box_scroll[0] += distance_from_right_side
+
+            #self._curr_center[0] = round(x1 / self._scale)
+
+        # check if image fills the y-axis of the canvas
+        if self.canvas.winfo_height() > curr_image_height:
+            self._image_taller_than_canvas = False
+            self._curr_center[1] = self.canvas.canvasy(0) - box_scroll[1]
+        else:
+            self._image_taller_than_canvas = True
+
+            # if image is taller than the canvas move it
+            # so it occupies the whole Y axis
+
+            # image distance from canvas top side
+            distance_from_top_side = math.ceil(box_scroll[1] - box_image[1])
+            # image distance from canvas right side
+            distance_from_bottom_side = math.ceil(box_scroll[3] - box_image[3])
+
+            if distance_from_top_side < 0:
+                self.canvas.move(self.container, 0, distance_from_top_side)
+                box_scroll[3] += distance_from_top_side
+            elif distance_from_bottom_side > 0:
+                self.canvas.move(self.container, 0, distance_from_bottom_side)
+                box_scroll[1] += distance_from_bottom_side
+
+            #self._curr_center[1] = round(y1 / self._scale)
+
+        # recalculate containers coords
+        box_image = self.canvas.coords(self.container)
+        box_img_int = tuple(map(int, box_image))
+
         self.canvas.configure(scrollregion=tuple(map(int, box_scroll)))  # set scroll region
 
         x1 = max(box_canvas[0] - box_image[0], 0)  # get coordinates (x1,y1,x2,y2) of the image tile
         y1 = max(box_canvas[1] - box_image[1], 0)
         x2 = min(box_canvas[2], box_image[2]) - box_image[0]
         y2 = min(box_canvas[3], box_image[3]) - box_image[1]
+
+        # calculate current image center
+        if self._image_wider_than_canvas:
+            self._curr_center[0] = round(x1 / self._scale)
+        if self._image_taller_than_canvas:
+            self._curr_center[1] = round(y1 / self._scale)
 
         if int(x2 - x1) > 0 and int(y2 - y1) > 0:  # show image if it in the visible area
             if self._huge and self._curr_img < 0:  # show huge image
@@ -228,22 +289,6 @@ class CanvasImage(ttk.Frame):
             self.canvas.lower(image_id)  # set image into background
             self.canvas.imagetk = image_tk  # keep an extra reference to prevent garbage-collection
 
-            # set current center value
-            # check if image fills the x-axis of the canvas
-            if self.canvas.canvasx(self.canvas.winfo_width()) > int(x2 - x1):
-                self._image_covers_X_axis = FALSE
-                self._curr_center[0] = self.canvas.canvasx(0) - box_scroll[0]
-            else:
-                self._image_covers_X_axis = TRUE
-                self._curr_center[0] = round(x1 / self._scale)
-
-            # check if image fills the y-axis of the canvas
-            if self.canvas.canvasy(self.canvas.winfo_height()) > int(y2 - y1):
-                self._image_covers_Y_axis = FALSE
-                self._curr_center[1] = self.canvas.canvasy(0) - box_scroll[1]
-            else:
-                self._image_covers_Y_axis = TRUE
-                self._curr_center[1] = round(y1 / self._scale)
 
     def _move_from(self, event:tk.Event):
         """ Remember previous coordinates for scrolling with the mouse """
@@ -277,6 +322,7 @@ class CanvasImage(ttk.Frame):
             if round(self._min_side * self.im_scale) < 30: return  # image is less than 30 pixels
             self.im_scale  = new_im_scale
             scale        /= self._delta
+            # use BICUBIC filtering to make the zoomed out image smoother
             if self.im_scale < 1.0:
                 self._filter = Image.BICUBIC
         if event.num == 4 or event.delta == 120:  # scroll up, bigger
@@ -284,13 +330,14 @@ class CanvasImage(ttk.Frame):
             if i < self.im_scale: return  # 1 pixel is bigger than the visible area
             self.im_scale *= self._delta
             scale        *= self._delta
+            # use NEAREST filtering to make the pixels visisble
             if self.im_scale > 1.0:
                 self._filter = Image.NEAREST
         # Take appropriate image from the pyramid
         k = self.im_scale * self._ratio  # temporary coefficient
         self._curr_img = min((-1) * int(math.log(k, self._reduction)), len(self._pyramid) - 1)
         self._scale = k * math.pow(self._reduction, max(0, self._curr_img))
-        #
+
         self.canvas.scale(ALL, x, y, scale, scale)  # rescale all objects
         # Redraw some figures before showing image on the screen
         self.redraw_figures()  # method for child classes
@@ -304,13 +351,13 @@ class CanvasImage(ttk.Frame):
         else:
             self._previous_state = event.state  # remember the last keystroke state
             # Up, Down, Left, Right keystrokes
-            if event.keycode in [68, 39, 102]:  # scroll right: keys 'D', 'Right' or 'Numpad-6'
+            if event.keycode in [40, 114, 85]:  # scroll right: keys 'D', 'Right' or 'Numpad-6'
                 self._scroll_X('scroll',  1, 'unit', event=event)
-            elif event.keycode in [65, 37, 100]:  # scroll left: keys 'A', 'Left' or 'Numpad-4'
+            elif event.keycode in [38, 113, 83]:  # scroll left: keys 'A', 'Left' or 'Numpad-4'
                 self._scroll_X('scroll', -1, 'unit', event=event)
-            elif event.keycode in [87, 38, 104]:  # scroll up: keys 'W', 'Up' or 'Numpad-8'
+            elif event.keycode in [25, 111, 80]:  # scroll up: keys 'W', 'Up' or 'Numpad-8'
                 self._scroll_Y('scroll', -1, 'unit', event=event)
-            elif event.keycode in [83, 40, 98]:  # scroll down: keys 'S', 'Down' or 'Numpad-2'
+            elif event.keycode in [39, 116, 88]:  # scroll down: keys 'S', 'Down' or 'Numpad-2'
                 self._scroll_Y('scroll',  1, 'unit', event=event)
 
     def _save_coordinates(self, event:tk.Event):
@@ -318,12 +365,12 @@ class CanvasImage(ttk.Frame):
         self.saved_y_coord.set(self.temp_y_coord.get())
 
     def _canvas_coords_to_image_coords(self, x, y):
-        if self._image_covers_X_axis:
+        if self._image_wider_than_canvas:
             x_coord = int(self._curr_center[0] + (x / self.im_scale))
         else:
             x_coord = int((self._curr_center[0] + x) / self.im_scale)
 
-        if self._image_covers_Y_axis:
+        if self._image_taller_than_canvas:
             y_coord = int(self._curr_center[1] + (y / self.im_scale))
         else:
             y_coord = int((self._curr_center[1] + y) / self.im_scale)
@@ -333,7 +380,6 @@ class CanvasImage(ttk.Frame):
     def _motion(self, event:tk.Event):
         x = self.canvas.canvasx(event.x)  # get coordinates of the event on the canvas
         y = self.canvas.canvasy(event.y)
-
         if self._outside(x, y): return
 
         temp = self._canvas_coords_to_image_coords(event.x, event.y)
@@ -366,8 +412,8 @@ class CanvasImage(ttk.Frame):
         self.path = path  # path to the image, should be public for outer classes
 
         self._curr_center = [0, 0]  # coordinate center
-        self._image_covers_X_axis = FALSE
-        self._image_covers_Y_axis = FALSE
+        self._image_wider_than_canvas = FALSE
+        self._image_taller_than_canvas = FALSE
 
         with warnings.catch_warnings():  # suppress DecompressionBombWarning
             warnings.simplefilter('ignore')
