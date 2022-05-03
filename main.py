@@ -153,7 +153,6 @@ class InfoInput(ttk.Labelframe):
         self.columnconfigure(2, weight=1)
 
         self.font = '-size 13'
-        self.info_file_type = ''
 
         self.image_path = ttk.StringVar()
         self.info_file_path = ttk.StringVar()
@@ -244,13 +243,7 @@ class InfoInput(ttk.Labelframe):
         self._selectFile(self.image_path, ("Image files",".img .png .jpeg .jpg"))
 
     def _select_info_file(self):
-        self._selectFile(self.info_file_path, ("Info files",".txt .exel .xlsx"))
-        file_extension = self.info_file_path.get().split('.')[-1]
-
-        if file_extension in {'txt'}:
-            self.info_file_type = 'txt'
-        elif file_extension in {'exel', 'xlsx'}:
-            self.info_file_type = 'exel'
+        self._selectFile(self.info_file_path, ("Info files",".txt .exel .xlsx .csv"))
 
     def _invoke_image_handler(self, *args):
         if self.image_changed_handler is not None and self.image_path_entry.validate():
@@ -258,7 +251,7 @@ class InfoInput(ttk.Labelframe):
 
     def _invoke_info_file_handler(self, *args):
         if self.info_file_changed_handler is not None and self.info_path_entry.validate():
-            self.info_file_changed_handler(self.info_file_path.get(), self.info_file_type)
+            self.info_file_changed_handler(self.info_file_path.get())
 
     def _selectFile(self, stringVar:tk.StringVar, filetype):
         stringVar.set(fd.askopenfilename(filetypes=(filetype,("All files","*.*"))))
@@ -404,7 +397,7 @@ class App(ttk.Frame):
         self.image_viewer.grid(row=1, column=0, sticky=NSEW)
 
         self.certificate_options.image_changed_handler = self.load_image
-        self.certificate_options.info_file_changed_handler = self.proccess_txt_file
+        self.certificate_options.info_file_changed_handler = self.load_info_file
 
         # =-=-=-=-=-=-=-=-=- File Manager -=-=-=-=-=--=-=-=-=-=
 
@@ -439,10 +432,17 @@ class App(ttk.Frame):
         self.font_configuration = FontSelector(master=self.rframe)
         self.font_configuration.pack(expand=YES, fill=Y, side=RIGHT)
 
-    def proccess_txt_file(self, path:str, *_):
+    def load_info_file(self, path:str, *_) -> None:
         logging = self.certificate_options.logging.get()
-        # create and sort user list based on user name
-        user_list = sorted(dataFiltering.txt_to_list(path), key=lambda a: a[1])
+        filetype = path.split('.')[-1]
+
+        if filetype in {'exel', 'xlsx'}:
+            user_list = dataFiltering.exel_to_list(path)
+        elif filetype == 'csv':
+            user_list = dataFiltering.csv_to_list(path)
+        else:
+            user_list = dataFiltering.txt_to_list(path)
+
         # list with valid users
         self.user_list = []
         # list with flagged users
@@ -462,7 +462,8 @@ class App(ttk.Frame):
         self.filemanager_children['Name List']._reset()
 
         for item in self.user_list:
-            self.filemanager_children['Name List'].insert_entry(values=[item[1], item[0]], save_edit=False)
+            self.filemanager_children['Name List'].insert_entry(
+                values=[item[0], item[1]], save_edit=False)
 
         for item in self.flagged_user_list:
             tag = ''
@@ -472,7 +473,8 @@ class App(ttk.Frame):
             elif item[2][0] == 'E':
                 tag = 'flaggedEmail'
 
-            self.filemanager_children['Name List'].insert_entry(values=[item[1], item[0]], tags=(tag), save_edit=False)
+            self.filemanager_children['Name List'].insert_entry(
+                values=[item[0], item[1]], tags=(tag), save_edit=False)
 
         #dataFiltering.listToTxt(userList)
         self.load_file('cleanFile.txt')
