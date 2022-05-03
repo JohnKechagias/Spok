@@ -72,13 +72,29 @@ def txt_to_list(txtPath:str) -> None:
     return users_list
 
 
-def exel_to_list(exel_path:str) -> tuple:
-    exel = pd.read_excel(exel_path, usecols=(1, 2))
-    exel = exel[exel.columns[[1,0]]]
-    exel.drop_duplicates(subset=None, keep='first', inplace=True)
-    exel.sort_values(by=['Name'], inplace=True)
-    exel.reset_index(drop=True, inplace=True)
-    user_list = exel.values.tolist()
+def exel_to_list(path:str) -> list:
+    df = pd.read_excel(
+        path,
+        usecols=['Email', 'Name'],
+        names=('Timestamp', 'Email', 'Name')
+    )[['Name', 'Email']]
+    return dataframe_to_list(df)
+
+
+def csv_to_list(path:str) -> list:
+    df = pd.read_csv(
+        path,
+        usecols=['Email', 'Name'],
+        names=('Timestamp', 'Email', 'Name')
+    )[['Name', 'Email']]
+    return dataframe_to_list(df)
+
+
+def dataframe_to_list(df:pd.DataFrame):
+    df.drop_duplicates(subset=None, keep='first', inplace=True)
+    df.sort_values(by=['Name'], inplace=True)
+    df.reset_index(drop=True, inplace=True)
+    user_list = df.values.tolist()
     user_list = clean_name_email_list(user_list)
     return user_list
 
