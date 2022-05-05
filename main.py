@@ -434,7 +434,7 @@ class App(ttk.Frame):
         self.text_editor = TextEditor(self.file_manager_notebook)
         self.data_viewer = DataViewer(self.file_manager_notebook, bootstyle=DARK)
         self.email_creator = EmailCreator(self.file_manager_notebook)
-        self.logger = Logger(self.file_manager_notebook)
+        self.logger = Logger(self.file_manager_notebook, bootstyle=(DEFAULT, ROUND))
 
         self.filemanager_children = {}
         self.filemanager_children['Info File'] = self.text_editor
@@ -459,7 +459,8 @@ class App(ttk.Frame):
         logging = self.certificate_options.logging.get()
         filetype = path.split('.')[-1]
 
-        if filetype in {'exel', 'xlsx'}:
+        if filetype in {'exel', 'xls', 'xlsx', 'xlsm',
+            'xlsb', 'odf', 'ods', 'odt'}:
             user_list = dataFiltering.exel_to_list(path)
         elif filetype == 'csv':
             user_list = dataFiltering.csv_to_list(path)
