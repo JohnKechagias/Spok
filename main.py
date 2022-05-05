@@ -1,4 +1,5 @@
 import os
+import threading
 
 import tkinter as tk
 from tkinter import filedialog as fd
@@ -20,6 +21,8 @@ from widgets.constants import *
 
 import validators
 import dataFiltering
+
+from PIL import ImageFont
 
 
 
@@ -382,7 +385,15 @@ class App(ttk.Frame):
         self.modes_combobox.bind("<<ComboboxSelected>>", change_mode, add='+')
         self.mode.trace_add('write', self.change_mode)
 
-        ttk.Separator(self).grid(row=1, column=0, columnspan=3, sticky=EW, pady=6)
+        self.progressbar_var = ttk.IntVar(value=0)
+        self.progressbar = ttk.Progressbar(
+            self,
+            variable=self.progressbar_var,
+            bootstyle=(DANGER)
+        )
+
+        self.seperator = ttk.Separator(self)
+        self.seperator.grid(row=1, column=0, columnspan=3, sticky=EW, pady=6)
 
         self.lframe = ttk.Frame(self, padding=5)
         self.lframe.grid(row=2, column=0, sticky=NSEW)
@@ -514,29 +525,54 @@ class App(ttk.Frame):
         self.certificate_options.grid_remove()
         self.emailing_options.grid(row=0, column=0, sticky=EW)
 
-    def change_mode(self, *args):
+    def change_mode(self, *args) -> None:
         if self.mode.get() == 'Email Sender':
             self.changeToEmailingMode()
         else:
             self.changeToCertificateMode()
 
-    def create_certificates(self):
+    def initialize_progressbar(self, maximum) -> None:
+        self.seperator.grid_forget()
+        self.progressbar.configure(maximum=maximum)
+        self.progressbar_var.set(0)
+        self.progressbar.grid(row=1, column=0, columnspan=3, sticky=EW, pady=6)
+
+    def hide_progressbar(self) -> None:
+        self.progressbar.grid_forget()
+        self.seperator.grid(row=1, column=0, columnspan=3, sticky=EW, pady=6)
+
+    def create_certificates(self) -> None:
+        font = ImageFont.truetype('fonts/roboto-Regular.ttf', 50)
+
         certificate_creator = CertificateCreator(
             image_path = self.certificate_options.image_path.get(),
             output_folder_path = 'certificates',
-            font = self.font_configuration.font,
-            font_color = tuple(self.font_configuration.color_selector.get_color_tuple()),
+            font = font,
+            font_color=(0,0,0),
+            #font_color = tuple(self.font_configuration.color_selector.get_color_tuple()),
             image_coords = self.image_viewer.get_saved_coords(),
             word_position = LEFT,
+            compress_level=3,
+            #logging=self.certificate_options.logging.get(),
             log_func = self.logger.log
         )
 
         if self.certificate_options.test_mode.get():
-            entries_list = (('x', 'John Kechagias', 'what@gmail.com'))
+            entries_list = [('x', 'John Kechagias', 'what@gmail.com'),
+            ('x', 'John Kasechagias', 'what@gmail.com')]
         else:
             entries_list = self.filemanager_children['Name List'].get_list_of_entries()
 
-        certificate_creator.create_certificates_from_list(entries_list)
+        self.initialize_progressbar(len(entries_list))
+
+        lock = threading.Lock()
+        x = threading.Thread(
+            target=certificate_creator.create_certificates_from_list,
+            args=(lock, self.progressbar_var, entries_list, self.hide_progressbar),
+            daemon=True
+        )
+        x.start()
+
 
 
 if __name__ == "__main__":
