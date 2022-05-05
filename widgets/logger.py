@@ -166,9 +166,9 @@ class Logger(ttk.Frame):
         self._text.bind_all('<Control-KeyPress-f>', lambda e: self._openSearch(), add='+')
         self._text.bind_all('<Escape>', lambda e: self._closeSearch(), add='+')
 
-        self.log('<<LOGGER INITIALIZED>>',LogLevel.INFO)
+        self.log('LOGGER INITIALIZED', log_level=LogLevel.INFO, newline=False)
 
-    def log(self, message:str, log_level:LogLevel):
+    def log(self, title:str, message:str=None, log_level:LogLevel=LogLevel.INFO, newline=True):
         """Log a message. Each message has a logLevel assosiated
         with it.
 
@@ -185,8 +185,14 @@ class Logger(ttk.Frame):
 
         tag = f'tag_{log_level.name.lower()}'
         self._text.configure(state=NORMAL)
+        if newline:
+            self._text.insert(END, '\n')
         self._text.insert(END, timestamp, 'timestamp_tag')
-        self._text.insert(END, f'{message}\n', tag)
+        title = f'<<{title}>>'
+        self._text.insert(END, title, tag)
+        if message is not None:
+            message = f'::{message}'
+            self._text.insert(END, message)
         self._text.configure(state=DISABLED)
 
     def _onChange(self, _):
