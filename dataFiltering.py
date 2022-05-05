@@ -76,7 +76,7 @@ def exel_to_list(path:str) -> list:
     df = pd.read_excel(
         path,
         usecols=['Email', 'Name'],
-        names=('Timestamp', 'Email', 'Name')
+        names=['Timestamp', 'Email', 'Name']
     )[['Name', 'Email']]
     return dataframe_to_list(df)
 
@@ -85,7 +85,7 @@ def csv_to_list(path:str) -> list:
     df = pd.read_csv(
         path,
         usecols=['Email', 'Name'],
-        names=('Timestamp', 'Email', 'Name')
+        names=['Timestamp', 'Email', 'Name']
     )[['Name', 'Email']]
     return dataframe_to_list(df)
 
