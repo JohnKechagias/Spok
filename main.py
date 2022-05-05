@@ -2,6 +2,7 @@ import os
 
 import tkinter as tk
 from tkinter import filedialog as fd
+from tkinter.font import ROMAN
 
 import ttkbootstrap as ttk
 from ttkbootstrap.constants import *
@@ -27,6 +28,17 @@ class FontSelector(ttk.Frame):
         super().__init__(master)
         self.font_dialog = FontDialog(parent=master.master, title='Font Selection')
         self.show_button = ttk.Button(self, bootstyle=(DARK))
+
+        if font is None:
+            font = ttk.font.Font(
+                name='default_font',
+                exists=False,
+                family='Courier',
+                size=48,
+                weight=NORMAL,
+                slant=ROMAN,
+                underline=False,
+                overstrike=False)
         self.font = font
 
         self.cco_labelframe = ttk.Labelframe(
