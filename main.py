@@ -423,9 +423,9 @@ class App(ttk.Frame):
             self.file_manager_notebook.add(value, text=key, sticky=NSEW)
 
         self.certificate_options.info_file_path.set(
-            f'{os.curdir}/assets/text.txt')
+            f'{os.curdir}/userlists/text.txt')
         self.certificate_options.image_path.set(
-            f'{os.curdir}/assets/template.png')
+            f'{os.curdir}/templates/tem.png')
 
         # =-=-=-=-=-=- Certificate Creation Options -=-=-=-=-=--=-=
 
