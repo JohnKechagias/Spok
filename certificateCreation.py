@@ -1,24 +1,58 @@
-import concurrent.futures
+from functools import partial
+from time import sleep
 
-from ttkbootstrap import font
-from PIL import Image, ImageDraw, ImageFont
+import multiprocessing as mp
+import threading
 
+from PIL import Image, ImageDraw
 from widgets.constants import *
+from ttkbootstrap import IntVar
 
+
+
+NUMBER_OF_PROCESSES = mp.cpu_count() - 1
+
+def create_certificate(
+    image:Image.Image,
+    coords:tuple,
+    font,
+    font_color:tuple,
+    anchor:str,
+    align:str,
+    compress_level:int,
+    entry_info:tuple
+    ) -> None:
+    # NEED to have a temp copy of image, else the base template
+    # is going to get replaced!!
+    # draw the message on the background
+    draw = ImageDraw.Draw(image)
+    draw.text(
+        coords,
+        entry_info[1],
+        fill=font_color,
+        font=font,
+        anchor=anchor,
+        align=align
+    )
+    # save the edited image
+    name = entry_info[1].replace(' ', '_')
+    image_name = f'{name}.png'
+    image_location = f'certificates/{image_name}'
+    image.save(image_location, format='png', compress_level=compress_level)
+    return entry_info
 
 
 class CertificateCreator:
-    """Class used in creating certificates. Can also log actions.
-    """
+    """Class used in creating certificates. Can also log actions."""
     def __init__(
         self,
         image_path:str,
         output_folder_path:str,
-        font:font.Font,
+        font,
         font_color:tuple,
         image_coords:tuple,
         word_position:str,
-        logging:bool,
+        compress_level:int,
         log_func
         ) -> None:
         """
@@ -28,15 +62,7 @@ class CertificateCreator:
         self.output_folder_path = output_folder_path
         self.font = font
         self.font_color = font_color
-        self.font_truetype = ImageFont.truetype('fonts/roboto-Regular.ttf',
-            self.font.cget('size'))
-        # starting position of the message
         self.coords = image_coords
-        self.logging = logging
-        self.log = log_func
-        # list where are the certificate_creation output is stored
-        self._info_list = []
-
         if word_position == MIDDLE:
             self.anchor = 'ms'
             self.align = 'middle'
@@ -46,46 +72,52 @@ class CertificateCreator:
         elif word_position == RIGHT:
             self.anchor = 'rs'
             self.align = 'right'
+        self.compress_level = compress_level
+        self.log_func = log_func
 
-    def create_certificates_from_list(self, item_list:list|tuple) -> list:
-        """create multiple certificates for each item in a list
+    def create_certificates_from_list(
+        self,
+        lock:threading.Lock,
+        progress_var:IntVar,
+        item_list:list,
+        cleanup_func=None
+        ) -> list:
+        """Create a certificate for each item in a list
 
         Args:
-            Each item inside `items` is a tuple with
-            3 elements, (item_index, name, email)
+            Each item is a tuple (item_index, name, email)
 
-        Return a list where each entry is (item_index, filename, email)
         """
-        # reset info list
-        self._info_list.clear()
-
-        with concurrent.futures.ThreadPoolExecutor() as executor:
-            executor.map(self._create_certificate, item_list)
-
-        #return self._info_list
-
-    def _create_certificate(self, entry_info:tuple) -> None:
-        # NEED to have a temp copy of image, else the base template
-        # is going to get replaced!!
-        temp = self.image.copy()
-        # draw the message on the background
-        draw = ImageDraw.Draw(temp)
-        draw.text(
+        func = partial(
+            create_certificate,
+            self.image.copy(),
             self.coords,
-            entry_info[1],
-            fill=self.font_color,
-            font=self.font_truetype,
-            anchor=self.anchor,
-            align=self.align
+            self.font,
+            self.font_color,
+            self.anchor,
+            self.align,
+            self.compress_level
         )
-        # save the edited image
-        name = entry_info[1].replace(' ', '_')
-        image_name = f'{name}.png'
-        image_location = f'{self.output_folder_path}/{image_name}'
-        temp.save(image_location, optimize=True)
 
-        if self.logging:
-            self.log('<<Created Certificate>>:: {}. name: {} | email: {}'
-                .format(entry_info[0], image_name, entry_info[2]), LogLevel.WARNING)
+        pool = mp.Pool(processes=NUMBER_OF_PROCESSES)
+        log_list = pool.imap(
+            func,
+            item_list,
+            chunksize=15
+        )
 
-        self._info_list.append((entry_info[0], image_name, entry_info[2]))
+        for log in log_list:
+            lock.acquire()
+            progress_var.set(progress_var.get() + 1)
+            self.log(log)
+            lock.release()
+        pool.close()
+        pool.join()
+
+        if cleanup_func is not None:
+            sleep(0.5)
+            cleanup_func()
+
+    def log(self, entry_info):
+        self.log_func('Created Certificate', '{}. name: {} | email: {}'
+            .format(entry_info[0], entry_info[1], entry_info[2]), LogLevel.WARNING)
