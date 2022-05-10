@@ -11,7 +11,7 @@ def split_name_and_email(row:str) -> tuple:
 
     (text without email, email)"""
     words = row.split()
-    email = ''
+    email = 'null'
     for index, word in enumerate(words):
         if ('@' in word):
             email = words.pop(index)
