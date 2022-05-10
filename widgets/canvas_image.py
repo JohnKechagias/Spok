@@ -133,6 +133,7 @@ class CanvasImage(ttk.Frame):
             self.canvas.delete(self.container)
             map(lambda i: i.close, self._pyramid)  # close all pyramid images
 
+        self.im_scale = 1.0
         self._previous_state = 0  # previous state of the keyboard
         self.path = path  # path to the image, should be public for outer classes
 
