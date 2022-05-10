@@ -25,7 +25,8 @@ def create_certificate(
     # NEED to have a temp copy of image, else the base template
     # is going to get replaced!!
     # draw the message on the background
-    draw = ImageDraw.Draw(image)
+    image_copy = image.copy()
+    draw = ImageDraw.Draw(image_copy)
     draw.text(
         coords,
         entry_info[1],
@@ -38,7 +39,7 @@ def create_certificate(
     name = entry_info[1].replace(' ', '_')
     image_name = f'{name}.png'
     image_location = f'certificates/{image_name}'
-    image.save(image_location, format='png', compress_level=compress_level)
+    image_copy.save(image_location, format='png', compress_level=compress_level)
     return entry_info
 
 
@@ -90,7 +91,7 @@ class CertificateCreator:
         """
         func = partial(
             create_certificate,
-            self.image.copy(),
+            self.image,
             self.coords,
             self.font,
             self.font_color,
