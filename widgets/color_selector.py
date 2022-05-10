@@ -1,4 +1,5 @@
 from functools import partial
+import clipboard
 
 import tkinter as tk
 import ttkbootstrap as ttk
@@ -65,6 +66,8 @@ class ColorSelector(ttk.Frame):
         )
         self.colored_button.pack(side=TOP, expand=YES, fill=X)
 
+        self.colored_button.bind('<Button-1>', self.get_hex_color, add='+')
+
     def update_color_value(self, color, *_):
         # normalize and update color value
         if self.update_in_progress == True: return
@@ -129,3 +132,6 @@ class ColorSelector(ttk.Frame):
                 value = entry_text_var.get() - 1
                 if value >= min_value:
                     entry_text_var.set(value)
+
+    def get_hex_color(self, *args):
+        clipboard.copy(self.get_color_code())
