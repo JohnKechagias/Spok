@@ -19,7 +19,7 @@ class Logger(ttk.Frame):
         padding=0,
         timestamp=True,
         log_level:LogLevel=LogLevel.INFO,
-        bootstyle=DEFAULT,
+        scrollbar_bootstyle=DEFAULT,
         vbar=True,
         hbar=False,
         **kwargs,
@@ -107,7 +107,7 @@ class Logger(ttk.Frame):
         if vbar is not None:
             self._vbar = AutoScrollbar(
                 master=self,
-                bootstyle=bootstyle,
+                bootstyle=scrollbar_bootstyle,
                 command=self._text.yview,
                 orient=VERTICAL,
             )
@@ -117,7 +117,7 @@ class Logger(ttk.Frame):
         if hbar is not None:
             self._hbar = AutoScrollbar(
                 master=self,
-                bootstyle=bootstyle,
+                bootstyle=scrollbar_bootstyle,
                 command=self._text.xview,
                 orient=HORIZONTAL,
             )

@@ -29,6 +29,7 @@ class DataViewer(ttk.Frame):
         self,
         master=None,
         bootstyle=DEFAULT,
+        scrollbar_bootstyle=DEFAULT,
         *args,
         **kwargs,
     ):
@@ -92,6 +93,7 @@ class DataViewer(ttk.Frame):
         self.scrollbar = AutoScrollbar(
             self,
             orient=VERTICAL,
+            bootstyle=scrollbar_bootstyle,
             command=self._tree.yview)
 
         self._tree.configure(yscroll=self.scrollbar.set)

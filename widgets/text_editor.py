@@ -14,6 +14,7 @@ class TextEditor(ttk.Frame):
         master,
         padding=0,
         bootstyle=DEFAULT,
+        scrollbar_bootstyle=DEFAULT,
         vbar=True,
         hbar=False,
         **kwargs,
@@ -84,7 +85,7 @@ class TextEditor(ttk.Frame):
         if vbar is not None:
             self._vbar = AutoScrollbar(
                 master=self,
-                bootstyle=bootstyle,
+                bootstyle=scrollbar_bootstyle,
                 command=self._scroll_both,
                 orient=VERTICAL,
             )
@@ -95,7 +96,7 @@ class TextEditor(ttk.Frame):
         if hbar is not None:
             self._hbar = AutoScrollbar(
                 master=self,
-                bootstyle=bootstyle,
+                bootstyle=scrollbar_bootstyle,
                 command=self._text.xview,
                 orient=HORIZONTAL,
             )
