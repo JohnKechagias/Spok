@@ -490,10 +490,22 @@ class App(ttk.Frame):
         self.file_manager_notebook.enable_traversal()
 
         # initialize widgets
-        self.text_editor = TextEditor(self.file_manager_notebook)
-        self.data_viewer = DataViewer(self.file_manager_notebook, bootstyle=DARK)
-        self.email_creator = EmailCreator(self.file_manager_notebook)
-        self.logger = Logger(self.file_manager_notebook, bootstyle=(DEFAULT, ROUND))
+        self.text_editor = TextEditor(
+            self.file_manager_notebook,
+            scrollbar_bootstyle=(DEFAULT, ROUND)
+        )
+        self.data_viewer = DataViewer(
+            self.file_manager_notebook,
+            bootstyle=DARK,
+            scrollbar_bootstyle=(DEFAULT, ROUND)
+        )
+        self.email_creator = EmailCreator(
+            self.file_manager_notebook
+        )
+        self.logger = Logger(
+            self.file_manager_notebook,
+            scrollbar_bootstyle=(DEFAULT, ROUND)
+        )
 
         self.filemanager_children = {}
         self.filemanager_children['Info File'] = self.text_editor
