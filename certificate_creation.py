@@ -12,36 +12,6 @@ from ttkbootstrap import IntVar
 
 NUMBER_OF_PROCESSES = mp.cpu_count() - 1
 
-def create_certificate(
-    image:Image.Image,
-    coords:tuple,
-    font,
-    font_color:tuple,
-    anchor:str,
-    align:str,
-    compress_level:int,
-    entry_info:tuple
-    ) -> None:
-    # NEED to have a temp copy of image, else the base template
-    # is going to get replaced!!
-    # draw the message on the background
-    image_copy = image.copy()
-    draw = ImageDraw.Draw(image_copy)
-    draw.text(
-        coords,
-        entry_info[1],
-        fill=font_color,
-        font=font,
-        anchor=anchor,
-        align=align
-    )
-    # save the edited image
-    name = entry_info[1].replace(' ', '_')
-    image_name = f'{name}.png'
-    image_location = f'certificates/{image_name}'
-    image_copy.save(image_location, format='png', compress_level=compress_level)
-    return entry_info
-
 
 class CertificateCreator:
     """Class used in creating certificates. Can also log actions."""
@@ -90,7 +60,7 @@ class CertificateCreator:
 
         """
         func = partial(
-            create_certificate,
+            CertificateCreator.create_certificate,
             self.image,
             self.coords,
             self.font,
@@ -118,6 +88,37 @@ class CertificateCreator:
         if cleanup_func is not None:
             sleep(0.5)
             cleanup_func()
+
+    @staticmethod
+    def create_certificate(
+        image:Image.Image,
+        coords:tuple,
+        font,
+        font_color:tuple,
+        anchor:str,
+        align:str,
+        compress_level:int,
+        entry_info:tuple
+        ) -> None:
+        # NEED to have a temp copy of image, else the base template
+        # is going to get replaced!!
+        # draw the message on the background
+        image_copy = image.copy()
+        draw = ImageDraw.Draw(image_copy)
+        draw.text(
+            coords,
+            entry_info[1],
+            fill=font_color,
+            font=font,
+            anchor=anchor,
+            align=align
+        )
+        # save the edited image
+        name = entry_info[1].replace(' ', '_')
+        image_name = f'{name}.png'
+        image_location = f'certificates/{image_name}'
+        image_copy.save(image_location, format='png', compress_level=compress_level)
+        return entry_info
 
     def log(self, entry_info):
         self.log_func('Created Certificate', '{}. name: {} | email: {}'

@@ -18,8 +18,8 @@ class EmailCreator(ttk.Frame):
         self.personal_email = False
         self.email_signature = ''
 
-        self._title = PlaceholderEntry(self, placeholder='Title')
-        self._title.grid(row=0,  column=0, sticky=EW, pady=(0, 5))
+        self._subject = PlaceholderEntry(self, placeholder='Title')
+        self._subject.grid(row=0,  column=0, sticky=EW, pady=(0, 5))
 
         self._receiver = PlaceholderEntry(self, placeholder='Recipient')
 
@@ -46,12 +46,12 @@ class EmailCreator(ttk.Frame):
             dict: email info
         """
         email = {}
-        email['title'] = self._title.get()
+        email['subject'] = self._subject.get()
 
         recipient = ''
         if self.personal_email:
             recipient = self._receiver.get()
-        email['recipient'] = recipient
+        email['to'] = recipient
 
         signature = self.get_signature()
         body = self._body.get('1.0', END)

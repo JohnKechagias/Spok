@@ -9,7 +9,9 @@ from tkinter.font import ROMAN
 import ttkbootstrap as ttk
 from ttkbootstrap.constants import *
 from ttkbootstrap.dialogs.dialogs import FontDialog
+
 from certificate_creation import CertificateCreator
+from email_sender import EmailSender
 
 from widgets.logger import Logger
 from widgets.canvas_image import ImageViewer
@@ -664,8 +666,14 @@ class App(ttk.Frame):
 
     def send_emails(self) -> None:
         userlist = self.data_viewer.get_list_of_entries()
-        print(userlist)
+        sender = 'minecraft18211821@gmail.com'
+        to = 'johnnyjictest@gmail.com'
         email =self.email_creator.get_email()
+        subject = email['subject']
+        body = email['body']
+
+        email_sender = EmailSender()
+        email_sender.initialize_service()
         #print(email['body'])
 
 
