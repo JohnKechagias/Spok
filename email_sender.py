@@ -11,22 +11,14 @@ import mimetypes
 from .google import create_service
 
 
-<<<<<<< HEAD
-# =-=-=-=-=-=-=- Global Vars -=-=-=-=-=-=-=-=
-=======
->>>>>>> 846a09c (Enforce PEP8 naming)
 
 CLIENT_SECRET_FILE = 'client_secret.json'
 API_NAME = 'gmail'
 API_VERSION = 'v1'
 SCOPES = ['https://mail.google.com/']
 
-<<<<<<< HEAD
-user_ID = 'me'
-# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
-=======
+
 USER_ID = 'me'
->>>>>>> 846a09c (Enforce PEP8 naming)
 
 
 def get_email_service():
@@ -37,11 +29,7 @@ def send_message(Service, message):
     it prints the message ID """
 
     try:
-<<<<<<< HEAD
-        message = Service.users().messages().send(userId=user_ID, body=message).execute()
-=======
         message = Service.users().messages().send(userId=USER_ID, body=message).execute()
->>>>>>> 846a09c (Enforce PEP8 naming)
         print('message ID: {}'.format(message['id']))
         return message
     except Exception as e:
@@ -49,10 +37,6 @@ def send_message(Service, message):
         return None
 
 def create_message_with_attachments(to:str, sender:str, subject:str, body:str, files:list) -> dict:
-<<<<<<< HEAD
-    # create the MIME message
-=======
->>>>>>> 846a09c (Enforce PEP8 naming)
     mime_message = MIMEMultipart()
     mime_message['to'] = to
     mime_message['from'] = sender
@@ -111,10 +95,6 @@ def create_message_with_attachments(to:str, sender:str, subject:str, body:str, f
 
 
 def create_message_without_attachments(to:str, sender:str, subject:str, body:str) -> dict:
-<<<<<<< HEAD
-    # create the MIME message
-=======
->>>>>>> 846a09c (Enforce PEP8 naming)
     mimeMessage = MIMEMultipart()
     mimeMessage['to'] = to
     mimeMessage['from'] = sender
