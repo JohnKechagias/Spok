@@ -7,7 +7,7 @@ from google.oauth2.credentials import Credentials
 
 
 
-def createService(client_secret_file, api_name, api_version, *scopes):
+def create_service(client_secret_file, api_name, api_version, *scopes):
     CLIENT_SECRET_FILE = client_secret_file
     API_SERVICE_NAME = api_name
     API_VERSION = api_version
