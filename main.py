@@ -9,7 +9,7 @@ from tkinter.font import ROMAN
 import ttkbootstrap as ttk
 from ttkbootstrap.constants import *
 from ttkbootstrap.dialogs.dialogs import FontDialog
-from certificateCreation import CertificateCreator
+from certificate_creation import CertificateCreator
 
 from widgets.logger import Logger
 from widgets.canvas_image import ImageViewer
@@ -22,10 +22,27 @@ from widgets.image_button import ImageButton
 from widgets.constants import *
 
 import validators
-import dataFiltering
+import data_filtering
 
 from PIL import ImageFont
 
+
+
+class TextAlignment(ttk.Frame):
+    def __init__(self, master:str, bootstyle=DEFAULT):
+        super().__init__(master=master, bootstyle=bootstyle)
+
+        self.label = ttk.Label(
+            self,
+            text='Text Alignment',
+            bootstyle=(INVERSE, SECONDARY),
+            anchor=CENTER,
+            font="-size 13"
+        )
+        self.label.pack(expand=YES, fill=X)
+
+        self.scale = ttk.Scale(self, bootstyle=WARNING)
+        self.scale.pack(expand=YES, fill=X, pady=6)
 
 
 class FontSelector(ttk.Frame):
@@ -533,11 +550,11 @@ class App(ttk.Frame):
 
         if filetype in {'exel', 'xls', 'xlsx', 'xlsm',
             'xlsb', 'odf', 'ods', 'odt'}:
-            user_list = dataFiltering.exel_to_list(path)
+            user_list = data_filtering.exel_to_list(path)
         elif filetype == 'csv':
-            user_list = dataFiltering.csv_to_list(path)
+            user_list = data_filtering.csv_to_list(path)
         else:
-            user_list = dataFiltering.txt_to_list(path)
+            user_list = data_filtering.txt_to_list(path)
 
         # list with valid users
         self.user_list = []
@@ -646,8 +663,10 @@ class App(ttk.Frame):
         x.start()
 
     def send_emails(self) -> None:
+        userlist = self.data_viewer.get_list_of_entries()
+        print(userlist)
         email =self.email_creator.get_email()
-        print(email['body'])
+        #print(email['body'])
 
 
 if __name__ == "__main__":

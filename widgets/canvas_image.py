@@ -35,6 +35,19 @@ class ImageViewer(ttk.Frame):
             textvariable=self.image_canvas.temp_y_coord, width=4, bootstyle=DARK)
         self.y_coord_entry.pack(side=LEFT, padx=(0, 40))
 
+        self.text_alignment = ttk.StringVar()
+        self.text_alignment_list = ('left', 'middle', 'right')
+        self.text_alignment_combobox = ttk.Combobox(
+            master=self.top_frame,
+            bootstyle=(SECONDARY),
+            state=READONLY,
+            textvariable=self.text_alignment,
+            width=6,
+            values=self.text_alignment_list
+        )
+        self.text_alignment_combobox.current(0)
+        self.text_alignment_combobox.pack(side=LEFT)
+
         self.curr_coord_frame = ttk.Frame(self.top_frame)
         self.curr_coord_frame.pack(side=RIGHT)
 
