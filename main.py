@@ -621,18 +621,17 @@ class App(ttk.Frame):
             image_path = self.certificate_options.image_path.get(),
             output_folder_path = 'certificates',
             font = font,
-            font_color=(0,0,0),
+            font_color=(255,255,255),
             #font_color = tuple(self.font_configuration.color_selector.get_color_tuple()),
             image_coords = self.image_viewer.get_saved_coords(),
-            word_position = LEFT,
+            word_position = MIDDLE,
             compress_level=3,
             #logging=self.certificate_options.logging.get(),
             log_func = self.logger.log
         )
 
         if self.certificate_options.test_mode.get():
-            entries_list = [('x', 'John Kechagias', 'what@gmail.com'),
-            ('x', 'John Kasechagias', 'what@gmail.com')]
+            entries_list = [('x', 'John Kechagias', 'what@gmail.com')]
         else:
             entries_list = self.filemanager_children['Name List'].get_list_of_entries()
 
