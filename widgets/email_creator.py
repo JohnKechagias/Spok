@@ -26,7 +26,7 @@ class EmailCreator(ttk.Frame):
         self._body = ttk.Text(self, *args, **kwargs)
         self._body.grid(row=2,  column=0, sticky=NSEW, pady=(5, 0))
 
-        self._body.bind('<KeyPress-t>', self.get_email)
+        self._body.bind('<KeyPress-t>', lambda _: self.get_email())
 
     def enable_personal_emails(self):
         self.personal_email = True
@@ -36,7 +36,7 @@ class EmailCreator(ttk.Frame):
         self.personal_email = False
         self._receiver.grid_remove()
 
-    def get_email(self, _):
+    def get_email(self):
         """returns the email info in a form of a dict.
         Email info consists of the title, the recipient and the body of
         the email in HTML form. If the personalEmail flag is false, the
