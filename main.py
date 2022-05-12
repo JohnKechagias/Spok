@@ -1,5 +1,6 @@
 import os
 import threading
+from pathlib import Path
 
 import tkinter as tk
 from tkinter import filedialog as fd
@@ -17,6 +18,7 @@ from widgets.data_viewer import DataViewer
 from widgets.email_creator import EmailCreator
 from widgets.placeholder_entry import PlaceholderEntry
 from widgets.text_editor import TextEditor
+from widgets.image_button import ImageButton
 from widgets.constants import *
 
 import validators
@@ -189,39 +191,57 @@ class InfoInput(ttk.Labelframe):
         self.image_changed_handler = None
         self.info_file_changed_handler = None
 
-        self.select_template_button = ttk.Button(
+        # =-=-=-=-=-=-=-=- Load Icons -=-=-=-=-=--=-=-=-=-=-=
+        image_files = {
+            'template-default': 'template_default_32px.png',
+            'template_active': 'template_active_32px.png',
+            'userlist-default': 'userlist_default_32px.png',
+            'userlist-active': 'userlist_active_32px.png'
+        }
+
+        self.photoimages = []
+        icons_path = Path(__file__).parent / 'assets/icons'
+        for key, val in image_files.items():
+            _path = icons_path / val
+            self.photoimages.append(ttk.PhotoImage(name=key, file=_path))
+
+        self.select_template_button = ImageButton(
             master=self,
-            bootstyle=(DEFAULT),
-            text='Select Template Image',
-            padding=8,
-            width=19,
+            default_image='template-default',
+            hover_image='template-active',
+            background='#222222',
             command=self._select_image_file
         )
-        self.select_template_button.grid(row=0, column=0, padx=(0, 8), pady=4)
+        self.select_template_button.grid(row=0, column=0, padx=(0, 16), pady=4, sticky=W)
 
         self.image_path_entry = ttk.Entry(
             master=self,
             font=self.font,
-            textvariable=self.image_path)
-        self.image_path_entry.grid(row=0, column=1, columnspan=2, pady=6, sticky=EW)
+            textvariable=self.image_path
+        )
+        self.image_path_entry.grid(row=0, column=1, columnspan=3, pady=6, sticky=EW)
 
         self.image_path_entry.bind('<Return>', lambda _: self._invoke_image_handler(), add='+')
 
         validators.add_file_type_validation(self.image_path_entry,
             filetypes={'img', 'png', 'jpeg', 'jpg'})
 
-        self.select_info_file_button = ttk.Button(
+        self.select_info_file_button = ImageButton(
             master=self,
-            bootstyle=(DEFAULT),
-            text='Select Info File',
-            padding=8,
-            width=19,
+            default_image='userlist-default',
+            hover_image='userlist-active',
+            background='#222222',
             command=self._select_info_file
         )
-        self.select_info_file_button.grid(row=1, column=0, padx=(0, 8), pady=4)
+        #C4C4C4
+        self.select_info_file_button.grid(row=1, column=0, padx=(0, 16), pady=4, sticky=W)
 
-        self.info_path_entry = ttk.Entry(master=self, font=self.font, textvariable=self.info_file_path)
-        self.info_path_entry.grid(row=1, column=1, columnspan=2, pady=6, sticky=EW)
+        self.info_path_entry = ttk.Entry(
+            master=self,
+            font=self.font,
+            textvariable=self.info_file_path
+        )
+        self.info_path_entry.grid(row=1, column=1, columnspan=3, pady=6, sticky=EW)
 
         self.info_path_entry.bind('<Return>', lambda _: self._invoke_info_file_handler(), add='+')
 
@@ -236,15 +256,15 @@ class InfoInput(ttk.Labelframe):
             text=' Test Mode',
             variable=self.test_mode
         )
-        self.error_checking_mode_checkbutton.grid(row=3, column=0, sticky=W, pady=6)
+        self.error_checking_mode_checkbutton.grid(row=3, column=0, columnspan=2, sticky=W, pady=6)
 
-        self.clean_mode_button = ttk.Checkbutton(
+        self.logging_mode_button = ttk.Checkbutton(
             master=self,
             bootstyle=(WARNING, TOGGLE, SQUARE),
             text=' Logging',
             variable=self.logging
         )
-        self.clean_mode_button.grid(row=4, column=0, sticky=W, pady=6)
+        self.logging_mode_button.grid(row=4, column=0, columnspan=2, sticky=W, pady=6)
 
         self.create_certificates_button = ttk.Button(
             master=self,
@@ -255,10 +275,28 @@ class InfoInput(ttk.Labelframe):
         self.create_certificates_button.grid(row=3, rowspan=2, column=2, sticky=E)
 
     def _select_image_file(self):
-        self._selectFile(self.image_path, ("Image files",".img .png .jpeg .jpg"))
+        templates_folder = Path('templates/')
+
+        image_path = fd.askopenfilename(
+            title='Select template',
+            filetypes=(("Image files",".img .png .jpeg .jpg"),("All files","*.*")),
+            initialdir=templates_folder
+        )
+
+        if image_path not in {None, '', ()}:
+            self.image_path.set(image_path)
 
     def _select_info_file(self):
-        self._selectFile(self.info_file_path, ("Info files",".txt .exel .xlsx .csv"))
+        userlists_folder = Path('userlists/')
+
+        info_file_path = fd.askopenfilename(
+            title='Select Info file',
+            filetypes=(("Info files",".txt .exel .xlsx .csv"),("All files","*.*")),
+            initialdir=userlists_folder
+        )
+
+        if info_file_path not in {None, '', ()}:
+            self.info_file_path.set(info_file_path)
 
     def _invoke_image_handler(self, *args):
         if self.image_changed_handler is not None and self.image_path_entry.validate():
@@ -267,9 +305,6 @@ class InfoInput(ttk.Labelframe):
     def _invoke_info_file_handler(self, *args):
         if self.info_file_changed_handler is not None and self.info_path_entry.validate():
             self.info_file_changed_handler(self.info_file_path.get())
-
-    def _selectFile(self, stringVar:tk.StringVar, filetype):
-        stringVar.set(fd.askopenfilename(filetypes=(filetype,("All files","*.*"))))
 
 
 class EmailInput(ttk.Labelframe):
@@ -281,8 +316,8 @@ class EmailInput(ttk.Labelframe):
         ):
         super().__init__(master, text='Emailing Options', padding=(16, 10))
 
-        self.columnconfigure(0, weight=1)
         self.columnconfigure(1, weight=1)
+        self.columnconfigure(2, weight=1)
 
         self.font = '-size 13'
 
@@ -292,17 +327,47 @@ class EmailInput(ttk.Labelframe):
         self.test_mode = ttk.BooleanVar(value=testmode)
         self.two_level_auth = ttk.BooleanVar(value=twolevelauth)
 
+        # =-=-=-=-=-=-=-=- Load Icons -=-=-=-=-=--=-=-=-=-=-=
+        image_files = {
+            'test_email-default': 'test_email_default_32px.png',
+            'test_email-active': 'test_email_active_32px.png',
+            'email-default': 'email_default_32px.png',
+            'email-active': 'email_active_32px.png'
+        }
+
+        self.photoimages = []
+        icons_path = Path(__file__).parent / 'assets/icons'
+        for key, val in image_files.items():
+            _path = icons_path / val
+            self.photoimages.append(ttk.PhotoImage(name=key, file=_path))
+
+        self.test_email_button = ImageButton(
+            master=self,
+            default_image='test_email-default',
+            hover_image='test_email-active',
+            background='#222222'
+        )
+        self.test_email_button.grid(row=0, column=0, padx=(0, 16), pady=4, sticky=W)
+
         self.test_email_entry = PlaceholderEntry(
             master=self,
             placeholder='Testing Email',
             font=self.font,
             textvariable=self.test_email
         )
-        self.test_email_entry.grid(row=0, column=0, columnspan=2, pady=6, sticky=EW)
+        self.test_email_entry.grid(row=0, column=1, columnspan=2, pady=6, sticky=EW)
 
         self.test_email_entry.bind('<Return>',
             lambda _: self.test_email_entry.validate(), add='+')
         validators.add_email_validation(self.test_email_entry)
+
+        self.real_email_button = ImageButton(
+            master=self,
+            default_image='email-default',
+            hover_image='email-active',
+            background='#222222'
+        )
+        self.real_email_button.grid(row=1, column=0, padx=(0, 16), pady=4, sticky=W)
 
         self.real_email_entry = PlaceholderEntry(
             master=self,
@@ -310,13 +375,13 @@ class EmailInput(ttk.Labelframe):
             font=self.font,
             textvariable=self.real_email
         )
-        self.real_email_entry.grid(row=1, column=0, columnspan=2, pady=6, sticky=EW)
+        self.real_email_entry.grid(row=1, column=1, columnspan=2, pady=6, sticky=EW)
 
         self.real_email_entry.bind('<Return>',
             lambda _: self.real_email_entry.validate(), add='+')
         validators.add_email_validation(self.real_email_entry)
 
-        ttk.Separator(self).grid(row=2, column=0, columnspan=2, pady=10, sticky=EW)
+        ttk.Separator(self).grid(row=2, column=0, columnspan=3, pady=10, sticky=EW)
 
         self.test_mode_checkbutton = ttk.Checkbutton(
             master=self,
@@ -324,7 +389,7 @@ class EmailInput(ttk.Labelframe):
             text=' Use Test Email',
             variable=self.test_mode
         )
-        self.test_mode_checkbutton.grid(row=3, column=0, sticky=W, pady=6)
+        self.test_mode_checkbutton.grid(row=3, column=0, columnspan=2, sticky=W, pady=6)
 
         self.two_level_auth_checkbutton = ttk.Checkbutton(
             master=self,
@@ -332,7 +397,7 @@ class EmailInput(ttk.Labelframe):
             text=' Two level Auth',
             variable=self.two_level_auth
         )
-        self.two_level_auth_checkbutton.grid(row=4, column=0, sticky=W, pady=6)
+        self.two_level_auth_checkbutton.grid(row=4, column=0, columnspan=2, sticky=W, pady=6)
 
         self.send_emails_button = ttk.Button(
             master=self,
@@ -340,8 +405,7 @@ class EmailInput(ttk.Labelframe):
             text='Send Emails',
             padding=9, width=18,
         )
-        self.send_emails_button.grid(row=3, rowspan=2, column=1, sticky=E)
-
+        self.send_emails_button.grid(row=3, rowspan=2, column=2, sticky=E)
 
 
 class App(ttk.Frame):
@@ -445,10 +509,11 @@ class App(ttk.Frame):
         for key, value in self.filemanager_children.items():
             self.file_manager_notebook.add(value, text=key, sticky=NSEW)
 
-        self.certificate_options.info_file_path.set(
-            f'{os.curdir}/userlists/text.txt')
-        self.certificate_options.image_path.set(
-            f'{os.curdir}/templates/tem.png')
+        default_template_path = Path('templates/tem.png')
+        default_userlist_path = Path('userlists/text.txt')
+
+        self.certificate_options.info_file_path.set(default_userlist_path)
+        self.certificate_options.image_path.set(default_template_path)
 
         # =-=-=-=-=-=- Certificate Creation Options -=-=-=-=-=--=-=
 
