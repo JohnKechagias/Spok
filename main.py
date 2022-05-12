@@ -471,6 +471,9 @@ class App(ttk.Frame):
             command=self.create_certificates)
 
         self.emailing_options = EmailInput(master=self.lframe)
+        self.emailing_options.send_emails_button.configure(
+            command=self.send_emails
+        )
 
         self.image_viewer = ImageViewer(self.lframe)
         self.image_viewer.grid(row=1, column=0, sticky=NSEW)
@@ -631,6 +634,9 @@ class App(ttk.Frame):
         )
         x.start()
 
+    def send_emails(self) -> None:
+        email =self.email_creator.get_email()
+        print(email['body'])
 
 
 if __name__ == "__main__":
