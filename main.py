@@ -658,4 +658,5 @@ if __name__ == "__main__":
     app.pack(expand=YES, fill=BOTH, padx=10, pady=10)
 
     app.bind('<Configure>', lambda e: print(e.height))
+    app.bind_class('TEntry', '<Return>', lambda _: app.focus_set(), add='+')
     window.mainloop()
