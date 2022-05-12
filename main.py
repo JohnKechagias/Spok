@@ -63,7 +63,7 @@ class FontSelector(ttk.Frame):
             padding=10,
             command=self._showFontDialog
         )
-        self.select_font_button.grid(row=0, column=0, sticky=EW, pady=6)
+        self.select_font_button.grid(row=7, column=0, sticky=EW, pady=6)
 
         # =-=-=-=-=-=- Colors Options -=-=-=-=-=--=-=
 
@@ -80,18 +80,10 @@ class FontSelector(ttk.Frame):
         self.color_selector.grid(row=2, column=0, sticky=EW)
 
         self.font_size_selector = FontSizeSelector(master=self.cco_labelframe, bootstyle=WARNING)
-        self.font_size_selector.grid(row=3, column=0, sticky=EW)
+        self.font_size_selector.grid(row=6, column=0, sticky=EW)
 
         self.font_size_selector.meter.amountusedvar.trace_add(
             'write', self._update_font_size)
-
-        self.select_font_button = ttk.Button(
-            master=self.cco_labelframe,
-            bootstyle=(OUTLINE, WARNING),
-            text='Close',
-            padding=9
-        )
-        self.select_font_button.grid(row=6, column=0, sticky=EW, pady=6)
 
     def _update_font_size(self, *args):
         new_size = self.font_size_selector.meter.amountusedvar.get()
