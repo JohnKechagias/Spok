@@ -98,7 +98,10 @@ class ColorSelector(ttk.Frame):
     def get_color_tuple(self):
         return (i['value'].get() for i in self.color.values())
 
-    def set_color(self, color:tuple):
+    def set_color(self, color:tuple|str):
+        if isinstance(color, str):
+            color = tuple(int(color[i:i+2], 16) for i in (0, 2, 4))
+
         for i, channel in enumerate(self.color.values()):
             channel['value'].set(color[i])
 
