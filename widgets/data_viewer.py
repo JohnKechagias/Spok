@@ -114,13 +114,13 @@ class DataViewer(ttk.Frame):
 
         self._tree.bind('<<TreeviewSelect>>', self._item_selected, add='+')
         self._tree.bind('<Double-Button-1>', self._enter_edit_mode, add='+')
-        self.bind_all('<space>', self.create_entry, add='+')
-        self.bind_all('<Escape>', self._cancel_edit_mode, add='+')
-        self.bind_all('<Return>', self._leave_edit_mode, add='+')
-        self.bind_all('<Button-3>', self._leave_edit_mode, add='+')
-        self.bind_all('<Delete>', self._delete_selected_entry, add='+')
-        self.bind_all('<Control-z>', self._undo, add='+')
-        self.bind_all('<u>', self._redo, add='+')
+        self._tree.bind('<space>', self.create_entry, add='+')
+        self._tree.bind('<Escape>', self._cancel_edit_mode, add='+')
+        self._tree.bind('<Return>', self._leave_edit_mode, add='+')
+        self._tree.bind('<Button-3>', self._leave_edit_mode, add='+')
+        self._tree.bind('<Delete>', self._delete_selected_entry, add='+')
+        self._tree.bind('<Control-z>', self._undo, add='+')
+        self._tree.bind('<u>', self._redo, add='+')
 
     def _notOnEditMode(func):
         @wraps(func)
