@@ -11,7 +11,16 @@ from .auto_scrollbar import AutoScrollbar
 
 
 class ImageViewer(ttk.Frame):
-    def __init__(self, master=None, imagepath=None, *args, **kwArgs):
+    def __init__(
+        self,
+        master=None,
+        imagepath=None,
+        text_alignment=LEFT,
+        xcoord=0,
+        ycoord=0,
+        *args,
+        **kwArgs
+        ):
         super().__init__(master)
 
         self.top_frame = ttk.Frame(self)
@@ -45,7 +54,8 @@ class ImageViewer(ttk.Frame):
             width=6,
             values=self.text_alignment_list
         )
-        self.text_alignment_combobox.current(0)
+        item_index = self.text_alignment_list.index(text_alignment)
+        self.text_alignment_combobox.current(item_index)
         self.text_alignment_combobox.pack(side=LEFT)
 
         self.curr_coord_frame = ttk.Frame(self.top_frame)
@@ -53,6 +63,9 @@ class ImageViewer(ttk.Frame):
 
         self.x_curr_coord_label = ttk.Label(self.curr_coord_frame, text='X: ')
         self.x_curr_coord_label.pack(side=LEFT, padx=(0, 3))
+
+        self.image_canvas.saved_x_coord.set(xcoord)
+        self.image_canvas.saved_y_coord.set(ycoord)
 
         self.x_curr_coord_entry = ttk.Entry(self.curr_coord_frame,
             textvariable=self.image_canvas.saved_x_coord, width=4, bootstyle=DARK)
