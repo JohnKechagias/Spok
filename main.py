@@ -81,7 +81,11 @@ class FontSelector(ttk.Frame):
         self.color_selector = ColorSelector(master=self.cco_labelframe)
         self.color_selector.grid(row=2, column=0, sticky=EW)
 
-        self.font_size_selector = FontSizeSelector(master=self.cco_labelframe, bootstyle=WARNING)
+        self.font_size_selector = FontSizeSelector(
+            master=self.cco_labelframe,
+            bootstyle=WARNING,
+            maxfontsize=60
+            )
         self.font_size_selector.grid(row=6, column=0, sticky=EW)
 
         self.font_size_selector.meter.amountusedvar.trace_add(
@@ -106,7 +110,7 @@ class FontSelector(ttk.Frame):
 
 
 class FontSizeSelector(ttk.Frame):
-    def __init__(self, master, fontsize=18, maxfontsize=50, *args, **kwargs):
+    def __init__(self, master, fontsize=25, maxfontsize=50, *args, **kwargs):
         super().__init__(master)
 
         self.meter = ttk.Meter(
@@ -155,7 +159,7 @@ class InfoInput(ttk.Labelframe):
     def __init__(
         self,
         master,
-        test_mode=True,
+        testmode=True,
         logging=True
         ):
         super().__init__(master, text='Certificate Options', padding=(16, 10))
@@ -171,7 +175,7 @@ class InfoInput(ttk.Labelframe):
         self.image_path.trace_add('write', self._invoke_image_handler)
         self.info_file_path.trace_add('write', self._invoke_info_file_handler)
 
-        self.test_mode = ttk.BooleanVar(value=test_mode)
+        self.test_mode = ttk.BooleanVar(value=testmode)
         self.logging = ttk.BooleanVar(value=logging)
 
         # We manually call the hanlders instead of tracing the vars because
@@ -305,8 +309,10 @@ class EmailInput(ttk.Labelframe):
     def __init__(
         self,
         master,
+        testemail='',
+        realemail='',
         testmode=True,
-        twolevelauth=True
+        personalemail=False
         ):
         super().__init__(master, text='Emailing Options', padding=(16, 10))
 
@@ -319,7 +325,7 @@ class EmailInput(ttk.Labelframe):
         self.real_email = ttk.StringVar()
 
         self.test_mode = ttk.BooleanVar(value=testmode)
-        self.two_level_auth = ttk.BooleanVar(value=twolevelauth)
+        self.personal_email = ttk.BooleanVar(value=personalemail)
 
         # =-=-=-=-=-=-=-=- Load Icons -=-=-=-=-=--=-=-=-=-=-=
         image_files = {
@@ -345,12 +351,12 @@ class EmailInput(ttk.Labelframe):
 
         self.test_email_entry = PlaceholderEntry(
             master=self,
+            text=testemail,
             placeholder='Testing Email',
             font=self.font,
             textvariable=self.test_email
         )
         self.test_email_entry.grid(row=0, column=1, columnspan=2, pady=6, sticky=EW)
-
         self.test_email_entry.bind('<Return>',
             lambda _: self.test_email_entry.validate(), add='+')
         validators.add_email_validation(self.test_email_entry)
@@ -365,6 +371,7 @@ class EmailInput(ttk.Labelframe):
 
         self.real_email_entry = PlaceholderEntry(
             master=self,
+            text=realemail,
             placeholder='Real Email',
             font=self.font,
             textvariable=self.real_email
@@ -385,13 +392,13 @@ class EmailInput(ttk.Labelframe):
         )
         self.test_mode_checkbutton.grid(row=3, column=0, columnspan=2, sticky=W, pady=6)
 
-        self.two_level_auth_checkbutton = ttk.Checkbutton(
+        self.personal_email_checkbutton = ttk.Checkbutton(
             master=self,
             bootstyle=(WARNING, TOGGLE, SQUARE),
-            text=' Two level Auth',
-            variable=self.two_level_auth
+            text=' Personal Email',
+            variable=self.personal_email
         )
-        self.two_level_auth_checkbutton.grid(row=4, column=0, columnspan=2, sticky=W, pady=6)
+        self.personal_email_checkbutton.grid(row=4, column=0, columnspan=2, sticky=W, pady=6)
 
         self.send_emails_button = ttk.Button(
             master=self,
