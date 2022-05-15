@@ -15,26 +15,25 @@ class EmailCreator(ttk.Frame):
         # Default behavior is batch sending of emails.
         # Disables batch sending and enables the sending
         # of personal emails (with a single recipient).
-        self.personal_email = False
+        self.personal_email = ttk.BooleanVar(value=False)
+        self.personal_email.trace_add('write', self.personal_email_changed)
         self.email_signature = ''
 
-        self._subject = PlaceholderEntry(self, placeholder='Title')
-        self._subject.grid(row=0,  column=0, sticky=EW, pady=(0, 5))
+        self._subject = PlaceholderEntry(self, placeholder='Subject')
+        self._subject.grid(row=1,  column=0, sticky=EW, pady=(0, 5))
 
-        self._receiver = PlaceholderEntry(self, placeholder='Recipient')
+        self._receiver = PlaceholderEntry(self, placeholder='To')
 
         self._body = ttk.Text(self, *args, **kwargs)
         self._body.grid(row=2,  column=0, sticky=NSEW, pady=(5, 0))
 
         self._body.bind('<KeyPress-t>', lambda _: self.get_email())
 
-    def enable_personal_emails(self):
-        self.personal_email = True
-        self._receiver.grid(row=1,  column=0, sticky=EW, pady=(5,5))
-
-    def disable_personal_emails(self):
-        self.personal_email = False
-        self._receiver.grid_remove()
+    def personal_email_changed(self, *args):
+        if self.personal_email.get():
+            self._receiver.grid(row=0,  column=0, sticky=EW, pady=(5,10))
+        else:
+            self._receiver.grid_remove()
 
     def get_email(self):
         """returns the email info in a form of a dict.
