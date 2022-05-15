@@ -30,23 +30,6 @@ from PIL import ImageFont
 
 
 
-class TextAlignment(ttk.Frame):
-    def __init__(self, master:str, bootstyle=DEFAULT):
-        super().__init__(master=master, bootstyle=bootstyle)
-
-        self.label = ttk.Label(
-            self,
-            text='Text Alignment',
-            bootstyle=(INVERSE, SECONDARY),
-            anchor=CENTER,
-            font="-size 13"
-        )
-        self.label.pack(expand=YES, fill=X)
-
-        self.scale = ttk.Scale(self, bootstyle=WARNING)
-        self.scale.pack(expand=YES, fill=X, pady=6)
-
-
 class FontSelector(ttk.Frame):
     def __init__(self, master, font:ttk.font.Font=None):
         super().__init__(master)
