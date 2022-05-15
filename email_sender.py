@@ -36,11 +36,11 @@ class EmailSender:
 
     @classmethod
     def send_email(cls, to, sender, subject, body, files=None) -> None:
-        msg = EmailSender.create_message(to, sender, subject, body, files)
-        EmailSender.send_message(cls.service, msg)
+        msg = EmailSender._create_message(to, sender, subject, body, files)
+        EmailSender._send_message(cls.service, msg)
 
     @staticmethod
-    def send_message(service, message):
+    def _send_message(service, message):
         """ sends the provided message. If the sending was succesful
         it prints the message ID """
 
@@ -53,7 +53,7 @@ class EmailSender:
             return None
 
     @staticmethod
-    def create_message(
+    def _create_message(
         to:str,
         sender:str,
         subject:str,
@@ -65,23 +65,9 @@ class EmailSender:
         mime_message['from'] = sender
         mime_message['subject'] = subject
         mime_message.attach(MIMEText(body, 'html'))
-        """pdf shit
-        for attachment in files:
-            # open the file in bynary
-            binary_pdf = open(attachment, 'rb')
 
-            payload = MIMEBase('application', 'octate-stream', Name=attachment)
-            payload.set_payload((binary_pdf).read())
-
-            # enconding the binary into base64
-            encoders.encode_base64(payload)
-
-            # add header with pdf name
-            payload.add_header('Content-Decomposition', 'attachment', filename=attachment)
-            mimeMessage.attach(payload)
-
-            rawMsg = base64.urlsafe_b64encode(mimeMessage.as_string().encode('utf-8'))
-            return {'raw': rawMsg.decode('utf-8')}"""
+        if files is None:
+            files = []
 
         for attachment in files:
             (contenttype, encoding) = mimetypes.guess_type(attachment)
