@@ -188,7 +188,7 @@ class InfoInput(ttk.Labelframe):
         # =-=-=-=-=-=-=-=- Load Icons -=-=-=-=-=--=-=-=-=-=-=
         image_files = {
             'template-default': 'template_default_32px.png',
-            'template_active': 'template_active_32px.png',
+            'template-active': 'template_active_32px.png',
             'userlist-default': 'userlist_default_32px.png',
             'userlist-active': 'userlist_active_32px.png'
         }
