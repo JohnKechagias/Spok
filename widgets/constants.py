@@ -2,7 +2,7 @@ from enum import Enum
 
 
 
-# logging level enum
+# Logging level enum
 class LogLevel(Enum):
     DEBUG = 1
     INFO = 2
@@ -10,7 +10,7 @@ class LogLevel(Enum):
     ERROR = 4
     SUCCESS = 5
 
-# positional constants
+# Positional constants
 LEFT = 'left'
 MIDDLE = 'middle'
 RIGHT = 'right'

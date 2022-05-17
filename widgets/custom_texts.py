@@ -31,26 +31,25 @@ class CText(tk.Text):
         <<TextChanged>>
     """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
-        # create a proxy for the underlying widget
+        # Create a proxy for the underlying widget
         # self._w is the name of the widget (cText)
         # each time an event happens it is passed to a tcl command which has
         # the same name as the widget class (cText)
 
-        # rename the main tcl command (cText) to cText_orig
+        # Rename the main tcl command (cText) to cText_orig
         # !!!ATTENTION!!!
-        # we don't rename the var self._w, but the command thats named after self._w
+        # We don't rename the var self._w, but the command thats named after self._w
         self._orig = self._w + "_orig"
         self.tk.call("rename", self._w, self._orig)
-        # after that, create a proxy command and give it the same name as the one
-        # of the old command (cText), so that, when an event happens, the new proxy
-        # func is called.
+        # Create a proxy command and give it the same name as the one of the old
+        #  command (cText), so that, when an event happens, the new proxy func is called.
         self.tk.createcommand(self._w, self._proxy)
 
     def _proxy(self, *args):
-        # pass the args to the original widget function
+        # Pass the args to the original widget function
         result = None
         try:
             cmd = (self._orig,) + args
@@ -58,7 +57,7 @@ class CText(tk.Text):
         except tk.TclError:
             print(f'_tkinter.TclError. Command args: {args}')
 
-        # generate an event if something was added or deleted,
+        # Generate an event if something was added or deleted,
         # or the cursor position changed
         if (args[0] in ("insert", "replace", "delete") or
             args[0:3] == ("mark", "set", "insert") or
@@ -69,7 +68,7 @@ class CText(tk.Text):
         ):
             self.event_generate("<<TextChanged>>", when="tail")
 
-        # return what the actual widget returned
+        # Return what the actual widget returned
         return result
 
 
@@ -97,9 +96,9 @@ class NumberedText(tk.Text):
         state, tabs, undo, width, wrap,
     """
 
-    def __init__(self, width=5, *args, **kwargs):
+    def __init__(self, width=5, *args, **kwargs) -> None:
         super().__init__(width=width, state=DISABLED, *args, **kwargs)
-        # move every index to the right of the line
+        # Move every index to the right of the line
         self.tag_configure('tag_right', justify=RIGHT)
         self._num_of_lines = 0
 
@@ -110,13 +109,13 @@ class NumberedText(tk.Text):
 
     def _recalculate_numbers(self):
         self.configure(state=NORMAL)
-        # clear all indexes
+        # Clear all indexes
         self.delete('1.0', END)
-        # recalculate all line indexes
+        # Recalculate all line indexes
         for i in range(self._num_of_lines):
             self.insert(END, f'{i + 1}  \n', 'tag_right')
 
-        # remove empty line thats constanlty added by the text widget
+        # Remove empty line thats constanlty added by the text widget
         if self.get('end-1c', END) == '\n':
             self.delete('end-1c', END)
         self.configure(state=DISABLED)

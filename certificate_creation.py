@@ -52,7 +52,7 @@ class CertificateCreator:
         progress_var:IntVar,
         item_list:list,
         cleanup_func=None
-        ) -> list:
+        ):
         """Create a certificate for each item in a list
 
         Args:
@@ -99,10 +99,10 @@ class CertificateCreator:
         align:str,
         compress_level:int,
         entry_info:tuple
-        ) -> None:
+        ) -> tuple[str, str, str]:
         # NEED to have a temp copy of image, else the base template
         # is going to get replaced!!
-        # draw the message on the background
+        # Draw the message on the background
         image_copy = image.copy()
         draw = ImageDraw.Draw(image_copy)
         draw.text(
@@ -113,7 +113,7 @@ class CertificateCreator:
             anchor=anchor,
             align=align
         )
-        # save the edited image
+        # Save the edited image
         name = entry_info[1].replace(' ', '_')
         image_name = f'{name}.png'
         image_location = f'certificates/{image_name}'

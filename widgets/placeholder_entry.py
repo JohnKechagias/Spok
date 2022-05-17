@@ -43,7 +43,14 @@ class PlaceholderEntry(ttk.Entry):
 
 
 class tkPlaceholderEntry(tk.Entry):
-    def __init__(self, master=None, placeholder='placeholder', placeholdercolor='gray', *args, **kwargs):
+    def __init__(
+        self,
+        master=None,
+        placeholder='placeholder',
+        placeholdercolor='gray',
+        *args,
+        **kwargs
+        ) -> None:
         super().__init__(master, *args, **kwargs)
 
         self.placeholder = placeholder

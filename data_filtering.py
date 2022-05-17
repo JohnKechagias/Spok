@@ -1,10 +1,11 @@
+from typing import List
 import pandas as pd
 import unicodedata
 import re
 
 
 
-def split_name_and_email(row:str) -> tuple:
+def split_name_and_email(row:str) -> tuple[str, str]:
     """Strips the email from a text
 
     RETURNS
@@ -25,7 +26,7 @@ def remove_nonspacing_marks(s) -> str:
                    if unicodedata.category(c) != 'Mn')
 
 
-def txt_to_list(txtPath:str) -> None:
+def txt_to_list(txtPath:str) -> list[tuple[str, str ,str]]:
     """Convert a txt file to a list. Each row in the txt must contain an email and a name.
     If an entry is missing a name or an email and logging is disabled, it will be deleted
 
@@ -51,7 +52,7 @@ def txt_to_list(txtPath:str) -> None:
     a list where each entry is [email, name, errorFlag]"""
 
     try:
-        # read from attendants
+        # Read from attendants
         with open(txtPath, "r", encoding='utf-8') as file:
             lines = file.readlines()
     except IOError:
@@ -59,20 +60,20 @@ def txt_to_list(txtPath:str) -> None:
 
     users_list = []
     for line in lines:
-        # remove tabs, whitespaces and newlines
+        # Remove tabs, whitespaces and newlines
         line = line.replace('\n', '').replace('\t', ' ').replace('-', ' ').strip()
-        # continue if line is empty
+        # Continue if line is empty
         if line == '': continue
         line = re.sub(' +', ' ', line)
 
         name, email = split_name_and_email(line)
-        users_list.append([name, email])
+        users_list.append((name, email))
 
     users_list = clean_name_email_list(users_list)
     return users_list
 
 
-def exel_to_list(path:str) -> list:
+def exel_to_list(path:str) -> list[tuple[str, str ,str]]:
     df = pd.read_excel(
         path,
         usecols=['Email', 'Name'],
@@ -81,7 +82,7 @@ def exel_to_list(path:str) -> list:
     return dataframe_to_list(df)
 
 
-def csv_to_list(path:str) -> list:
+def csv_to_list(path:str) -> list[tuple[str, str ,str]]:
     df = pd.read_csv(
         path,
         usecols=['Email', 'Name'],
@@ -90,7 +91,7 @@ def csv_to_list(path:str) -> list:
     return dataframe_to_list(df)
 
 
-def dataframe_to_list(df:pd.DataFrame):
+def dataframe_to_list(df:pd.DataFrame) -> list[tuple[str, str ,str]]:
     df.drop_duplicates(subset=None, keep='first', inplace=True)
     df.sort_values(by=['Name'], inplace=True)
     df.reset_index(drop=True, inplace=True)
@@ -100,14 +101,14 @@ def dataframe_to_list(df:pd.DataFrame):
 
 
 def list_to_txt(list:list) -> None:
-    with open('cleanFile.txt', 'w', encoding='utf-8') as file:
+    with open('userlist.temp', 'w', encoding='utf-8') as file:
         for item in list:
             file.write(f'{item[2]} | {item[0]} {item[1]}\n')
 
 
-def clean_name_email_list(user_list:list) -> list:
+def clean_name_email_list(user_list:list) -> list[list[str, str, str]]:
     flag_error_index = 0
-    # true if the the exact item is already in the list
+    # True if the the exact item is already in the list
     duplicate = False
     clean_user_list = []
 
@@ -119,7 +120,7 @@ def clean_name_email_list(user_list:list) -> list:
         if name == '' or email == '':
             continue
 
-        # check if the user name or user email already exists in the list
+        # Check if the user name or user email already exists in the list
         for user in clean_user_list:
             if name == user[0] and email == user[1]:
                 duplicate = True
@@ -141,7 +142,7 @@ def clean_name_email_list(user_list:list) -> list:
     for user in clean_user_list:
         user[2] = user[2].removeprefix('-')
 
-    # sort list based on the name
+    # Sort list based on the name
     clean_user_list = sorted(clean_user_list, key=lambda a: a[0])
     return clean_user_list
 

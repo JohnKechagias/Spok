@@ -32,7 +32,7 @@ class DataViewer(ttk.Frame):
         scrollbar_bootstyle=DEFAULT,
         *args,
         **kwargs,
-    ):
+    ) -> None:
         """Construct a Ttk Treeview with parent master.
 
         STANDARD OPTIONS
@@ -54,20 +54,20 @@ class DataViewer(ttk.Frame):
         """
         super().__init__(master)
 
-        # make tree resizable
+        # Make tree resizable
         self.rowconfigure(0, weight=1)
         self.columnconfigure(0, weight=1)
-        # define columns
+        # Define columns
         self._columns = ('index', 'name', 'email')
-        # used to track where the next valid item (without a tag) should be inserted
+        # Used to track where the next valid item (without a tag) should be inserted
         self._curr_valid_index = 0
-        # stacks that stores edits. (used in undo and redo)
+        # Stacks that stores edits. (used in undo and redo)
         self.edit_stack = []
-        # stack size
+        # Stack size
         self.stack_size = 25
-        # stack index that points to the current edit
+        # Stack index that points to the current edit
         self.stack_index = -1
-        # true if we are editing a row
+        # True if we are editing a row
         self._edit_mode = False
         self._item_to_edit = None
 
@@ -83,13 +83,13 @@ class DataViewer(ttk.Frame):
         self._tree.tag_configure('flaggedEmail', background='#CA9242', foreground='white')
         self._tree.tag_configure('flaggedName', background='#ca5f42', foreground='white')
 
-        # define and tweak columns
+        # Define and tweak columns
         self._tree.column("# 1", stretch=NO, width=45)
         self._tree.heading('index', text='Index')
         self._tree.heading('name', text='Name')
         self._tree.heading('email', text='Email')
 
-        # setup scrollbar
+        # Setup scrollbar
         self.scrollbar = AutoScrollbar(
             self,
             orient=VERTICAL,
@@ -132,7 +132,7 @@ class DataViewer(ttk.Frame):
     def load_list(self, item_list:list):
         for item in item_list:
             self.insert_entry(values=item, save_edit=False)
-        # select top entry
+        # Select top entry
         self._clear_treeview_selection()
         self._tree.selection_add(self._tree.get_children()[0])
 
@@ -140,7 +140,7 @@ class DataViewer(ttk.Frame):
         values = []
         for entry in self._tree.get_children():
             entry_tags = self._tree.item(entry, 'tags')
-            # export only entry that don't have a tag
+            # Export only entry that don't have a tag
             if len(entry_tags) == 0 or entry_tags is None:
                 entry_values = self._tree.item(entry, 'values')
                 values.append(entry_values)
@@ -155,13 +155,13 @@ class DataViewer(ttk.Frame):
         focus:bool=False,
         save_edit=True
         ) -> str:
-        """insert an item.
+        """Insert an item.
 
         POSSIBLE TAGS
 
         flaggedEmail, flaggedName
         """
-        # default initialize values
+        # Default initialize values
         if values is None:
             values = ['', '']
 
@@ -181,18 +181,18 @@ class DataViewer(ttk.Frame):
             self._push_edit(['insert', entry, index, values, tags])
 
         if focus:
-            # select entry
+            # Select entry
             self._clear_treeview_selection()
             self._tree.selection_add(entry)
 
-        # recalculate entries indexes if entry wasn't inserted in the end
+        # Recalculate entries indexes if entry wasn't inserted in the end
         if index != END or index != item_index - 1:
             self._recalculate_indexes()
 
         return entry
 
     def create_entry(self, event:tk.Event=None):
-        """create a new treeview entry and add it just before the
+        """Create a new treeview entry and add it just before the
         entries with a tag"""
         self.insert_entry(self._curr_valid_index, focus=True)
 
@@ -205,7 +205,7 @@ class DataViewer(ttk.Frame):
 
     @_notOnEditMode
     def delete_entry(self, entry:str, save_edit=True):
-        # get item index in the tree
+        # Get item index in the tree
         index = int(self._tree.item(entry, 'values')[0]) - 1
 
         if self._tree.item(entry, 'tags') == '':
@@ -219,7 +219,7 @@ class DataViewer(ttk.Frame):
         self._tree.delete(entry)
         self._recalculate_indexes()
 
-        # select the item with the same index as the one we deleted
+        # Select the item with the same index as the one we deleted
         # ex. if we deleted item with index 42 select the new item with
         # index 42
         items = self._tree.get_children()
@@ -267,7 +267,7 @@ class DataViewer(ttk.Frame):
 
     @_notOnEditMode
     def _undo(self, event:tk.Event=None):
-        """undo the latest edit"""
+        """Undo the latest edit"""
         if self.stack_index < 0:
             return
 
@@ -276,10 +276,10 @@ class DataViewer(ttk.Frame):
             self.delete_entry(edit[1], save_edit=False)
         elif edit[0] == 'delete':
             values = list(edit[3])
-            del values[0]  # remove entry index
+            del values[0]  # Remove entry index
             tags = edit[4]
             entry = self.insert_entry(edit[2], values, tags, save_edit=False)
-            # because we insert a new entry, the entrys ID has
+            # Because we insert a new entry, the entrys ID has
             # changed, so we need to update it
             edit[1] = entry
         elif edit[0] == 'edit':
@@ -290,7 +290,7 @@ class DataViewer(ttk.Frame):
 
     @_notOnEditMode
     def _redo(self, event:tk.Event=None):
-        """redo the latest edit"""
+        """Redo the latest edit"""
         if self.stack_index == len(self.edit_stack) - 1 or self.stack_index < -1:
             return
 
@@ -301,7 +301,7 @@ class DataViewer(ttk.Frame):
             del values[0]  # remove entry index
             tags = edit[4]
             entry = self.insert_entry(edit[2], values, tags, save_edit=False)
-            # because we insert a new entry, the entrys ID has
+            # Because we insert a new entry, the entrys ID has
             # changed, so we need to update it
             edit[1] = entry
         elif edit[0] == 'delete':
@@ -322,7 +322,7 @@ class DataViewer(ttk.Frame):
         if self.stack_size - (self.stack_index + 1) >=\
             (self.stack_index + 1):
             del self.edit_stack[-1]
-            # update editStack index
+            # Update editStack index
             self.stack_index += 1
         elif self.stack_size - (self.stack_index + 1) <\
             (self.stack_index + 1):

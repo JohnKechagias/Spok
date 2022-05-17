@@ -40,29 +40,28 @@ class Logger(ttk.Frame):
         self.rowconfigure(0, weight=1)
         self.columnconfigure(1, weight=1)
 
-        timestamp_color = 'white'
-        info_color = '#ADB5BD'
-        warning_color = '#f39c12'
-        error_color = '#e74c3c'
-        Success_color  = '#00bc8c'
+        timestamp_color = '#ffffff'
+        info_color      = '#ADB5BD'
+        warning_color   = '#f39c12'
+        error_color     = '#e74c3c'
+        Success_color   = '#00bc8c'
 
-
-        dark_color = '#303030'
+        dark_color      = '#303030'
         secondary_color = '#444444'
-        num_font_color = '#687273'
+        num_font_color  = '#687273'
         text_font_color = '#e8e8e8'
-        cursor_color = '#f7d4d4'
-        dark_background_color = '#222222'
-        secondary_dark_background_color= '#363636'
-        selected_background_color = '#444444'
-        selected_foreground_color = '#f7d4d4'
-        find_background = '#2b2b2b'
+        cursor_color    = '#f7d4d4'
+        dark_background_color           = '#222222'
+        secondary_dark_background_color = '#363636'
+        selected_background_color       = '#444444'
+        selected_foreground_color       = '#f7d4d4'
+        find_background                 = '#2b2b2b'
 
         font = ('Arial', '14')
         find_font = ('Arial', '13')
 
-        self._last_line_index = 0  # stores the row index of the previously selected line
-        self.log_level = log_level  # store logLevel as a public var
+        self._last_line_index = 0  # Store the row index of the previously selected line
+        self.log_level = log_level  # Store logLevel as a public var
         self._timestamp = timestamp
 
         self._text = CText(
@@ -81,7 +80,8 @@ class Logger(ttk.Frame):
             foreground=text_font_color,
             insertbackground=cursor_color,
             selectbackground=secondary_color,
-            **kwargs)
+            **kwargs
+        )
 
         self._text.tag_configure('timestamp_tag', foreground=timestamp_color)
         self._text.tag_configure('tag_selected', foreground=selected_background_color)
@@ -96,14 +96,14 @@ class Logger(ttk.Frame):
         self._hbar = None
         self._vbar = None
 
-        # delegate text methods to frame
+        # Delegate text methods to frame
         for method in vars(ttk.Text).keys():
             if any(['pack' in method, 'grid' in method, 'place' in method]):
                 pass
             else:
                 setattr(self, method, getattr(self._text, method))
 
-        # setup scrollbars
+        # Setup scrollbars
         if vbar is not None:
             self._vbar = AutoScrollbar(
                 master=self,
@@ -124,13 +124,13 @@ class Logger(ttk.Frame):
             self._hbar.grid(row=1, column=0, columnspan=2, sticky=EW)
             self._text.configure(xscrollcommand=self._hbar.set)
 
-        self._text.bind('<<TextChanged>>', self._onChange)
+        self._text.bind('<<TextChanged>>', self._on_change)
 
         self._text.grid(row=0, column=1, sticky=NSEW)
 
-        # setup search functionality
+        # Setup search functionality
         self._search_open = False
-        self._find_text = ttk.StringVar(self)
+        self._find_text = ttk.StringVar()
         self._find_frame = ttk.Frame(self._text)
 
         self._find_entry = tkPlaceholderEntry(
@@ -144,10 +144,11 @@ class Logger(ttk.Frame):
             background=find_background,
             foreground=text_font_color,
             insertbackground=cursor_color,
-            textvariable=self._find_text)
+            textvariable=self._find_text
+        )
         self._find_entry.pack(side=LEFT, pady=2, padx=(10, 4))
 
-        #Import the image using PhotoImage function
+        # Import the image using PhotoImage function
         self._find_button_img= ttk.PhotoImage(file='assets/x.png')
 
         self._find_close_button = tk.Button(
@@ -160,11 +161,12 @@ class Logger(ttk.Frame):
             activebackground=secondary_dark_background_color,
             relief=FLAT,
             cursor='arrow',
-            command=self._closeSearch)
+            command=self._close_search
+        )
         self._find_close_button.pack(side=LEFT, expand=NO, pady=2, padx=(0, 4))
 
-        self._text.bind_all('<Control-KeyPress-f>', lambda e: self._openSearch(), add='+')
-        self._text.bind_all('<Escape>', lambda e: self._closeSearch(), add='+')
+        self._text.bind_all('<Control-KeyPress-f>', lambda e: self._open_search(), add='+')
+        self._text.bind_all('<Escape>', lambda e: self._close_search(), add='+')
 
         self.log('LOGGER INITIALIZED', log_level=LogLevel.INFO, newline=False)
 
@@ -195,13 +197,13 @@ class Logger(ttk.Frame):
             self._text.insert(END, message)
         self._text.configure(state=DISABLED)
 
-    def _onChange(self, _):
+    def _on_change(self, _):
         pass
 
-    def _openSearch(self):
+    def _open_search(self):
         self._find_frame.place(relx=0.98, rely=0, anchor=NE, bordermode=OUTSIDE)
         self._search_open = True
 
-    def _closeSearch(self):
+    def _close_search(self):
         self._find_frame.place_forget()
         self._search_open = False

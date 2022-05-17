@@ -1,3 +1,5 @@
+from typing import Dict
+
 import ttkbootstrap as ttk
 from ttkbootstrap.constants import *
 
@@ -35,8 +37,8 @@ class EmailCreator(ttk.Frame):
         else:
             self._receiver.grid_remove()
 
-    def get_email(self):
-        """returns the email info in a form of a dict.
+    def get_email(self) -> Dict[str, str]:
+        """Returns the email info in a form of a dict.
         Email info consists of the title, the recipient and the body of
         the email in HTML form. If the personalEmail flag is false, the
         recipient is empty.

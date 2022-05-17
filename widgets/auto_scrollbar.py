@@ -11,8 +11,8 @@ class AutoScrollbar(ttk.Scrollbar):
             self.grid()
             ttk.Scrollbar.set(self, lo, hi)
 
-    def pack(self, **kw):
+    def pack(self, **kwargs):
         raise ttk.TclError('Cannot use pack with the widget ' + self.__class__.__name__)
 
-    def place(self, **kw):
+    def place(self, **kwargs):
         raise ttk.TclError('Cannot use place with the widget ' + self.__class__.__name__)

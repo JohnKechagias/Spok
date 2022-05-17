@@ -41,8 +41,8 @@ class EmailSender:
 
     @staticmethod
     def _send_message(service, message):
-        """ sends the provided message. If the sending was succesful
-        it prints the message ID """
+        """Sends the provided message. If the sending was succesful
+        it prints the message ID"""
 
         try:
             message = service.users().messages().send(userId=USER_ID, body=message).execute()
@@ -92,11 +92,10 @@ class EmailSender:
                     msg = MIMEAudio(f.read(), _subtype=subtype)
 
             elif maintype=='application' and subtype=='pdf':
-                # open the file in bynary
+                # Open the file in binary
                 binary_pdf = open(attachment, 'rb')
                 msg = MIMEBase('application', 'octate-stream', Name=attachment)
                 msg.set_payload((binary_pdf).read())
-                # enconding the binary into base64
                 encoders.encode_base64(msg)
 
             else:
