@@ -3,7 +3,7 @@ import threading
 from pathlib import Path
 
 import tkinter as tk
-from tkinter import filedialog as fd
+from tkinter import Misc, filedialog as fd
 from tkinter.font import ROMAN
 
 import ttkbootstrap as ttk
@@ -32,10 +32,10 @@ from configparser import ConfigParser
 
 
 class FontSelector(ttk.Frame):
-    def __init__(self, master, font:ttk.font.Font=None):
+    def __init__(self, master:Misc, font:ttk.font.Font=None) -> None:
         super().__init__(master)
         self.font_dialog = FontDialog(parent=master.master, title='Font Selection')
-        self.show_button = ttk.Button(self, bootstyle=(DARK))
+        self.show_button = ttk.Button(self, bootstyle=DARK)
 
         if font is None:
             font = ttk.font.Font(
@@ -56,17 +56,7 @@ class FontSelector(ttk.Frame):
             width=330
         )
         self.cco_labelframe.pack(expand=YES, fill=BOTH)
-
         self.cco_labelframe.rowconfigure(5, weight=1)
-
-        self.select_font_button = ttk.Button(
-            master=self.cco_labelframe,
-            bootstyle=(OUTLINE, WARNING),
-            text='Select Font',
-            padding=10,
-            command=self._showFontDialog
-        )
-        self.select_font_button.grid(row=7, column=0, sticky=EW, pady=6)
 
         # =-=-=-=-=-=- Colors Options -=-=-=-=-=--=-=
 
@@ -77,7 +67,7 @@ class FontSelector(ttk.Frame):
             anchor=CENTER,
             font="-size 13"
         )
-        self.color_Label.grid(row=1, column=0, sticky=EW, pady=(6, 10))
+        self.color_Label.grid(row=1, column=0, sticky=EW, pady=6)
 
         self.color_selector = ColorSelector(master=self.cco_labelframe)
         self.color_selector.grid(row=2, column=0, sticky=EW)
@@ -87,19 +77,33 @@ class FontSelector(ttk.Frame):
             bootstyle=WARNING,
             maxfontsize=60
             )
-        self.font_size_selector.grid(row=6, column=0, sticky=EW)
-
-        self.font_size_selector.meter.amountusedvar.trace_add(
+        self.font_size_selector.grid(row=6, column=0, sticky=EW, pady=6)
+        self.font_size_selector.amountusedvar.trace_add(
             'write', self._update_font_size)
 
+        self.select_font_button = ttk.Button(
+            master=self.cco_labelframe,
+            bootstyle=(OUTLINE, WARNING),
+            text='Select Font',
+            padding=10,
+            command=self._showFontDialog
+        )
+        self.select_font_button.grid(row=7, column=0, sticky=EW, pady=6)
+
+    def get_font_color(self) -> str:
+        return self.color_selector.get_color_code()
+
+    def get_font_size(self) -> int:
+        return self.font_size_selector.amountusedvar.get()
+
     def _update_font_size(self, *args):
-        new_size = self.font_size_selector.meter.amountusedvar.get()
+        new_size = self.font_size_selector.amountusedvar.get()
         self.font.configure(size=new_size)
 
     def _showFontDialog(self):
         self.font_dialog.show()
         self.font = self.font_dialog._result
-        self.font_size_selector.meter.configure(amountused=self.font.cget('size'))
+        self.font_size_selector.configure(amountused=self.font.cget('size'))
 
     def _hideWidget(self):
         self.cco_labelframe.pack_forget()
@@ -110,50 +114,54 @@ class FontSelector(ttk.Frame):
         self.cco_labelframe.pack(expand=YES, fill=Y, anchor=NE, side=RIGHT)
 
 
-class FontSizeSelector(ttk.Frame):
-    def __init__(self, master, fontsize=25, maxfontsize=50, *args, **kwargs):
-        super().__init__(master)
-
-        self.meter = ttk.Meter(
-            master=self,
+class FontSizeSelector(ttk.Meter):
+    def __init__(
+        self,
+        master:Misc,
+        fontsize=25,
+        maxfontsize=50,
+        *args,
+        **kwargs
+        ) -> None:
+        super().__init__(
+            master=master,
             amounttotal=maxfontsize,
             metersize=150,
             amountused=fontsize,
             stripethickness=8,
-            subtext="Font Size",
+            subtext='Font Size',
             interactive=False,
             *args,
             **kwargs
         )
-        self.meter.pack(side=TOP, padx=6, pady=6)
 
-        # get label child of meter widget
-        meter_child = self.meter.winfo_children()[0].winfo_children()[0]
+        # Get label child of meter widget
+        meter_child = self.winfo_children()[0].winfo_children()[0]
         meter_child.bind('<Button-5>', self._wheelScroll) # Linux, wheel scroll down
         meter_child.bind('<Button-4>', self._wheelScroll)  # Linux, wheel scroll up
-        meter_child.bind('<MouseWheel>', self._wheelScroll) # windows wheel scroll keybind
+        meter_child.bind('<MouseWheel>', self._wheelScroll) # Windows wheel scroll keybind
+
+    def get_font_size(self) -> int:
+        return self.amountusedvar.get()
 
     def _increment_meter(self):
-        new_value = self.meter.amountusedvar.get() + 1
-        # make sure new value isn't out of bounds
-        if new_value <= self.meter.amounttotalvar.get():
-            self.meter.configure(amountused=new_value)
+        new_value = self.amountusedvar.get() + 1
+        # Make sure new value isn't out of bounds
+        if new_value <= self.amounttotalvar.get():
+            self.configure(amountused=new_value)
 
     def _decrement_meter(self):
-        new_value = self.meter.amountusedvar.get() - 1
-        # make sure new value isn't out of bounds
+        new_value = self.amountusedvar.get() - 1
+        # Make sure new value isn't out of bounds
         if new_value >= 0:
-            self.meter.configure(amountused=new_value)
+            self.configure(amountused=new_value)
 
     def _wheelScroll(self, event:tk.Event):
         # Respond to Linux (event.num) or Windows (event.delta) wheel event
-        if event.num == 4 or event.delta == 120: # scroll up
+        if event.num == 4 or event.delta == 120: # Scroll up
             self._increment_meter()
-        if event.num == 5 or event.delta == -120: # scroll down
+        if event.num == 5 or event.delta == -120: # Scroll down
             self._decrement_meter()
-
-    def getFontSize(self) -> int:
-        return self.meter.amountusedvar.get()
 
 
 class InfoInput(ttk.Labelframe):
@@ -162,13 +170,14 @@ class InfoInput(ttk.Labelframe):
         master,
         testmode=True,
         logging=True
-        ):
+        ) -> None:
         super().__init__(master, text='Certificate Options', padding=(16, 10))
 
         self.columnconfigure(1, weight=1)
         self.columnconfigure(2, weight=1)
 
         self.font = '-size 13'
+        self.background_color = '#222222'
 
         self.image_path = ttk.StringVar()
         self.info_file_path = ttk.StringVar()
@@ -179,7 +188,7 @@ class InfoInput(ttk.Labelframe):
         self.test_mode = ttk.BooleanVar(value=testmode)
         self.logging = ttk.BooleanVar(value=logging)
 
-        # We manually call the hanlders instead of tracing the vars because
+        # We manually call the handlers instead of tracing the vars because
         # we want to call the handlers whenever the complete path is given
         # and not when the path changes.
 
@@ -208,7 +217,7 @@ class InfoInput(ttk.Labelframe):
             master=self,
             default_image='template-default',
             hover_image='template-active',
-            background='#222222',
+            background=self.background_color,
             command=self._select_image_file
         )
         self.select_template_button.grid(row=0, column=0, padx=(0, 16), pady=4, sticky=W)
@@ -229,7 +238,7 @@ class InfoInput(ttk.Labelframe):
             master=self,
             default_image='userlist-default',
             hover_image='userlist-active',
-            background='#222222',
+            background=self.background_color,
             command=self._select_info_file
         )
         #C4C4C4
@@ -314,13 +323,14 @@ class EmailInput(ttk.Labelframe):
         realemail='',
         testmode=True,
         personalemail=False
-        ):
+        ) -> None:
         super().__init__(master, text='Emailing Options', padding=(16, 10))
 
         self.columnconfigure(1, weight=1)
         self.columnconfigure(2, weight=1)
 
         self.font = '-size 13'
+        self.background_color = '#222222'
 
         self.test_email = ttk.StringVar()
         self.real_email = ttk.StringVar()
@@ -346,7 +356,7 @@ class EmailInput(ttk.Labelframe):
             master=self,
             default_image='test_email-default',
             hover_image='test_email-active',
-            background='#222222'
+            background=self.background_color
         )
         self.test_email_button.grid(row=0, column=0, padx=(0, 16), pady=4, sticky=W)
 
@@ -366,7 +376,7 @@ class EmailInput(ttk.Labelframe):
             master=self,
             default_image='email-default',
             hover_image='email-active',
-            background='#222222'
+            background=self.background_color
         )
         self.real_email_button.grid(row=1, column=0, padx=(0, 16), pady=4, sticky=W)
 
@@ -378,7 +388,6 @@ class EmailInput(ttk.Labelframe):
             textvariable=self.real_email
         )
         self.real_email_entry.grid(row=1, column=1, columnspan=2, pady=6, sticky=EW)
-
         self.real_email_entry.bind('<Return>',
             lambda _: self.real_email_entry.validate(), add='+')
         validators.add_email_validation(self.real_email_entry)
@@ -410,12 +419,35 @@ class EmailInput(ttk.Labelframe):
         self.send_emails_button.grid(row=3, rowspan=2, column=2, sticky=E)
 
 
+
+class MainWindow(object):
+    def __init__(self, *args, **kwargs):
+        self.root = ttk.Window(
+            title='Certificates Creation',
+            themename='darkly',
+            minsize=(600, 565),
+            *args,
+            **kwargs
+        )
+        self.root.geometry('1600x800')
+
+        self.app = App(self.root)
+        self.app.pack(expand=YES, fill=BOTH, padx=10, pady=10)
+        self.app.bind_class('TEntry', '<Return>', lambda _: self.app.focus_set(), add='+')
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.app.save_config()
+        self.app.clean_temp_files()
+
+
 class App(ttk.Frame):
-    def __init__(self, master):
+    def __init__(self, master) -> None:
         super().__init__(master)
 
         self.rowconfigure(2, weight=1)
-
         self.columnconfigure(0, weight=1, minsize=450)
         self.columnconfigure(1, weight=1)
 
@@ -432,7 +464,7 @@ class App(ttk.Frame):
 
         text_color = config.get('certificate', 'color')
         text_font  = config.get('certificate', 'font')
-        self.text_font = text_font
+        self.text_font = text_font  # TODO
         text_font_size = config.getint('certificate', 'fontSize')
 
         text_alignment = config.get('certificateText', 'textAlignment')
@@ -444,10 +476,21 @@ class App(ttk.Frame):
         emailing_test_mode = config.getboolean('emailing', 'testMode')
         personal_email = config.getboolean('emailing', 'personalEmail')
 
-        # =-=-=-=-=-=-=-=-=- Top Frame -=-=-=-=-=--=-=-=-=-=-=
+        # =-=-=-=-=-=- Initialize Main Frames -=-=--=-=-=-=-=-=
 
         self.topframe = ttk.Frame(self)
         self.topframe.grid(row=0, column=0, columnspan=3, sticky=NSEW)
+
+        self.lframe = ttk.Frame(self, padding=5)
+        self.lframe.grid(row=2, column=0, sticky=NSEW)
+
+        self.mframe = ttk.Frame(self, padding=5)
+        self.mframe.grid(row=2, column=1, sticky=NSEW)
+
+        self.rframe = ttk.Frame(self, padding=5)
+        self.rframe.grid(row=2, column=2, sticky=NSEW)
+
+        # =-=-=-=-=-=-=-=-=- Top Frame -=-=-=-=-=--=-=-=-=-=-=
 
         self.modes_selection_title = ttk.Label(
             master=self.topframe, text="Certificates Creator", font="-size 24 -weight bold"
@@ -480,15 +523,6 @@ class App(ttk.Frame):
 
         self.seperator = ttk.Separator(self)
         self.seperator.grid(row=1, column=0, columnspan=3, sticky=EW, pady=6)
-
-        self.lframe = ttk.Frame(self, padding=5)
-        self.lframe.grid(row=2, column=0, sticky=NSEW)
-
-        self.mframe = ttk.Frame(self, padding=5)
-        self.mframe.grid(row=2, column=1, sticky=NSEW)
-
-        self.rframe = ttk.Frame(self, padding=5)
-        self.rframe.grid(row=2, column=2, sticky=NSEW)
 
         # =-=-=-=-=-=-=-=-=- Left Frame -=-=-=-=-=--=-=-=-=-=-=
 
@@ -532,15 +566,15 @@ class App(ttk.Frame):
         self.certificate_options.image_changed_handler = self.load_image
         self.certificate_options.info_file_changed_handler = self.load_info_file
 
-        # =-=-=-=-=-=-=-=-=- File Manager -=-=-=-=-=--=-=-=-=-=
+        # =-=-=-=-=-=-=-=- Middle Frame -=-=-=-=-=--=-=-=-=-=
 
-        # notebook with table and text tabs
+        # Notebook with table and text tabs
         self.file_manager_notebook = ttk.Notebook(master=self.mframe, bootstyle=LIGHT)
         self.file_manager_notebook.pack(expand=YES, fill=BOTH, pady=(8, 0), padx=10)
         # enable key-binds for traversal
         self.file_manager_notebook.enable_traversal()
 
-        # initialize widgets
+        # Initialize widgets
         self.text_editor = TextEditor(
             self.file_manager_notebook,
             scrollbar_bootstyle=(DEFAULT, ROUND)
@@ -575,14 +609,44 @@ class App(ttk.Frame):
         self.certificate_options.image_path.set(default_template_path)
         self.certificate_options.info_file_path.set(default_userlist_path)
 
-        # =-=-=-=-=-=- Certificate Creation Options -=-=-=-=-=--=-=
+        # =-=-=-=-=-=-=-=-=- Right Frame -=-=-=-=-=--=-=-=-=-=-=
 
         self.font_configuration = FontSelector(master=self.rframe)
         self.font_configuration.color_selector.set_color(text_color)
-        self.font_configuration.font_size_selector.meter.amountusedvar.set(text_font_size)
+        self.font_configuration.font_size_selector.amountusedvar.set(text_font_size)
         self.font_configuration.pack(expand=YES, fill=Y, side=RIGHT)
 
-    def notebook_tab_changed(self, event:tk.Event) -> None:
+    def clean_temp_files(self):
+        if os.path.exists('userlist.temp'):
+            os.remove('userlist.temp')
+
+    def save_config(self):
+        config = ConfigParser()
+        config_path = Path('config.ini')
+        config.read(config_path)
+
+        logging = str(self.certificate_options.logging.get()).lower()
+        config.set('certificateCreation', 'logging', logging)
+
+        text_color = self.font_configuration.get_font_color()[1:]
+        config.set('certificate', 'color', text_color)
+        text_font  = '' # TODO
+        text_font_size = self.font_configuration.get_font_size()
+        config.set('certificate', 'fontSize', str(text_font_size))
+
+        coords = self.image_viewer.get_saved_coords()
+        config.set('certificateText', 'xcoord', str(coords[0]))
+        config.set('certificateText', 'ycoord', str(coords[1]))
+
+        test_email = self.emailing_options.test_email.get()
+        config.set('emailing', 'testEmail', test_email)
+        real_email = self.emailing_options.real_email.get()
+        config.set('emailing', 'realEmail', real_email)
+
+        with open('config.ini', 'w') as configfile:
+            config.write(configfile)
+
+    def notebook_tab_changed(self, event:tk.Event):
         tab = event.widget.tab(CURRENT)['text']
 
         if tab == 'Info File':
@@ -590,8 +654,7 @@ class App(ttk.Frame):
         elif tab == 'Email':
             self.modes_combobox.current(1)
 
-    def load_info_file(self, path:str, *_) -> None:
-        logging = self.certificate_options.logging.get()
+    def load_info_file(self, path:str, *_):
         filetype = path.split('.')[-1]
 
         if filetype in {'exel', 'xls', 'xlsx', 'xlsm',
@@ -602,22 +665,21 @@ class App(ttk.Frame):
         else:
             user_list = data_filtering.txt_to_list(path)
 
-        # list with valid users
+        # List with valid users
         self.user_list = []
-        # list with flagged users
+        # List with flagged users
         self.flagged_user_list = []
 
-        # filter users based on their flags
+        # Filter users based on their flags
         for item in user_list:
             if item[2] == '':
                 self.user_list.append(item)
             else:
                 self.flagged_user_list.append(item)
 
-        # sort flaggedUserList based on flagIndex
+        # Sort flaggedUserList based on flagIndex
         self.flagged_user_list = sorted(self.flagged_user_list, key=lambda a: a[2])
-
-        # clean dataViewer widgets
+        # Clean dataViewer widgets
         self.filemanager_children['Name List']._reset()
 
         for item in self.user_list:
@@ -626,7 +688,7 @@ class App(ttk.Frame):
 
         for item in self.flagged_user_list:
             tag = ''
-            # convert item flag to tree tag
+            # Convert item flag to tree tag
             if item[2][0] == 'N':
                 tag = 'flaggedName'
             elif item[2][0] == 'E':
@@ -635,10 +697,9 @@ class App(ttk.Frame):
             self.filemanager_children['Name List'].insert_entry(
                 values=[item[0], item[1]], tags=(tag), save_edit=False)
 
-        #dataFiltering.listToTxt(userList)
-        self.load_file('cleanFile.txt')
-
-        # switch to DataViewer tab
+        data_filtering.list_to_txt(user_list)
+        self.load_file('userlist.temp')
+        # Switch to DataViewer tab
         self.file_manager_notebook.select(1)
 
     def load_file(self, path:str, *_):
@@ -648,7 +709,7 @@ class App(ttk.Frame):
 
     def load_image(self, path:str, *_):
         """Load image in the canvas widget"""
-        # if the user closes the gui before selecting
+        # If the user closes the gui before selecting
         # a file, the path will be empty
         if os.path.exists(path):
             self.image_viewer.load_image(path)
@@ -661,7 +722,7 @@ class App(ttk.Frame):
         self.certificate_options.grid_remove()
         self.emailing_options.grid(row=0, column=0, sticky=EW)
 
-    def change_mode(self, *args) -> None:
+    def change_mode(self, *args):
         mode = self.modes_combobox.get()
         self.modes_selection_title.configure(text=mode)
 
@@ -670,7 +731,7 @@ class App(ttk.Frame):
         else:
             self.changeToCertificateMode()
 
-    def initialize_progressbar(self, maximum) -> None:
+    def initialize_progressbar(self, maximum: int):
         self.seperator.grid_forget()
         self.progressbar.configure(maximum=maximum)
         self.progressbar_var.set(0)
@@ -688,7 +749,7 @@ class App(ttk.Frame):
             image_path = self.certificate_options.image_path.get(),
             output_folder_path = 'certificates',
             font = font,
-            font_color=(255,255,255),
+            font_color=self.font_configuration.color_selector.get_color_code(),
             #font_color = tuple(self.font_configuration.color_selector.get_color_tuple()),
             image_coords = self.image_viewer.get_saved_coords(),
             word_position = MIDDLE,
@@ -725,13 +786,6 @@ class App(ttk.Frame):
         email_sender.send_email(to, sender, subject, body)
 
 
-if __name__ == "__main__":
-    window = ttk.Window("Certificates Creation", themename="darkly", minsize=(600, 565))
-    window.geometry('1600x800')
-
-    app = App(window)
-    app.pack(expand=YES, fill=BOTH, padx=10, pady=10)
-
-    app.bind('<Configure>', lambda e: print(e.height))
-    app.bind_class('TEntry', '<Return>', lambda _: app.focus_set(), add='+')
-    window.mainloop()
+if __name__ == '__main__':
+    with MainWindow() as w:
+        w.root.mainloop()
