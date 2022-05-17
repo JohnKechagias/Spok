@@ -148,7 +148,7 @@ class TextEditor(ttk.Frame):
         self._text.bind_all('<Control-KeyPress-f>', lambda e: self._open_search(), add='+')
         self._text.bind_all('<Escape>', lambda e: self._close_search(), add='+')
 
-    def load_file(self, path:str):
+    def load_file(self, path: str):
         self.reset()
         with open(path, 'r', encoding='utf-8') as file:
             lines = file.readlines()

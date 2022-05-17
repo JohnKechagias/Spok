@@ -2,7 +2,7 @@ import os
 from ttkbootstrap.validation import validator, ValidationEvent, add_validation
 
 @validator
-def _validate_path(event:ValidationEvent):
+def _validate_path(event: ValidationEvent):
     """Contents is a valid os path."""
     if os.path.exists(event.postchangetext):
         return True
@@ -10,7 +10,7 @@ def _validate_path(event:ValidationEvent):
         return False
 
 @validator
-def _validate_file_type(event:ValidationEvent, filetypes=None):
+def _validate_file_type(event: ValidationEvent, filetypes=None):
     """Contents is a valid os path to a file of a type thats included in `filetypes`"""
 
     fileExtension = event.postchangetext.split('.')[-1]
@@ -21,7 +21,7 @@ def _validate_file_type(event:ValidationEvent, filetypes=None):
         return False
 
 @validator
-def _validate_email(event:ValidationEvent):
+def _validate_email(event: ValidationEvent):
     """Contents is a valid email"""
     if '@' in event.postchangetext and '.' in event.postchangetext:
         return True

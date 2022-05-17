@@ -157,7 +157,7 @@ class CanvasImage(ttk.Frame):
     def get_saved_coordinates(self):
         return (self.saved_x_coord.get(), self.saved_y_coord.get())
 
-    def load_image(self, path:str):
+    def load_image(self, path: str):
         # TODO when the new image loaded is smalled than the current one, the scrollbox
         # is out of bounds
         if self._image is not None:
@@ -360,17 +360,17 @@ class CanvasImage(ttk.Frame):
             self.canvas.lower(image_id)  # Set image into background
             self.canvas.imagetk = image_tk  # Keep an extra reference to prevent garbage-collection
 
-    def _move_from(self, event:tk.Event):
+    def _move_from(self, event: tk.Event):
         """ Remember previous coordinates for scrolling with the mouse """
         self.last_pos = (event.x, event.y)
         self.canvas.scan_mark(event.x, event.y)
 
-    def _move_to(self, event:tk.Event):
+    def _move_to(self, event: tk.Event):
         """ Drag (move) canvas to the new position """
         self.canvas.scan_dragto(event.x, event.y, gain=1)
         self._show_image()  # Zoom tile and show it on the canvas
 
-    def _outside(self, x, y):
+    def _outside(self, x: int, y: int):
         """ Checks if the point (x,y) is outside the image area """
         bbox = self.canvas.coords(self.container)  # Get image area
         if bbox[0] < x < bbox[2] and bbox[1] < y < bbox[3]:
@@ -378,7 +378,7 @@ class CanvasImage(ttk.Frame):
         else:
             return True  # Point (x,y) is outside the image area
 
-    def _wheel(self, event:tk.Event):
+    def _wheel(self, event: tk.Event):
         """ Zoom with mouse wheel """
         x = self.canvas.canvasx(event.x)  # Get coordinates of the event on the canvas
         y = self.canvas.canvasy(event.y)
@@ -413,7 +413,7 @@ class CanvasImage(ttk.Frame):
         self.redraw_figures()  # Method for child classes
         self._show_image()
 
-    def _keystroke(self, event:tk.Event):
+    def _keystroke(self, event: tk.Event):
         """ Scrolling with the keyboard.
             Independent from the language of the keyboard, CapsLock, <Ctrl>+<key>, etc. """
         if event.state - self._previous_state == 4:  # Means that the Control key is pressed
@@ -430,11 +430,11 @@ class CanvasImage(ttk.Frame):
             elif event.keycode in [39, 116, 88]:  # Scroll down: keys 'S', 'Down' or 'Numpad-2'
                 self._scroll_Y('scroll',  1, 'unit', event=event)
 
-    def _save_coordinates(self, event:tk.Event):
+    def _save_coordinates(self, event: tk.Event):
         self.saved_x_coord.set(self.temp_x_coord.get())
         self.saved_y_coord.set(self.temp_y_coord.get())
 
-    def _canvas_coords_to_image_coords(self, x, y):
+    def _canvas_coords_to_image_coords(self, x: int, y: int):
         if self._image_wider_than_canvas:
             x_coord = int(self._curr_center[0] + (x / self.im_scale))
         else:
@@ -447,7 +447,7 @@ class CanvasImage(ttk.Frame):
 
         return (x_coord, y_coord)
 
-    def _motion(self, event:tk.Event):
+    def _motion(self, event: tk.Event):
         x = self.canvas.canvasx(event.x)
         y = self.canvas.canvasy(event.y)
         if self._outside(x, y): return
@@ -456,7 +456,7 @@ class CanvasImage(ttk.Frame):
         self.temp_x_coord.set(temp[0])
         self.temp_y_coord.set(temp[1])
 
-    def crop(self, bbox):
+    def crop(self, bbox: tuple[int, int, int, int]):
         """ Crop rectangle from the image and return it """
         if self._huge:  # Image is huge and not totally in RAM
             band = bbox[3] - bbox[1]  # Width of the tile band

@@ -1,6 +1,7 @@
 from functools import  wraps
 
 import tkinter as tk
+from typing import  Any, Callable
 import ttkbootstrap as ttk
 from ttkbootstrap.constants import *
 
@@ -122,14 +123,14 @@ class DataViewer(ttk.Frame):
         self._tree.bind('<Control-z>', self._undo, add='+')
         self._tree.bind('<u>', self._redo, add='+')
 
-    def _notOnEditMode(func):
+    def _notOnEditMode(func: Callable[[Any], Any]):
         @wraps(func)
         def wrapperFunc(self, *args, **kwargs):
             if not self._edit_mode:
                 return func(self, *args, **kwargs)
         return wrapperFunc
 
-    def load_list(self, item_list:list):
+    def load_list(self, item_list: list):
         for item in item_list:
             self.insert_entry(values=item, save_edit=False)
         # Select top entry
@@ -149,10 +150,10 @@ class DataViewer(ttk.Frame):
     @_notOnEditMode
     def insert_entry(
         self,
-        index:int=END,
-        values:list=None,
-        tags:list|tuple=None,
-        focus:bool=False,
+        index: int = END,
+        values: list = None,
+        tags: list | tuple = None,
+        focus: bool = False,
         save_edit=True
         ) -> str:
         """Insert an item.
@@ -191,7 +192,7 @@ class DataViewer(ttk.Frame):
 
         return entry
 
-    def create_entry(self, event:tk.Event=None):
+    def create_entry(self, event: tk.Event = None):
         """Create a new treeview entry and add it just before the
         entries with a tag"""
         self.insert_entry(self._curr_valid_index, focus=True)
@@ -204,7 +205,7 @@ class DataViewer(ttk.Frame):
         self.delete_entry(entry_to_delete)
 
     @_notOnEditMode
-    def delete_entry(self, entry:str, save_edit=True):
+    def delete_entry(self, entry: str, save_edit=True):
         # Get item index in the tree
         index = int(self._tree.item(entry, 'values')[0]) - 1
 
@@ -240,10 +241,10 @@ class DataViewer(ttk.Frame):
             self._push_edit(['edit', entry, old_values, new_values])
         self._tree.item(entry, values=new_values)
 
-    def _item_selected(self, event:tk.Event=None):
+    def _item_selected(self, event: tk.Event = None):
         pass
 
-    def _enter_edit_mode(self, event:tk.Event=None):
+    def _enter_edit_mode(self, event: tk.Event = None):
         self._edit_mode = True
         self._item_to_edit = self._tree.selection()[0]
         user = self._tree.item(self._item_to_edit)['values']
@@ -251,7 +252,7 @@ class DataViewer(ttk.Frame):
         self._edit_email.set(user[2])
         self._edit_frame.place(relwidth=0.9, anchor=CENTER, relx=0.5, rely=0.5)
 
-    def _leave_edit_mode(self, event:tk.Event=None):
+    def _leave_edit_mode(self, event: tk.Event = None):
         """Save changes and leave edit mode"""
         if not self._edit_mode: return
         new_values = (self._edit_name.get(), self._edit_email.get())
@@ -266,7 +267,7 @@ class DataViewer(ttk.Frame):
             self._edit_frame.place_forget()
 
     @_notOnEditMode
-    def _undo(self, event:tk.Event=None):
+    def _undo(self, event: tk.Event = None):
         """Undo the latest edit"""
         if self.stack_index < 0:
             return
@@ -289,7 +290,7 @@ class DataViewer(ttk.Frame):
         self.stack_index -= 1
 
     @_notOnEditMode
-    def _redo(self, event:tk.Event=None):
+    def _redo(self, event: tk.Event=None):
         """Redo the latest edit"""
         if self.stack_index == len(self.edit_stack) - 1 or self.stack_index < -1:
             return

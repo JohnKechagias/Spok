@@ -54,11 +54,11 @@ class EmailSender:
 
     @staticmethod
     def _create_message(
-        to:str,
-        sender:str,
-        subject:str,
-        body:str,
-        files:list|tuple=None
+        to: str,
+        sender: str,
+        subject: str,
+        body: str,
+        files: list|tuple = None
         ) -> dict:
         mime_message = MIMEMultipart()
         mime_message['to'] = to

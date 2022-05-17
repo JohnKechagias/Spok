@@ -5,11 +5,11 @@ import tkinter as tk
 class ImageButton(tk.Button):
     def __init__(
         self,
-        master:str,
-        default_image:tk.PhotoImage,
-        hover_image:tk.PhotoImage,
-        active_image:tk.PhotoImage=None,
-        background:str='white',
+        master,
+        default_image: tk.PhotoImage,
+        hover_image: tk.PhotoImage,
+        active_image: tk.PhotoImage = None,
+        background: str = '#ffffff',
         *args,
         **kwargs
         ) -> None:
@@ -39,14 +39,14 @@ class ImageButton(tk.Button):
         super().bind('<Button>', self.button)
         super().bind('<ButtonRelease>', self.button_release)
 
-    def enter(self, *args) -> None:
+    def enter(self, event: tk.Event):
         super().configure(image=self.hover_image)
 
-    def leave(self, *args) -> None:
+    def leave(self, event: tk.Event):
         super().configure(image=self.default_image)
 
-    def button(self, *args) -> None:
+    def button(self, event: tk.Event):
         super().configure(image=self.active_image)
 
-    def button_release(self, *args) -> None:
+    def button_release(self, event: tk.Event):
         super().configure(image=self.hover_image)

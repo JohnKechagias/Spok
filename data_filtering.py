@@ -5,7 +5,7 @@ import re
 
 
 
-def split_name_and_email(row:str) -> tuple[str, str]:
+def split_name_and_email(row: str) -> tuple[str, str]:
     """Strips the email from a text
 
     RETURNS
@@ -20,13 +20,13 @@ def split_name_and_email(row:str) -> tuple[str, str]:
     return (' '.join(words), email)
 
 
-def remove_nonspacing_marks(s) -> str:
+def remove_nonspacing_marks(s: str) -> str:
     "Decompose the unicode string s and remove non-spacing marks."
     return ''.join(c for c in unicodedata.normalize('NFKD', s)
                    if unicodedata.category(c) != 'Mn')
 
 
-def txt_to_list(txtPath:str) -> list[tuple[str, str ,str]]:
+def txt_to_list(txtPath: str) -> list[tuple[str, str ,str]]:
     """Convert a txt file to a list. Each row in the txt must contain an email and a name.
     If an entry is missing a name or an email and logging is disabled, it will be deleted
 
@@ -73,7 +73,7 @@ def txt_to_list(txtPath:str) -> list[tuple[str, str ,str]]:
     return users_list
 
 
-def exel_to_list(path:str) -> list[tuple[str, str ,str]]:
+def exel_to_list(path: str) -> list[tuple[str, str ,str]]:
     df = pd.read_excel(
         path,
         usecols=['Email', 'Name'],
@@ -82,7 +82,7 @@ def exel_to_list(path:str) -> list[tuple[str, str ,str]]:
     return dataframe_to_list(df)
 
 
-def csv_to_list(path:str) -> list[tuple[str, str ,str]]:
+def csv_to_list(path: str) -> list[tuple[str, str ,str]]:
     df = pd.read_csv(
         path,
         usecols=['Email', 'Name'],
@@ -91,7 +91,7 @@ def csv_to_list(path:str) -> list[tuple[str, str ,str]]:
     return dataframe_to_list(df)
 
 
-def dataframe_to_list(df:pd.DataFrame) -> list[tuple[str, str ,str]]:
+def dataframe_to_list(df: pd.DataFrame) -> list[tuple[str, str ,str]]:
     df.drop_duplicates(subset=None, keep='first', inplace=True)
     df.sort_values(by=['Name'], inplace=True)
     df.reset_index(drop=True, inplace=True)
@@ -100,13 +100,13 @@ def dataframe_to_list(df:pd.DataFrame) -> list[tuple[str, str ,str]]:
     return user_list
 
 
-def list_to_txt(list:list) -> None:
+def list_to_txt(list: list) -> None:
     with open('userlist.temp', 'w', encoding='utf-8') as file:
         for item in list:
             file.write(f'{item[2]} | {item[0]} {item[1]}\n')
 
 
-def clean_name_email_list(user_list:list) -> list[list[str, str, str]]:
+def clean_name_email_list(user_list: list) -> list[list[str, str, str]]:
     flag_error_index = 0
     # True if the the exact item is already in the list
     duplicate = False
@@ -147,7 +147,7 @@ def clean_name_email_list(user_list:list) -> list[list[str, str, str]]:
     return clean_user_list
 
 
-def clean_name(name:str) -> str:
+def clean_name(name: str) -> str:
     name = name.translate(str.maketrans('', '', ')(!\'\":@#$.,')).upper()
     name = name.replace('\n', '').replace('\t', ' ').replace('-', ' ').strip()
     name = remove_nonspacing_marks(name)
@@ -155,7 +155,7 @@ def clean_name(name:str) -> str:
     return name
 
 
-def clean_email(email:str)-> str:
+def clean_email(email: str)-> str:
     email = email.translate(str.maketrans('', '', ')(\'\"')).strip()
     return email
 

@@ -32,7 +32,7 @@ from configparser import ConfigParser
 
 
 class FontSelector(ttk.Frame):
-    def __init__(self, master:Misc, font:ttk.font.Font=None) -> None:
+    def __init__(self, master: Misc, font: ttk.font.Font = None) -> None:
         super().__init__(master)
         self.font_dialog = FontDialog(parent=master.master, title='Font Selection')
         self.show_button = ttk.Button(self, bootstyle=DARK)
@@ -117,7 +117,7 @@ class FontSelector(ttk.Frame):
 class FontSizeSelector(ttk.Meter):
     def __init__(
         self,
-        master:Misc,
+        master: Misc,
         fontsize=25,
         maxfontsize=50,
         *args,
@@ -156,7 +156,7 @@ class FontSizeSelector(ttk.Meter):
         if new_value >= 0:
             self.configure(amountused=new_value)
 
-    def _wheelScroll(self, event:tk.Event):
+    def _wheelScroll(self, event: tk.Event):
         # Respond to Linux (event.num) or Windows (event.delta) wheel event
         if event.num == 4 or event.delta == 120: # Scroll up
             self._increment_meter()
@@ -646,7 +646,7 @@ class App(ttk.Frame):
         with open('config.ini', 'w') as configfile:
             config.write(configfile)
 
-    def notebook_tab_changed(self, event:tk.Event):
+    def notebook_tab_changed(self, event: tk.Event):
         tab = event.widget.tab(CURRENT)['text']
 
         if tab == 'Info File':
@@ -702,12 +702,12 @@ class App(ttk.Frame):
         # Switch to DataViewer tab
         self.file_manager_notebook.select(1)
 
-    def load_file(self, path:str, *_):
+    def load_file(self, path: str, *_):
         """Load text file in the Text editor widget"""
         if os.path.exists(path):
             self.filemanager_children['Info File'].load_file(path)
 
-    def load_image(self, path:str, *_):
+    def load_image(self, path: str, *_):
         """Load image in the canvas widget"""
         # If the user closes the gui before selecting
         # a file, the path will be empty

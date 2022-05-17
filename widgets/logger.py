@@ -18,7 +18,7 @@ class Logger(ttk.Frame):
         master,
         padding=0,
         timestamp=True,
-        log_level:LogLevel=LogLevel.INFO,
+        log_level: LogLevel = LogLevel.INFO,
         scrollbar_bootstyle=DEFAULT,
         vbar=True,
         hbar=False,
@@ -170,7 +170,13 @@ class Logger(ttk.Frame):
 
         self.log('LOGGER INITIALIZED', log_level=LogLevel.INFO, newline=False)
 
-    def log(self, title:str, message:str=None, log_level:LogLevel=LogLevel.INFO, newline=True):
+    def log(
+        self,
+        title: str,
+        message: str = None,
+        log_level: LogLevel = LogLevel.INFO,
+        newline=True
+        ):
         """Log a message. Each message has a logLevel assosiated
         with it.
 

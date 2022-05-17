@@ -42,8 +42,8 @@ class CText(tk.Text):
         # Rename the main tcl command (cText) to cText_orig
         # !!!ATTENTION!!!
         # We don't rename the var self._w, but the command thats named after self._w
-        self._orig = self._w + "_orig"
-        self.tk.call("rename", self._w, self._orig)
+        self._orig = self._w + '_orig'
+        self.tk.call('rename', self._w, self._orig)
         # Create a proxy command and give it the same name as the one of the old
         #  command (cText), so that, when an event happens, the new proxy func is called.
         self.tk.createcommand(self._w, self._proxy)
@@ -59,14 +59,14 @@ class CText(tk.Text):
 
         # Generate an event if something was added or deleted,
         # or the cursor position changed
-        if (args[0] in ("insert", "replace", "delete") or
-            args[0:3] == ("mark", "set", "insert") or
-            args[0:2] == ("xview", "moveto") or
-            args[0:2] == ("xview", "scroll") or
-            args[0:2] == ("yview", "moveto") or
-            args[0:2] == ("yview", "scroll")
+        if (args[0] in ('insert', 'replace', 'delete') or
+            args[0:3] == ('mark', 'set', 'insert') or
+            args[0:2] == ('xview', 'moveto') or
+            args[0:2] == ('xview', 'scroll') or
+            args[0:2] == ('yview', 'moveto') or
+            args[0:2] == ('yview', 'scroll')
         ):
-            self.event_generate("<<TextChanged>>", when="tail")
+            self.event_generate('<<TextChanged>>', when='tail')
 
         # Return what the actual widget returned
         return result

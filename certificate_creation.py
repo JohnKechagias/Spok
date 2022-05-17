@@ -17,13 +17,13 @@ class CertificateCreator:
     """Class used in creating certificates. Can also log actions."""
     def __init__(
         self,
-        image_path:str,
-        output_folder_path:str,
+        image_path: str,
+        output_folder_path: str,
         font,
-        font_color:tuple,
-        image_coords:tuple,
-        word_position:str,
-        compress_level:int,
+        font_color: tuple[int, int, int],
+        image_coords: tuple,
+        word_position: str,
+        compress_level: int,
         log_func
         ) -> None:
         """
@@ -48,9 +48,9 @@ class CertificateCreator:
 
     def create_certificates_from_list(
         self,
-        lock:threading.Lock,
-        progress_var:IntVar,
-        item_list:list,
+        lock: threading.Lock,
+        progress_var: IntVar,
+        item_list: list,
         cleanup_func=None
         ):
         """Create a certificate for each item in a list
@@ -91,14 +91,14 @@ class CertificateCreator:
 
     @staticmethod
     def create_certificate(
-        image:Image.Image,
-        coords:tuple,
+        image: Image.Image,
+        coords: tuple[int, int],
         font,
-        font_color:tuple,
-        anchor:str,
-        align:str,
-        compress_level:int,
-        entry_info:tuple
+        font_color: tuple[int, int, int],
+        anchor: str,
+        align: str,
+        compress_level: int,
+        entry_info: tuple[int, str, str]
         ) -> tuple[str, str, str]:
         # NEED to have a temp copy of image, else the base template
         # is going to get replaced!!
