@@ -106,7 +106,11 @@ def list_to_txt(list: list) -> None:
             file.write(f'{item[2]} | {item[0]} {item[1]}\n')
 
 
-def clean_name_email_list(user_list: list) -> list[list[str, str, str]]:
+def clean_name_email_list(
+    user_list: list[list[str]],
+    check_for_name_duplicates=True,
+    check_for_email_duplicates=False
+    ) -> list[list[str, str, str]]:
     flag_error_index = 0
     # True if the the exact item is already in the list
     duplicate = False
@@ -126,11 +130,12 @@ def clean_name_email_list(user_list: list) -> list[list[str, str, str]]:
                 duplicate = True
                 break
 
-            if name == user[0]:
+            if check_for_name_duplicates and name == user[0]:
                 flags = flags.join(f'-E{flag_error_index}')
                 user[2] = user[2].join(f'-E{flag_error_index}')
                 flag_error_index += 1
-            elif email == user[1]:
+
+            elif check_for_email_duplicates and email == user[1]:
                 flags = flags.join(f'-N{flag_error_index}')
                 user[2] = user[2].join(f'-N{flag_error_index}')
                 flag_error_index += 1

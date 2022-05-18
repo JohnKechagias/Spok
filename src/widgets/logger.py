@@ -1,3 +1,4 @@
+from pathlib import Path
 import time
 
 import tkinter as tk
@@ -149,7 +150,8 @@ class Logger(ttk.Frame):
         self._find_entry.pack(side=LEFT, pady=2, padx=(10, 4))
 
         # Import the image using PhotoImage function
-        self._find_button_img= ttk.PhotoImage(file='assets/x.png')
+        assets_path = Path(__file__).parent.parent.parent / 'assets'
+        self._find_button_img= ttk.PhotoImage(file=assets_path / 'x.png')
 
         self._find_close_button = tk.Button(
             self._find_frame,

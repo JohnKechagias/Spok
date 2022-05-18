@@ -1,3 +1,4 @@
+from pathlib import Path
 import tkinter as tk
 import ttkbootstrap as ttk
 from ttkbootstrap.constants import *
@@ -130,7 +131,8 @@ class TextEditor(ttk.Frame):
         self._find_entry.pack(side=LEFT, pady=2, padx=(10, 4))
 
         # Import the image using PhotoImage function
-        self._find_img= ttk.PhotoImage(file='assets/x.png')
+        assets_path = Path(__file__).parent.parent.parent / 'assets'
+        self._find_img= ttk.PhotoImage(file=assets_path / 'x.png')
 
         self._find_close_button = tk.Button(
             self._find_frame,
