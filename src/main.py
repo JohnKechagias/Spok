@@ -1,6 +1,8 @@
 import os
 import threading
+import multiprocessing as mp
 from pathlib import Path
+from functools import partial
 
 import tkinter as tk
 from tkinter import Misc, filedialog as fd
@@ -8,7 +10,7 @@ from tkinter.font import ROMAN
 
 import ttkbootstrap as ttk
 from ttkbootstrap.constants import *
-from ttkbootstrap.dialogs.dialogs import FontDialog
+from ttkbootstrap.dialogs.dialogs import FontDialog, Messagebox
 
 from certificate_creation import CertificateCreator
 from email_sender import EmailSender
@@ -414,7 +416,6 @@ class EmailInput(ttk.Labelframe):
         self.send_emails_button.grid(row=3, rowspan=2, column=2, sticky=E)
 
 
-
 class MainWindow(object):
     def __init__(self, *args, **kwargs):
         self.root = ttk.Window(
@@ -443,6 +444,7 @@ class App(ttk.Frame):
         super().__init__(master)
 
         self.base_dir = Path(__file__).parent.parent
+        self.created_certificates = False
 
         self.rowconfigure(2, weight=1)
         self.columnconfigure(0, weight=1, minsize=450)
@@ -752,40 +754,78 @@ class App(ttk.Frame):
             output_folder_path='certificates',
             font=font,
             font_color=self.font_configuration.get_font_color(),
-            #font_color = tuple(self.font_configuration.color_selector.get_color_tuple()),
             image_coords=self.image_viewer.get_saved_coords(),
-            word_position=MIDDLE,
+            word_position=self.image_viewer.text_alignment_combobox.get(),
             compress_level=3,
-            #logging=self.certificate_options.logging.get(),
             log_func = self.logger.log
         )
 
         if self.certificate_options.test_mode.get():
-            entries_list = [('x', 'John Kechagias', 'what@gmail.com')]
+            entries_list = [('x', 'Name Surname', 'what@gmail.com')]
         else:
             entries_list = self.filemanager_children['Name List'].get_list_of_entries()
 
+        self.created_certificates = True
         self.initialize_progressbar(len(entries_list))
 
         lock = threading.Lock()
-        x = threading.Thread(
+        independent_thread = threading.Thread(
             target=certificate_creator.create_certificates_from_list,
             args=(lock, self.progressbar_var, entries_list, self.hide_progressbar),
             daemon=True
         )
-        x.start()
+        independent_thread.start()
+
+    @staticmethod
+    def create_message(sender, subject, body, create_message, user: tuple[str, str, str]):
+            certificate_path = Path('certificates') / str(user[1].replace(' ', '_') + '.png')
+            message = create_message(user[2], sender, subject, body, files=[certificate_path])
+            return (user[0], message)
 
     def send_emails(self):
-        userlist = self.data_viewer.get_list_of_entries()
-        sender = 'minecraft18211821@gmail.com'
-        to = 'johnnyjictest@gmail.com'
-        email =self.email_creator.get_email()
+        email_sender = EmailSender()
+        email_sender.initialize_service()
+
+        sender = self.emailing_options.real_email_entry.get()
+        email = self.email_creator.get_email()
         subject = email['subject']
         body = email['body']
 
-        email_sender = EmailSender()
-        email_sender.initialize_service()
-        email_sender.send_email(to, sender, subject, body)
+        if self.emailing_options.test_mode.get():
+            sender = self.emailing_options.test_email_entry.get()
+        else:
+            sender = self.emailing_options.real_email_entry.get()
+
+        if self.emailing_options.personal_email.get():
+            to = email['to']
+            email_sender.send_email(to, sender, subject, body)
+            return
+
+        if not self.created_certificates:
+            Messagebox.show_warning(
+                title='Certificate Emailing',
+                message='Haven\'t Created Certificates!'
+            )
+            return
+
+        func = partial(App.create_message, sender, subject, body, email_sender.create_message)
+        userlist = self.data_viewer.get_list_of_entries()
+
+        self.initialize_progressbar(len(userlist))
+        pool = mp.Pool(processes=5)
+        message_list = pool.imap(
+            func,
+            userlist,
+            chunksize=15
+        )
+
+        for message in message_list:
+            email_sender.send_message(message[1])
+            self.progressbar_var.set(self.progressbar_var.get() + 1)
+
+        self.hide_progressbar()
+        pool.close()
+        pool.join()
 
 
 if __name__ == '__main__':
