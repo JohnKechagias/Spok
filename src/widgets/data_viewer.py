@@ -137,7 +137,7 @@ class DataViewer(ttk.Frame):
         self._clear_treeview_selection()
         self._tree.selection_add(self._tree.get_children()[0])
 
-    def get_list_of_entries(self) -> tuple:
+    def get_list_of_entries(self) -> list:
         values = []
         for entry in self._tree.get_children():
             entry_tags = self._tree.item(entry, 'tags')
@@ -145,7 +145,7 @@ class DataViewer(ttk.Frame):
             if len(entry_tags) == 0 or entry_tags is None:
                 entry_values = self._tree.item(entry, 'values')
                 values.append(entry_values)
-        return tuple(values)
+        return values
 
     @_notOnEditMode
     def insert_entry(
@@ -156,7 +156,7 @@ class DataViewer(ttk.Frame):
         focus: bool = False,
         save_edit=True
         ) -> str:
-        """Insert an item.
+        """ Insert an item.
 
         POSSIBLE TAGS
 

@@ -19,7 +19,7 @@ class TextEditor(ttk.Frame):
         vbar=True,
         hbar=False,
         **kwargs,
-    ):
+    ) -> None:
         super().__init__(master, padding=padding)
 
         self.rowconfigure(0, weight=1)
@@ -147,44 +147,82 @@ class TextEditor(ttk.Frame):
             command=self._close_search)
         self._find_close_button.pack(side=LEFT, expand=NO, pady=2, padx=(0, 4))
 
-        self._text.bind_all('<Control-KeyPress-f>', lambda e: self._open_search(), add='+')
-        self._text.bind_all('<Escape>', lambda e: self._close_search(), add='+')
+        self._text.bind('<Control-KeyPress-f>', self._open_search, add='+')
+        self._text.bind('<Escape>', self._close_search, add='+')
+
+    @property
+    def vbar(self):
+        """ Get vertical scrollbar. """
+        return self._vbar
+
+    @property
+    def hbar(self):
+        """ Get horizontal scrollbar. """
+        return self._hbar
 
     def load_file(self, path: str):
+        """ Load a txt file to the TextEditor. """
         self.reset()
         with open(path, 'r', encoding='utf-8') as file:
             lines = file.readlines()
             for row in lines:
                 self._text.insert(END, row)
 
-    def _open_search(self):
-        self._find_frame.place(relx=0.98, rely=0, anchor=NE, bordermode=OUTSIDE)
-        self._search_open = True
-
-    def _close_search(self):
-        self._find_frame.place_forget()
-        self._search_open = False
-
     def reset(self):
+        """ Reset TextEditor. Remove text and reset variables. """
         # Remove selected background from the last selected line
-        self._numbered_text.tag_remove('tag_selected', f'{self._last_line_index}.0', f'{self._last_line_index}.end')
-        self._text.tag_remove('tag_selected', f'{self._last_line_index}.0', f'{self._last_line_index}.0+1lines')
+        self._numbered_text.tag_remove(
+            'tag_selected',
+            f'{self._last_line_index}.0',
+            f'{self._last_line_index}.end'
+        )
+        self._text.tag_remove(
+            'tag_selected',
+            f'{self._last_line_index}.0',
+            f'{self._last_line_index}.0+1lines'
+        )
         self._last_line_index = 0
         # Clean text
         self._text.delete('1.0', END)
 
+    def _open_search(self, event: tk.Event = None):
+        """ Open search box. """
+        self._find_frame.place(relx=0.98, rely=0, anchor=NE, bordermode=OUTSIDE)
+        self._search_open = True
+
+    def _close_search(self, event: tk.Event = None):
+        """ Close search box. """
+        self._find_frame.place_forget()
+        self._search_open = False
+
     def _on_change(self, *_):
         new_num_of_lines = self._text.count('1.0', END, 'displaylines')[0]
-        self._numbered_text.set_num_of_lines(new_num_of_lines)
+        self._numbered_text.num_of_lines = new_num_of_lines
         # Remove selected background from the last selected line
-        self._numbered_text.tag_remove('tag_selected', f'{self._last_line_index}.0', f'{self._last_line_index}.end')
-        self._text.tag_remove('tag_selected', f'{self._last_line_index}.0', f'{self._last_line_index}.0+1lines')
+        self._numbered_text.tag_remove(
+            'tag_selected',
+            f'{self._last_line_index}.0',
+            f'{self._last_line_index}.end'
+        )
+        self._text.tag_remove(
+            'tag_selected',
+            f'{self._last_line_index}.0',
+            f'{self._last_line_index}.0+1lines'
+        )
         # Get current line row index
         cur_row = self._text.index('insert').split('.')[0]
         self._last_line_index = cur_row
         # Set background of currently selected line
-        self._numbered_text.tag_add('tag_selected', f'{cur_row}.0', f'{cur_row}.0+1lines')
-        self._text.tag_add('tag_selected', f'{cur_row}.0', f'{cur_row}.0+1lines')
+        self._numbered_text.tag_add(
+            'tag_selected',
+            f'{cur_row}.0',
+            f'{cur_row}.0+1lines'
+        )
+        self._text.tag_add(
+            'tag_selected',
+            f'{cur_row}.0',
+            f'{cur_row}.0+1lines'
+        )
 
     def _scroll_both(self, action, position):
         self._text.yview_moveto(position)

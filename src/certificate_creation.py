@@ -1,4 +1,5 @@
 from functools import partial
+from pathlib import Path
 from time import sleep
 
 import multiprocessing as mp
@@ -14,7 +15,7 @@ NUMBER_OF_PROCESSES = mp.cpu_count() - 1
 
 
 class CertificateCreator:
-    """Class used in creating certificates. Can also log actions."""
+    """Used in creating certificates. Can also log actions."""
     def __init__(
         self,
         image_path: str,
@@ -26,9 +27,7 @@ class CertificateCreator:
         compress_level: int,
         log_func
         ) -> None:
-        """
-        Create a CertificateCreator instanse
-        """
+        """Create a CertificateCreator instanse."""
         self.image = Image.open(image_path)
         self.output_folder_path = output_folder_path
         self.font = font
@@ -53,11 +52,11 @@ class CertificateCreator:
         item_list: list,
         cleanup_func=None
         ):
-        """Create a certificate for each item in a list
+        """
+        Create a certificate for each item in a list.
 
         Args:
             Each item is a tuple (item_index, name, email)
-
         """
         func = partial(
             CertificateCreator.create_certificate,
@@ -116,7 +115,7 @@ class CertificateCreator:
         # Save the edited image
         name = entry_info[1].replace(' ', '_')
         image_name = f'{name}.png'
-        image_location = f'certificates/{image_name}'
+        image_location = Path('certificates') / image_name
         image_copy.save(image_location, format='png', compress_level=compress_level)
         return entry_info
 

@@ -9,6 +9,7 @@ from ttkbootstrap.constants import *
 
 class ColorSelector(ttk.Frame):
     def __init__(self, master=None, color: tuple[int, int, int] = None):
+        """ Initialize `ColorSelector` widget. """
         super().__init__(master)
 
         if color is None:
@@ -51,7 +52,7 @@ class ColorSelector(ttk.Frame):
             channel['value'].trace_add('write',
                 partial(self.update_color_value, channel_name))
             channel['entry'].bind('<Any-KeyPress>',
-                partial(self._keys_pressed, channel['value']), add='+')
+                partial(self._on_key_pressed, channel['value']), add='+')
 
         colored_button_frame = ttk.Frame(master=self, border=3, bootstyle=DARK)
         colored_button_frame.pack(fill=BOTH, expand=YES, pady=10)
@@ -68,15 +69,16 @@ class ColorSelector(ttk.Frame):
             highlightthickness=0
         )
         self.colored_button.pack(side=TOP, expand=YES, fill=X)
-        self.colored_button.bind('<Button-1>', self._colored_button_clicked, add='+')
+        self.colored_button.bind('<Button-1>', self._on_colored_button_clicked, add='+')
 
     @staticmethod
     def from_RGB(rgb: tuple[int, int, int]) -> str:
-        """translates an rgb tuple of int to a tkinter friendly color code"""
+        """ Translate an rgb tuple of int to a tkinter friendly color code. """
         r, g, b = rgb
         return f'#{r:02x}{g:02x}{b:02x}'
 
     def update_color_value(self, color: str, *_):
+        """ Round color channel value and update buttons background. """
         # Normalize and update color value
         if self.update_in_progress == True: return
         try:
@@ -93,8 +95,8 @@ class ColorSelector(ttk.Frame):
         self.update_in_progress = False
 
     def update_button_bg(self):
-        """Set button background to be the same as the color that the
-        user has selected"""
+        """ Set button background to be the same as the color that the
+            user has selected. """
         # Sum of RGB channel values
         sum_of_color_values = sum(self.get_color_tuple())
         color_code = self.get_color_code()
@@ -116,20 +118,24 @@ class ColorSelector(ttk.Frame):
         )
 
     def get_color_tuple(self) -> tuple[str, str, str]:
+        """ Return color in RGB form. """
         return (i['value'].get() for i in self.color.values())
 
     def get_color_code(self) -> str:
+        """ Return color in Hex form. """
         color_RGB_tuple = self.get_color_tuple()
         return self.from_RGB(color_RGB_tuple)
 
     def set_color(self, color: tuple[int, int, int] | str):
+        """ Set `color`. """
         if isinstance(color, str):
             color = tuple(int(color[i:i+2], 16) for i in (0, 2, 4))
 
         for i, channel in enumerate(self.color.values()):
             channel['value'].set(color[i])
 
-    def _keys_pressed(top_widget, entry_text_var, event: tk.Event):
+    def _on_key_pressed(top_widget, entry_text_var, event: tk.Event):
+        """ Handles key presses from user. """
         min_value = 0
         max_value = 255
 
@@ -150,5 +156,6 @@ class ColorSelector(ttk.Frame):
                 if value >= min_value:
                     entry_text_var.set(value)
 
-    def _colored_button_clicked(self, *args):
+    def _on_colored_button_clicked(self, *args):
+        """ Paste the colors hex code into the clipboard. """
         clipboard.copy(self.get_color_code())

@@ -1,17 +1,16 @@
 
-def containToRange(range: tuple, num: int) -> int:
-    """Checks if num is inside the range and returns the
-    lowest possible number x where `num + x` is inside the range.
+def containToRange(range: tuple[int, int], num: int) -> int:
+    """
+    Checks if num is inside the range and returns the
+    lowest possible number `x` where `num + x` is inside the range.
 
-    Parameters:
-
+    Args:
         range (tuple):
-            (lowerLimit:int, upperLimit:int) the range to check in
-
-        num (int): the number to check if x is in range
+            (lowerLimit, upperLimit): the range to check in.
+            num: the number to check if x is in range.
 
     Returns:
-        int: x
+        int: `x`
     """
     downLim =  range[0] - num
     upperLim = range[1] - num

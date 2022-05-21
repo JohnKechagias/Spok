@@ -4,8 +4,8 @@ from ttkbootstrap.constants import *
 
 
 class CText(tk.Text):
-    """Text widget which generates an event '<<TextChanged>>' whenever
-    the text is modified or the view is changed.
+    """ Text widget which generates an event '<<TextChanged>>' whenever
+        the text is modified or the view is changed.
 
     STANDARD OPTIONS
 
@@ -73,8 +73,8 @@ class CText(tk.Text):
 
 
 class NumberedText(tk.Text):
-    """Text widget where each line is a number. Numbers are
-    sorted in ascending order.
+    """ Text widget where each line is a number. Numbers are
+        sorted in ascending order.
 
     STANDARD OPTIONS
 
@@ -102,12 +102,20 @@ class NumberedText(tk.Text):
         self.tag_configure('tag_right', justify=RIGHT)
         self._num_of_lines = 0
 
-    def set_num_of_lines(self, new_num_of_lines):
+    @property
+    def num_of_lines(self):
+        """ Get number of lines. """
+        return self._num_of_lines
+
+    @num_of_lines.setter
+    def num_of_lines(self, new_num_of_lines):
+        """ Set `num_of_lines`. """
         if self._num_of_lines != new_num_of_lines:
             self._num_of_lines = new_num_of_lines
-            self._recalculate_numbers()
+            self._update_row_indexes()
 
-    def _recalculate_numbers(self):
+    def _update_row_indexes(self):
+        """ Update each rows index number. """
         self.configure(state=NORMAL)
         # Clear all indexes
         self.delete('1.0', END)
