@@ -1,12 +1,13 @@
 import os
 import base64
+from typing import List, Optional
 
-from email import encoders
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.base import MIMEBase
 from email.mime.image import MIMEImage
 from email.mime.audio import MIMEAudio
+from email.mime.application import MIMEApplication
 import mimetypes
 import google_service
 
@@ -14,7 +15,7 @@ import google_service
 CLIENT_SECRET_FILE = 'client_secret.json'
 API_NAME = 'gmail'
 API_VERSION = 'v1'
-SCOPES = ['https://mail.google.com/']
+SCOPES = ['https://www.googleapis.com/auth/gmail.send']
 USER_ID = 'me'
 
 
@@ -36,16 +37,18 @@ class EmailSender:
 
     @classmethod
     def send_email(cls, to, sender, subject, body, files=None) -> None:
-        msg = EmailSender._create_message(to, sender, subject, body, files)
-        EmailSender._send_message(cls.service, msg)
+        msg = EmailSender.create_message(to, sender, subject, body, files)
+        EmailSender.send_message(cls.service, msg)
 
-    @staticmethod
-    def _send_message(service, message):
-        """Sends the provided message. If the sending was succesful
-        it prints the message ID"""
+    @classmethod
+    def send_message(cls, message):
+        """
+        Send the provided message. If the sending was succesful,
+        print the message ID.
+        """
 
         try:
-            message = service.users().messages().send(userId=USER_ID, body=message).execute()
+            message = cls.service.users().messages().send(userId=USER_ID, body=message).execute()
             print('message ID: {}'.format(message['id']))
             return message
         except Exception as e:
@@ -53,58 +56,86 @@ class EmailSender:
             return None
 
     @staticmethod
-    def _create_message(
-        to: str,
+    def create_message(
         sender: str,
+        to: str,
         subject: str,
         body: str,
-        files: list|tuple = None
-        ) -> dict:
-        mime_message = MIMEMultipart()
-        mime_message['to'] = to
-        mime_message['from'] = sender
-        mime_message['subject'] = subject
-        mime_message.attach(MIMEText(body, 'html'))
+        attachments: Optional[List[str]] = None
+    ) -> dict:
+        """
+        Creates the raw email message to be sent.
 
-        if files is None:
-            files = []
+        Args:
+            sender: The email address the message is being sent from.
+            to: The email address the message is being sent to.
+            subject: The subject line of the email.
+            msg_html: The HTML message of the email.
+            msg_plain: The plain text alternate message of the email (for slow
+                or old browsers).
+            cc: The list of email addresses to be Cc'd.
+            bcc: The list of email addresses to be Bcc'd
+            attachments: A list of attachment file paths.
+            signature: Whether the account signature should be added to the
+                message. Will add the signature to your HTML message only, or a
+                create a HTML message if none exists.
 
-        for attachment in files:
-            (contenttype, encoding) = mimetypes.guess_type(attachment)
+        Returns:
+            The message dict.
 
-            if contenttype is None or encoding is not None:
-                contenttype = 'application/octet-stream'
+        """
 
-            (maintype, subtype) = contenttype.split('/', 1)
-            filename = os.path.basename(attachment)
-            print(maintype, subtype)
+        msg = MIMEMultipart()
+        msg['to'] = to
+        msg['from'] = sender
+        msg['subject'] = subject
+        msg.attach(MIMEText(body, 'html'))
 
-            if maintype == 'text':
-                with open(attachment, 'rb') as f:
-                    msg = MIMEText(f.read().decode('utf-8'), _subtype=subtype)
-            elif maintype == 'image':
+        if attachments:
+            EmailSender._add_attachments(msg, attachments)
 
-                with open(attachment, 'rb') as f:
-                    msg = MIMEImage(f.read(), _subtype=subtype)
-            elif maintype == 'audio':
-
-                with open(attachment, 'rb') as f:
-                    msg = MIMEAudio(f.read(), _subtype=subtype)
-
-            elif maintype=='application' and subtype=='pdf':
-                # Open the file in binary
-                binary_pdf = open(attachment, 'rb')
-                msg = MIMEBase('application', 'octate-stream', Name=attachment)
-                msg.set_payload((binary_pdf).read())
-                encoders.encode_base64(msg)
-
-            else:
-                with open(attachment, 'rb') as f:
-                    msg = MIMEBase(maintype, subtype)
-                    msg.set_payload(f.read())
-
-            msg.add_header('Content-Disposition', 'attachment', filename=filename)
-            mime_message.attach(msg)
-
-        rawMsg = base64.urlsafe_b64encode(mime_message.as_string().encode('utf-8'))
+        rawMsg = base64.urlsafe_b64encode(
+            msg.as_string().encode('utf-8'))
         return {'raw': rawMsg.decode('utf-8')}
+
+    @staticmethod
+    def _add_attachments(
+        msg: MIMEMultipart,
+        attachments: List[str]
+    ) -> None:
+        """
+        Converts attachment filepaths to MIME objects and adds them to msg.
+
+        Args:
+            msg: The message to add attachments to.
+            attachments: A list of attachment file paths.
+
+        """
+
+        for attachment in attachments:
+            content_type, encoding = mimetypes.guess_type(attachment)
+
+            if content_type is None or encoding is not None:
+                content_type = 'application/octet-stream'
+
+            main_type, sub_type = content_type.split('/', 1)
+            filename = os.path.basename(attachment)
+
+            with open(attachment, 'rb') as file:
+                raw_data = file.read()
+
+                attm : MIMEBase
+                if main_type == 'text':
+                    attm = MIMEText(raw_data.decode('utf-8'), _subtype=sub_type)
+                elif main_type == 'image':
+                    attm = MIMEImage(raw_data, _subtype=sub_type)
+                elif main_type == 'audio':
+                    attm = MIMEAudio(raw_data, _subtype=sub_type)
+                elif main_type == 'application':
+                    attm = MIMEApplication(raw_data, _subtype=sub_type)
+                else:
+                    attm = MIMEBase(main_type, sub_type)
+                    attm.set_payload(raw_data)
+
+            attm.add_header('Content-Disposition', 'attachment', filename=filename)
+            msg.attach(attm)

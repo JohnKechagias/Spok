@@ -1,4 +1,5 @@
 import os
+from typing import Any
 from urllib.error import HTTPError
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
@@ -7,7 +8,8 @@ from google.oauth2.credentials import Credentials
 
 
 
-def create_service(client_secret_file, api_name, api_version, *scopes):
+def create_service(client_secret_file, api_name, api_version, *scopes) -> Any:
+    """Create a service based on a user token."""
     CLIENT_SECRET_FILE = client_secret_file
     API_SERVICE_NAME = api_name
     API_VERSION = api_version
@@ -18,7 +20,7 @@ def create_service(client_secret_file, api_name, api_version, *scopes):
     # created automatically when the authorization flow completes for the first
     # time.
     if os.path.exists('token.json'):
-        creds = Credentials.from_authorized_user_file('token.json', SCOPES)
+        creds: Credentials = Credentials.from_authorized_user_file('token.json', SCOPES)
     # If there are no (valid) credentials available, let the user log in.
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
