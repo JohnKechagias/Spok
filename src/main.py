@@ -778,13 +778,18 @@ class App(ttk.Frame):
 
     @staticmethod
     def create_message(sender, subject, body, create_message, user: tuple[str, str, str]):
-            certificate_path = Path('certificates') / str(user[1].replace(' ', '_') + '.png')
-            message = create_message(user[2], sender, subject, body, files=[certificate_path])
-            return (user[0], message)
+        certificate_path = Path('certificates') / str(user[1].replace(' ', '_') + '.png')
+        message = create_message(
+            sender=sender,
+            to=user[2],
+            subject=subject,
+            msg_html=body,
+            attachments=[certificate_path]
+        )
+        return (user[0], message)
 
     def send_emails(self):
         email_sender = EmailSender()
-        email_sender.initialize_service()
 
         sender = self.emailing_options.real_email_entry.get()
         email = self.email_creator.get_email()
