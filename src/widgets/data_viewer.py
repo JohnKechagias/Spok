@@ -317,6 +317,8 @@ class DataViewer(ttk.Frame):
             entry = self.insert_entry(edit[2], values, tags, save_edit=False)
             # Because we insert a new entry, the entrys ID has
             # changed, so we need to update it
+            self._clear_treeview_selection()
+            self._tree.selection_add(entry)
             edit[1] = entry
         elif edit[0] == 'edit':
             values = list(edit[2])
