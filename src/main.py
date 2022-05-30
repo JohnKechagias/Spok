@@ -7,6 +7,7 @@ from functools import partial
 import tkinter as tk
 from tkinter import Misc, filedialog as fd
 from tkinter.font import ROMAN
+from typing import Any, Callable, List, Optional
 
 import ttkbootstrap as ttk
 from ttkbootstrap.constants import *
@@ -24,6 +25,8 @@ from widgets.placeholder_entry import PlaceholderEntry
 from widgets.text_editor import TextEditor
 from widgets.image_button import ImageButton
 from widgets.constants import *
+
+from googleapiclient.errors import HttpError
 
 import validators
 import data_filtering
@@ -459,7 +462,7 @@ class App(ttk.Frame):
         raw_template_path = config.get('certificateCreation', 'defaultTemplate')
         raw_userlist_path = config.get('certificateCreation', 'defaultUserlist')
         cc_test_mode = config.getboolean('certificateCreation', 'testMode')
-        logging   = config.getboolean('certificateCreation', 'logging')
+        logging = config.getboolean('certificateCreation', 'logging')
 
         text_color = config.get('certificate', 'color')
         text_font  = config.get('certificate', 'font')
@@ -741,13 +744,14 @@ class App(ttk.Frame):
         self.progressbar.grid(row=1, column=0, columnspan=3, sticky=EW, pady=6)
 
     def hide_progressbar(self):
-        """Replace the progressbar with a seperator."""
+        """Hide the progressbar and replace it with a seperator."""
         self.progressbar.grid_forget()
         self.seperator.grid(row=1, column=0, columnspan=3, sticky=EW, pady=6)
 
     def create_certificates(self):
         font_path = self.base_dir / f'fonts/{self.text_font}'
-        font = ImageFont.truetype('fonts/roboto-Regular.ttf', 50)
+        font_size = self.font_configuration.get_font_size()
+        font = ImageFont.truetype('fonts/roboto-Regular.ttf', font_size)
 
         certificate_creator = CertificateCreator(
             image_path=self.certificate_options.image_path.get(),
@@ -763,30 +767,20 @@ class App(ttk.Frame):
         if self.certificate_options.test_mode.get():
             entries_list = [('x', 'Name Surname', 'what@gmail.com')]
         else:
-            entries_list = self.filemanager_children['Name List'].get_list_of_entries()
+            entries_list = self.data_viewer.get_list_of_valid_entries()
 
         self.created_certificates = True
         self.initialize_progressbar(len(entries_list))
 
         lock = threading.Lock()
-        independent_thread = threading.Thread(
-            target=certificate_creator.create_certificates_from_list,
-            args=(lock, self.progressbar_var, entries_list, self.hide_progressbar),
-            daemon=True
+        App.launch_independent_tread(
+            certificate_creator.create_certificates_from_list,
+            lock,
+            self.progressbar_var,
+            entries_list,
+            self.hide_progressbar
         )
-        independent_thread.start()
 
-    @staticmethod
-    def create_message(sender, subject, body, create_message, user: tuple[str, str, str]):
-        certificate_path = Path('certificates') / str(user[1].replace(' ', '_') + '.png')
-        message = create_message(
-            sender=sender,
-            to=user[2],
-            subject=subject,
-            msg_html=body,
-            attachments=[certificate_path]
-        )
-        return (user[0], message)
 
     def send_emails(self):
         email_sender = EmailSender()
@@ -803,7 +797,12 @@ class App(ttk.Frame):
 
         if self.emailing_options.personal_email.get():
             to = email['to']
-            email_sender.send_email(to, sender, subject, body)
+            email_sender.send_email(
+                sender,
+                to,
+                subject,
+                msg_html=body
+            )
             return
 
         if not self.created_certificates:
@@ -813,10 +812,65 @@ class App(ttk.Frame):
             )
             return
 
-        func = partial(App.create_message, sender, subject, body, email_sender.create_message)
-        userlist = self.data_viewer.get_list_of_entries()
+        def log(success: bool, index: str):
+            entry = self.data_viewer.get_entry_from_index(index)
+            if success:
+                self.data_viewer._tree.item(entry, tags=['emailSuccess'])
+            else:
+                self.data_viewer._tree.item(entry, tags=['emailError'])
 
+        userlist = self.data_viewer.get_list_of_valid_entries()
         self.initialize_progressbar(len(userlist))
+
+        App.launch_independent_tread(
+            EmailSenderWrapper.send_certificates,
+            sender,
+            subject,
+            body,
+            email_sender.create_message,
+            email_sender.send_message,
+            self.progressbar_var,
+            log,
+            self.hide_progressbar,
+            userlist
+        )
+
+
+    @staticmethod
+    def launch_independent_tread(
+        target: Callable[..., Any],
+        *args
+    ):
+        independent_thread = threading.Thread(
+            target=target,
+            args=args,
+            daemon=True
+        )
+        independent_thread.start()
+
+
+class EmailSenderWrapper:
+    @staticmethod
+    def send_certificates(
+        sender: str,
+        subject: str,
+        body: str,
+        create_message,
+        send_message,
+        progress_var: ttk.IntVar,
+        log : Optional[Callable[[], Any]],
+        cleanup_func : Optional[Callable[[], Any]],
+        userlist: List[User]
+    ) -> None:
+
+        func = partial(
+            EmailSenderWrapper.create_message,
+            sender,
+            subject,
+            body,
+            create_message
+        )
+
         pool = mp.Pool(processes=5)
         message_list = pool.imap(
             func,
@@ -825,12 +879,38 @@ class App(ttk.Frame):
         )
 
         for message in message_list:
-            email_sender.send_message(message[1])
-            self.progressbar_var.set(self.progressbar_var.get() + 1)
+            try:
+                send_message(message[1])
+                log(True, int(message[0]))
+            except HttpError as error:
+                print('Couldn\'t send email, an http error has occured: ', error)
+                log(False, int(message[0]))
 
-        self.hide_progressbar()
+            progress_var.set(progress_var.get() + 1)
+
         pool.close()
         pool.join()
+
+        if cleanup_func:
+            cleanup_func()
+
+    @staticmethod
+    def create_message(
+        sender: str,
+        subject: str,
+        body: str,
+        create_message,
+        user: User
+    ) -> Tuple[str, str]:
+        certificate_path = Path('certificates') / str(user[1].replace(' ', '_') + '.png')
+        message = create_message(
+            sender=sender,
+            to=user[2],
+            subject=subject,
+            msg_html=body,
+            attachments=[certificate_path]
+        )
+        return (user[0], message)
 
 
 if __name__ == '__main__':
