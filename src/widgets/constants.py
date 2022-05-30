@@ -1,6 +1,10 @@
 from enum import Enum
+from typing import Tuple
 
 
+
+# type defs
+User = Tuple[str, str, str]
 
 # Logging level enum
 class LogLevel(Enum):
