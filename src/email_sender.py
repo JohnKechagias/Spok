@@ -2,7 +2,6 @@ import os
 import base64
 from typing import Dict, List, Optional
 
-from urllib.error import HTTPError
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build, Resource
 from googleapiclient.errors import HttpError
@@ -71,12 +70,11 @@ class EmailSender:
             # completes for the first time.
             if _creds:
                 self.creds = _creds
-            else:
-                if os.path.exists(self.creds_file):
-                    self.creds = Credentials.from_authorized_user_file(
-                        self.creds_file,
-                        self._SCOPES
-                    )
+            elif os.path.exists(self.creds_file):
+                self.creds = Credentials.from_authorized_user_file(
+                    self.creds_file,
+                    self._SCOPES
+                )
 
             if self.creds is None or not self.creds.valid:
                 flow = InstalledAppFlow.from_client_secrets_file(
@@ -103,7 +101,7 @@ class EmailSender:
                 credentials=self.creds
             )
 
-        except HTTPError as error:
+        except HttpError as error:
             message = 'Could not build googleapiclient.discovery service'\
                       f'for the {self._API_NAME}-{self._API_VERSION} API!'\
                       f'Error: {error}'
@@ -233,20 +231,15 @@ class EmailSender:
             message: The message to send.
 
         Raises:
-            googleapiclient.errors.HttpError: There was an error executing
-                the HTTP request.
+            googleapiclient.errors.HttpError: An Http error has occured.
         """
 
-        try:
-            req = self.service.users().messages().send(
-                userId=self._USER_ID,
-                body=message
-            )
-            res = req.execute()
-            return res
-
-        except HttpError as error:
-            print(f'Could not Send Email! An HttpError has occured: {error}')
+        req = self.service.users().messages().send(
+            userId=self._USER_ID,
+            body=message
+        )
+        res = req.execute()
+        return res
 
     def _add_attachments(
         self,
