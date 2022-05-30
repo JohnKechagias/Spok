@@ -4,10 +4,11 @@ from time import sleep
 
 import multiprocessing as mp
 import threading
+from typing import Any, Tuple, Callable, List, Optional
 
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageFont
 from widgets.constants import *
-from ttkbootstrap import IntVar
+import ttkbootstrap as ttk
 
 
 
@@ -20,9 +21,9 @@ class CertificateCreator:
         self,
         image_path: str,
         output_folder_path: str,
-        font,
-        font_color: tuple[int, int, int],
-        image_coords: tuple,
+        font: ImageFont.FreeTypeFont,
+        font_color: Tuple[int, int, int],
+        image_coords: Tuple[int, int],
         word_position: str,
         compress_level: int,
         log_func
@@ -48,16 +49,22 @@ class CertificateCreator:
     def create_certificates_from_list(
         self,
         lock: threading.Lock,
-        progress_var: IntVar,
-        item_list: list,
-        cleanup_func=None
-        ):
+        progress_var: ttk.IntVar,
+        item_list: List[User],
+        cleanup_func: Optional[Callable[[], Any]] = None
+    ):
         """
-        Create a certificate for each item in a list.
+        Creates a certificate for each user in the `item_list`.
 
         Args:
-            Each item is a tuple (item_index, name, email)
+            lock: A threading lock.
+            progress_var: An IntVar that represents the amount of certificates done.
+                The IntVar is linked to a progressbar.
+            item_list: The list of Users.
+            cleanup_func: The cleanup func is optional and if given, will be run
+                at the end, after all the certificates have been created.
         """
+
         func = partial(
             CertificateCreator.create_certificate,
             self.image,
@@ -91,14 +98,32 @@ class CertificateCreator:
     @staticmethod
     def create_certificate(
         image: Image.Image,
-        coords: tuple[int, int],
-        font,
-        font_color: tuple[int, int, int],
+        coords: Tuple[int, int],
+        font: ImageFont.FreeTypeFont,
+        font_color: Tuple[int, int, int],
         anchor: str,
         align: str,
         compress_level: int,
-        entry_info: tuple[int, str, str]
-        ) -> tuple[str, str, str]:
+        user: User
+    ) -> User:
+        """Creates a certificate. For more information about `anchor` and `align`
+        visit https://pillow.readthedocs.io/en/stable/handbook/text-anchors.html.
+
+        Args:
+            image: The image draw on.
+            coords: The image coords to start drawing on.
+            font: The font to use.
+            font_color: The font color to use.
+            anchor: The text anchor. For more information visit
+            align: The text alignment.
+            compress_level: The level of png compression to use.
+                Compression levels range from 0 to 9.
+            user: The user that the certificate will be based on.
+                user is (user_index, user_email, user_name).
+
+        Returns:
+            The passed `user`. This is done for logging purposes.
+        """
         # NEED to have a temp copy of image, else the base template
         # is going to get replaced!!
         # Draw the message on the background
@@ -106,18 +131,18 @@ class CertificateCreator:
         draw = ImageDraw.Draw(image_copy)
         draw.text(
             coords,
-            entry_info[1],
+            user[1],
             fill=font_color,
             font=font,
             anchor=anchor,
             align=align
         )
         # Save the edited image
-        name = entry_info[1].replace(' ', '_')
+        name = user[1].replace(' ', '_')
         image_name = f'{name}.png'
         image_location = Path('certificates') / image_name
         image_copy.save(image_location, format='png', compress_level=compress_level)
-        return entry_info
+        return user
 
     def log(self, entry_info):
         self.log_func('Created Certificate', '{}. name: {} | email: {}'
