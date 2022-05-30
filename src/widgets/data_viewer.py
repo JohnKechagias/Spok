@@ -1,9 +1,11 @@
 from functools import  wraps
 
 import tkinter as tk
-from typing import  Any, Callable
+from typing import  Any, Tuple, List, Callable
 import ttkbootstrap as ttk
 from ttkbootstrap.constants import *
+
+from widgets.constants import User
 
 from .auto_scrollbar import AutoScrollbar
 
@@ -18,13 +20,14 @@ class DataViewer(ttk.Frame):
 
     The treeview supports 3 types of entries:
 
-    1. Entries without a 'flaggedEmail' or 'flaggedName' tag\n
-    2. Entries with a 'flaggedEmail' tag\n
-    3. Entries with a 'flaggedName' tag\n
+    1. Entries without a 'flaggedEmail' or 'flaggedName' tag
+    2. Entries with a 'flaggedEmail' tag
+    3. Entries with a 'flaggedName' tag
 
     Each type of entry has a distinct background color.
     Entries are grouped together based on their tag and each group
-    is shown in the order thats specified above."""
+    is shown in the order thats specified above.
+    """
 
     def __init__(
         self,
@@ -81,8 +84,33 @@ class DataViewer(ttk.Frame):
             **kwargs)
         self._tree.grid(row=0, column=0, sticky=NSEW)
 
-        self._tree.tag_configure('flaggedEmail', background='#CA9242', foreground='white')
-        self._tree.tag_configure('flaggedName', background='#ca5f42', foreground='white')
+        # The entry has the same email as another entry
+        self._tree.tag_configure(
+            'flaggedEmail',
+            background='#CA9242',
+            foreground='white'
+        )
+        # The entry has the same name as another entry
+        self._tree.tag_configure(
+            'flaggedName',
+            background='#ca5f42',
+            foreground='white'
+        )
+
+        # The Email (based on the entry) was sent successfully
+        self._tree.tag_configure(
+            'emailSuccess',
+            background='#00ff77',
+            foreground='white'
+        )
+        # There was an error while sending the Email
+        # (which based on the entry).
+        # Most probable cause is that the email was invalid
+        self._tree.tag_configure(
+            'emailError',
+            background='#dd0101',
+            foreground='white'
+        )
 
         # Define and tweak columns
         self._tree.column("# 1", stretch=NO, width=45)
