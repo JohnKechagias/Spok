@@ -96,7 +96,7 @@ class ColorSelector(ttk.Frame):
 
     def update_button_bg(self):
         """ Set button background to be the same as the color that the
-            user has selected. """
+        user has selected. """
         # Sum of RGB channel values
         sum_of_color_values = sum(self.get_color_tuple())
         color_code = self.get_color_code()

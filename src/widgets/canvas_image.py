@@ -366,8 +366,8 @@ class CanvasImage(ttk.Frame):
         self._show_image()
 
     def _on_keystroke(self, event: tk.Event):
-        """ Scrolling with the keyboard.
-            Independent from the language of the keyboard, CapsLock, <Ctrl>+<key>, etc. """
+        """ Scrolling with the keyboard. Independent from the language of
+        the keyboard, CapsLock, <Ctrl>+<key>, etc. """
         if event.state - self._previous_state == 4:  # Means that the Control key is pressed
             pass  # Do nothing if Control key is pressed
         else:
@@ -389,7 +389,7 @@ class CanvasImage(ttk.Frame):
 
     def _canvas_coords_to_image_coords(self, x: int, y: int):
         """ Convert canvas coords to image coords.
-            The center of the image is its top left corner. """
+        The center of the image is its top left corner. """
         if self._image_wider_than_canvas:
             x_coord = int(self._curr_center[0] + (x / self.im_scale))
         else:
@@ -403,7 +403,7 @@ class CanvasImage(ttk.Frame):
 
     def _on_mouse_movement(self, event: tk.Event):
         """ Convert the current mouse coords to image coords
-            and store them to `temp_coords`. """
+        and store them to `temp_coords`. """
         x = self._canvas.canvasx(event.x)
         y = self._canvas.canvasy(event.y)
         if self._outside(x, y): return

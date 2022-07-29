@@ -13,7 +13,7 @@ from .constants import *
 
 
 class Logger(ttk.Frame):
-    """Logger widget used to display custom logs and errors."""
+    """ Logger widget used to display custom logs and errors. """
     def __init__(
         self,
         master,
@@ -25,7 +25,7 @@ class Logger(ttk.Frame):
         hbar=False,
         **kwargs,
     ):
-        """Contract a Logger widget with a parent master.
+        """ Contract a Logger widget with a parent master.
 
         STANDARD OPTIONS
 
@@ -179,7 +179,7 @@ class Logger(ttk.Frame):
         log_level: LogLevel = LogLevel.INFO,
         newline=True
         ):
-        """Log a message. Each message has a logLevel assosiated
+        """ Log a message. Each message has a logLevel assosiated
         with it.
 
         LOG LEVEL OPTIONS

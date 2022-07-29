@@ -47,7 +47,7 @@ class EmailSender:
         creds_file: str = 'gmail_token.json',
         _creds: Optional[Credentials] = None
     ) -> None:
-        """Initializes EmailSender. Creates a googleapiclient.discovery resource
+        """ Initializes EmailSender. Creates a googleapiclient.discovery resource
         for interacting with the Gmail API from a client secret file.
 
         Args:
@@ -127,7 +127,7 @@ class EmailSender:
         bcc: Optional[List[str]] = None,
         attachments: Optional[List[str]] = None
         ) -> Dict[str, str]:
-        """Creates and sends the raw email message.
+        """ Creates and sends the raw email message.
 
         Args:
             sender: The email address the message is being sent from.
@@ -169,7 +169,7 @@ class EmailSender:
         bcc: Optional[List[str]] = None,
         attachments: Optional[List[str]] = None
     ) -> Dict[str, MIMEMultipart]:
-        """Creates the raw email message to be sent.
+        """ Creates the raw email message to be sent.
 
         Args:
             sender: The email address the message is being sent from.
@@ -225,7 +225,7 @@ class EmailSender:
         self,
         message: Dict[str, MIMEMultipart]
     ) -> Dict[str, str]:
-        """Sends the provided message.
+        """ Sends the provided message.
 
         Args:
             message: The message to send.
@@ -246,7 +246,7 @@ class EmailSender:
         msg: MIMEMultipart,
         attachments: List[str]
     ) -> None:
-        """Converts attachment filepaths to MIME objects and adds them to msg.
+        """ Converts attachment filepaths to MIME objects and adds them to msg.
 
         Args:
             msg: The message to add attachments to.

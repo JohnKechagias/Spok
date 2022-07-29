@@ -10,8 +10,7 @@ import re
 ulist = List[List[str]]
 
 def split_name_and_email(text: str) -> tuple[str, str]:
-    """
-    Strip the email from a text.
+    """ Strip the email from a text.
 
     Returns:
         A tuple (text without email, email).
@@ -32,17 +31,18 @@ def remove_nonspacing_marks(s: str) -> str:
 
 
 def txt_to_list(txtPath: str) -> ulist:
-    """
-    Convert a txt file to a list. Each row in the txt must contain an email and a name.
-    If an entry is missing a name or an email and logging is disabled, it will be deleted
+    """ Convert a txt file to a list. Each row in the txt must contain
+    an email and a name. If an entry is missing a name or an email and
+    logging is disabled, it will be deleted.
 
     Entries that are missing a name or an email will be deleted.
-    If loggin is enabled, entries will be checked for duplicate emails and names.
+    If loggin is enabled, entries will be checked for duplicate
+    emails and names.
 
-    If duplicates are found, each entry with a duplicate will be marked with an error
-    Flag and be give a flag number. The number will be the same for all entries with the same
-    duplicates (is used as a common reference).
-
+    If duplicates are found, each entry with a duplicate will be marked
+    with an error Flag and be give a flag number. The number will be the
+    same for all entries with the same duplicates (is used as a common
+    reference).
 
     Error flags:
         E: duplicate email,
@@ -78,7 +78,7 @@ def txt_to_list(txtPath: str) -> ulist:
 
 
 def exel_to_list(path: str) -> ulist:
-    """Convert an exel to a userlist."""
+    """ Convert an exel to a userlist. """
     df = pd.read_excel(
         path,
         usecols=["Email", "Name"],
@@ -88,7 +88,7 @@ def exel_to_list(path: str) -> ulist:
 
 
 def csv_to_list(path: str) -> ulist:
-    """Convert a csv to a userlist."""
+    """ Convert a csv to a userlist. """
     df = pd.read_csv(
         path,
         usecols=["Email", "Name"],
@@ -98,7 +98,7 @@ def csv_to_list(path: str) -> ulist:
 
 
 def dataframe_to_list(df: pd.DataFrame) -> ulist:
-    """Convert a dataframe to a userlist."""
+    """ Convert a dataframe to a userlist. """
     df.drop_duplicates(subset=None, keep="first", inplace=True)
     df.sort_values(by=["Name"], inplace=True)
     df.reset_index(drop=True, inplace=True)
@@ -108,7 +108,7 @@ def dataframe_to_list(df: pd.DataFrame) -> ulist:
 
 
 def list_to_txt(list: ulist) -> None:
-    """Write a Ulist to txt."""
+    """ Write a Ulist to txt. """
     with open("userlist.temp", "w", encoding="utf-8") as file:
         for item in list:
             file.write(f"{item[2]} | {item[0]} {item[1]}\n")
@@ -119,8 +119,7 @@ def name_email_list_to_ulist(
     check_for_name_duplicates=True,
     check_for_email_duplicates=False
     ) -> ulist:
-    """
-    Convert a name-email list to a userlist.
+    """ Convert a name-email list to a userlist.
 
     1.  Clean name and email by removing forbidden chars, ex. "(", ")"
     2.  Remove duplicate users
@@ -169,7 +168,7 @@ def name_email_list_to_ulist(
 
 
 def clean_name(name: str) -> str:
-    """Remove forbidden chars from name."""
+    """ Remove forbidden chars from name. """
     name = name.translate(str.maketrans("", "", ")(!\"\":@#$.,")).upper()
     name = name.replace("\n", "").replace("\t", " ").replace("-", " ").strip()
     name = remove_nonspacing_marks(name)
@@ -178,6 +177,6 @@ def clean_name(name: str) -> str:
 
 
 def clean_email(email: str) -> str:
-    """Remove forbidden chars from email."""
+    """ Remove forbidden chars from email. """
     email = email.translate(str.maketrans("", "", ")(\"\"")).strip()
     return email

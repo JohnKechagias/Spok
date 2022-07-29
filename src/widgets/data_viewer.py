@@ -12,7 +12,8 @@ from .auto_scrollbar import AutoScrollbar
 
 
 class DataViewer(ttk.Frame):
-    """A custom 2D Ttk Treeview widget that displays a hierarchical collection of items.
+    """ A custom 2D Ttk Treeview widget that displays a hierarchical
+    collection of items.
 
     Each item has a textual label and an optional list of data values.
     The data values are displayed in successive columns
@@ -37,7 +38,7 @@ class DataViewer(ttk.Frame):
         *args,
         **kwargs,
     ) -> None:
-        """Construct a Ttk Treeview with parent master.
+        """ Construct a Ttk Treeview with parent master.
 
         STANDARD OPTIONS
 
@@ -224,8 +225,8 @@ class DataViewer(ttk.Frame):
         return entry
 
     def create_entry(self, event: tk.Event = None):
-        """Create a new treeview entry and add it just before the
-        entries with a tag"""
+        """ Create a new treeview entry and add it just before the
+        entries with a tag. """
         self.insert_entry(self._curr_valid_index, focus=True)
 
     def _delete_selected_entries(self, event:tk.Event=None):
@@ -288,7 +289,7 @@ class DataViewer(ttk.Frame):
         self._edit_frame.place(relwidth=0.9, anchor=CENTER, relx=0.5, rely=0.5)
 
     def _leave_edit_mode(self, event: tk.Event = None):
-        """Save changes and leave edit mode"""
+        """ Save changes and leave edit mode. """
         if not self._edit_mode: return
         new_values = (self._edit_name.get(), self._edit_email.get())
         self.edit_entry(self._item_to_edit, new_values)
@@ -296,14 +297,14 @@ class DataViewer(ttk.Frame):
         self._edit_frame.place_forget()
 
     def _cancel_edit_mode(self, event:tk.Event=None):
-        """Leave edit mode without saving the changes"""
+        """ Leave edit mode without saving the changes. """
         if self._edit_mode:
             self._edit_mode = False
             self._edit_frame.place_forget()
 
     @_notOnEditMode
     def _undo(self, event: tk.Event = None):
-        """Undo the latest edit"""
+        """ Undo the latest edit. """
         if self.stack_index < 0:
             return
 
@@ -328,7 +329,7 @@ class DataViewer(ttk.Frame):
 
     @_notOnEditMode
     def _redo(self, event: tk.Event = None):
-        """Redo the latest edit"""
+        """ Redo the latest edit. """
         if self.stack_index == len(self.edit_stack) - 1 or self.stack_index < -1:
             return
 

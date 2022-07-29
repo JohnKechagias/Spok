@@ -5,7 +5,7 @@ from ttkbootstrap.constants import *
 
 class CText(tk.Text):
     """ Text widget which generates an event '<<TextChanged>>' whenever
-        the text is modified or the view is changed.
+    the text is modified or the view is changed.
 
     STANDARD OPTIONS
 
@@ -74,7 +74,7 @@ class CText(tk.Text):
 
 class NumberedText(tk.Text):
     """ Text widget where each line is a number. Numbers are
-        sorted in ascending order.
+    sorted in ascending order.
 
     STANDARD OPTIONS
 

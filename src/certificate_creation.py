@@ -16,7 +16,7 @@ NUMBER_OF_PROCESSES = mp.cpu_count() - 1
 
 
 class CertificateCreator:
-    """Used in creating certificates. Can also log actions."""
+    """ Used in creating certificates. Can also log actions. """
     def __init__(
         self,
         image_path: str,
@@ -26,9 +26,11 @@ class CertificateCreator:
         image_coords: Tuple[int, int],
         word_position: str,
         compress_level: int,
-        log_func
+        log_func,
+        num_of_processes: int = mp.cpu_count() - 1
         ) -> None:
-        """Create a CertificateCreator instanse."""
+        """ Create a CertificateCreator instanse. """
+        self.num_of_processes = num_of_processes
         self.image = Image.open(image_path)
         self.output_folder_path = output_folder_path
         self.font = font
@@ -53,7 +55,7 @@ class CertificateCreator:
         user_list: List[User],
         cleanup_func: Optional[Callable[[], Any]] = None
     ):
-        """Creates a certificate for each user in the `user_list`.
+        """ Creates a certificate for each user in the `user_list`.
 
         Args:
             lock: A threading lock.
@@ -75,7 +77,7 @@ class CertificateCreator:
             self.compress_level
         )
 
-        pool = mp.Pool(processes=NUMBER_OF_PROCESSES)
+        pool = mp.Pool(processes=self.num_of_processes)
         log_list = pool.imap(
             func,
             user_list,
@@ -105,7 +107,7 @@ class CertificateCreator:
         compress_level: int,
         user: User
     ) -> User:
-        """Creates a certificate. For more information about `anchor` and `align`
+        """ Creates a certificate. For more information about `anchor` and `align`
         visit https://pillow.readthedocs.io/en/stable/handbook/text-anchors.html.
 
         Args:

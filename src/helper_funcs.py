@@ -1,7 +1,6 @@
 
 def containToRange(range: tuple[int, int], num: int) -> int:
-    """
-    Checks if num is inside the range and returns the
+    """ Checks if num is inside the range and returns the
     lowest possible number `x` where `num + x` is inside the range.
 
     Args:

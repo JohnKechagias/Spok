@@ -706,12 +706,12 @@ class App(ttk.Frame):
         self.file_manager_notebook.select(1)
 
     def load_file(self, path: str, *_):
-        """Load text file in the Text editor widget"""
+        """ Load text file in the Text editor widget. """
         if os.path.exists(path):
             self.text_editor.load_file(path)
 
     def load_image(self, path: str, *_):
-        """Load image in the canvas widget"""
+        """ Load image in the canvas widget. """
         # If the user closes the gui before selecting
         # a file, the path will be empty
         if os.path.exists(path):
@@ -726,8 +726,8 @@ class App(ttk.Frame):
         self.emailing_options.grid(row=0, column=0, sticky=EW)
 
     def switch_mode(self, *args):
-        """Change the app mode. If the current mode is emailing,
-        switch to certificate creation and vise versa."""
+        """ Change the app mode. If the current mode is emailing,
+        switch to certificate creation and vise versa. """
         mode = self.modes_combobox.get()
         self.modes_selection_title.configure(text=mode)
 
@@ -737,15 +737,15 @@ class App(ttk.Frame):
             self.switch_to_certificate_mode()
 
     def initialize_progressbar(self, maximum: int):
-        """Replace the seperator on the top frame with a
-        progressbar with max value `maximum`."""
+        """ Replace the seperator on the top frame with a
+        progressbar with max value `maximum`. """
         self.seperator.grid_forget()
         self.progressbar.configure(maximum=maximum)
         self.progressbar_var.set(0)
         self.progressbar.grid(row=1, column=0, columnspan=3, sticky=EW, pady=6)
 
     def hide_progressbar(self):
-        """Hide the progressbar and replace it with a seperator."""
+        """ Hide the progressbar and replace it with a seperator. """
         self.progressbar.grid_forget()
         self.seperator.grid(row=1, column=0, columnspan=3, sticky=EW, pady=6)
 
