@@ -339,9 +339,9 @@ class CanvasImage(ttk.Frame):
 
         # Calculate current image center
         if self._image_wider_than_canvas:
-            self._curr_center[0] = round(x1 / self._scale)
+            self._curr_center[0] = round(x1 / self.im_scale)
         if self._image_taller_than_canvas:
-            self._curr_center[1] = round(y1 / self._scale)
+            self._curr_center[1] = round(y1 / self.im_scale)
 
         if int(x2 - x1) > 0 and int(y2 - y1) > 0:  # Show image if it in the visible area
             if self._huge and self._curr_img < 0:  # Show huge image
