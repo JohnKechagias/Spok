@@ -36,6 +36,15 @@ from configparser import ConfigParser
 
 
 
+BASE_DIR = Path(__file__).parent.parent
+ICONS = BASE_DIR / 'assets' / 'icons'
+CERTIFICATES = BASE_DIR / 'certificates'
+FONTS = BASE_DIR / 'fonts'
+TEMPLATES = BASE_DIR / 'templates'
+USERLISTS = BASE_DIR / 'userlists'
+CONFIG = BASE_DIR / 'config.ini'
+
+
 class FontSelector(ttk.Frame):
     def __init__(self, master: Misc, font: ttk.font.Font = None) -> None:
         super().__init__(master)
@@ -184,8 +193,6 @@ class InfoInput(ttk.Labelframe):
         self.test_mode = ttk.BooleanVar(value=testmode)
         self.logging = ttk.BooleanVar(value=logging)
 
-        self.base_dir = Path(__file__).parent.parent
-
         # We manually call the handlers instead of tracing the vars because
         # we want to call the handlers whenever the complete path is given
         # and not when the path changes.
@@ -206,9 +213,8 @@ class InfoInput(ttk.Labelframe):
         }
 
         self.photoimages = []
-        icons_path = self.base_dir / 'assets' / 'icons'
         for key, val in image_files.items():
-            _path = icons_path / val
+            _path = ICONS / val
             self.photoimages.append(ttk.PhotoImage(name=key, file=_path))
 
         self.select_template_button = ImageButton(
@@ -281,24 +287,20 @@ class InfoInput(ttk.Labelframe):
         self.create_certificates_button.grid(row=3, rowspan=2, column=2, sticky=E)
 
     def _select_image_file(self):
-        templates_folder = self.base_dir / 'templates/'
-
         image_path = fd.askopenfilename(
             title='Select template',
             filetypes=(("Image files",".img .png .jpeg .jpg"),("All files","*.*")),
-            initialdir=templates_folder
+            initialdir=TEMPLATES
         )
 
         if image_path not in {None, '', ()}:
             self.image_path.set(image_path)
 
     def _select_info_file(self):
-        userlists_folder = self.base_dir / 'userlists/'
-
         info_file_path = fd.askopenfilename(
             title='Select Info file',
             filetypes=(("Info files",".txt .exel .xlsx .csv"),("All files","*.*")),
-            initialdir=userlists_folder
+            initialdir=USERLISTS
         )
 
         if info_file_path not in {None, '', ()}:
@@ -336,8 +338,6 @@ class EmailInput(ttk.Labelframe):
         self.test_mode = ttk.BooleanVar(value=testmode)
         self.personal_email = ttk.BooleanVar(value=personalemail)
 
-        self.base_dir = Path(__file__).parent.parent
-
         # =-=-=-=-=-=-=-=- Load Icons -=-=-=-=-=--=-=-=-=-=-=
         image_files = {
             'test_email-default': 'test_email_default_32px.png',
@@ -347,9 +347,8 @@ class EmailInput(ttk.Labelframe):
         }
 
         self.photoimages = []
-        icons_path = self.base_dir / 'assets/icons'
         for key, val in image_files.items():
-            _path = icons_path / val
+            _path = ICONS / val
             self.photoimages.append(ttk.PhotoImage(name=key, file=_path))
 
         self.test_email_button = ImageButton(
@@ -446,7 +445,6 @@ class App(ttk.Frame):
     def __init__(self, master) -> None:
         super().__init__(master)
 
-        self.base_dir = Path(__file__).parent.parent
         self.created_certificates = False
 
         self.rowconfigure(2, weight=1)
@@ -456,11 +454,10 @@ class App(ttk.Frame):
         # =-=-=-=-=-=-=-=- Read Config -=-=-=-=-=--=-=-=-=-=-=
 
         config = ConfigParser()
-        config_path = self.base_dir / 'config.ini'
-        config.read(config_path)
+        config.read(CONFIG)
 
-        raw_template_path = config.get('certificateCreation', 'defaultTemplate')
-        raw_userlist_path = config.get('certificateCreation', 'defaultUserlist')
+        template_file = config.get('certificateCreation', 'defaultTemplate')
+        userlist_file = config.get('certificateCreation', 'defaultUserlist')
         cc_test_mode = config.getboolean('certificateCreation', 'testMode')
         logging = config.getboolean('certificateCreation', 'logging')
 
@@ -495,12 +492,17 @@ class App(ttk.Frame):
         # =-=-=-=-=-=-=-=-=- Top Frame -=-=-=-=-=--=-=-=-=-=-=
 
         self.modes_selection_title = ttk.Label(
-            master=self.topframe, text="Certificates Creator", font="-size 24 -weight bold"
+            master=self.topframe,
+            text='Certificates Creator',
+            font='-size 24 -weight bold'
         )
         self.modes_selection_title.pack(side=LEFT)
 
         self.mode = ttk.StringVar()
-        self.modes_selection_label = ttk.Label(master=self.topframe, text="Select a mode:")
+        self.modes_selection_label = ttk.Label(
+            master=self.topframe,
+            text='Select a mode:'
+        )
         self.modes = ('Certificates Creator', 'Email Sender')
         self.modes_combobox= ttk.Combobox(
             master=self.topframe,
@@ -566,7 +568,7 @@ class App(ttk.Frame):
         self.image_viewer.grid(row=1, column=0, sticky=NSEW)
 
         self.certificate_options.image_changed_handler = self.load_image
-        self.certificate_options.info_file_changed_handler = self.load_info_file
+        self.certificate_options.info_file_changed_handler = self.load_userlist
 
         # =-=-=-=-=-=-=-=- Middle Frame -=-=-=-=-=--=-=-=-=-=
 
@@ -605,8 +607,8 @@ class App(ttk.Frame):
 
         self.file_manager_notebook.bind('<<NotebookTabChanged>>', self.notebook_tab_changed)
 
-        default_template_path = Path(raw_template_path)
-        default_userlist_path = Path(raw_userlist_path)
+        default_template_path = TEMPLATES / template_file
+        default_userlist_path = USERLISTS / userlist_file
 
         self.certificate_options.image_path.set(default_template_path)
         self.certificate_options.info_file_path.set(default_userlist_path)
@@ -624,8 +626,7 @@ class App(ttk.Frame):
 
     def save_config(self):
         config = ConfigParser()
-        config_path = self.base_dir / 'config.ini'
-        config.read(config_path)
+        config.read(CONFIG)
 
         logging = str(self.certificate_options.logging.get()).lower()
         config.set('certificateCreation', 'logging', logging)
@@ -700,7 +701,7 @@ class App(ttk.Frame):
                 values=[item[0], item[1]], tags=(tag), save_edit=False)
 
         data_filtering.list_to_txt(user_list)
-        self.load_file(self.base_dir / 'userlist.temp')
+        self.load_file(BASE_DIR / 'userlist.temp')
         # Switch to DataViewer tab
         self.file_manager_notebook.select(1)
 
@@ -749,9 +750,10 @@ class App(ttk.Frame):
         self.seperator.grid(row=1, column=0, columnspan=3, sticky=EW, pady=6)
 
     def create_certificates(self):
-        font_path = self.base_dir / f'fonts/{self.text_font}'
+        font_path = FONTS / self.text_font
+        font_path = FONTS / 'roboto-Regular.ttf'
         font_size = self.font_configuration.get_font_size()
-        font = ImageFont.truetype('fonts/roboto-Regular.ttf', font_size)
+        font = ImageFont.truetype(str(font_path), font_size)
 
         certificate_creator = CertificateCreator(
             image_path=self.certificate_options.image_path.get(),
@@ -902,7 +904,7 @@ class EmailSenderWrapper:
         create_message,
         user: User
     ) -> Tuple[str, str]:
-        certificate_path = Path('certificates') / str(user[1].replace(' ', '_') + '.png')
+        certificate_path = CERTIFICATES / str(user[1].replace(' ', '_') + '.png')
         message = create_message(
             sender=sender,
             to=user[2],
