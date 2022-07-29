@@ -4,5 +4,5 @@ templates/
 userlists/
 certificates/
 emailSignature.html
-client_secret.json
-token.json
+*secret*.json
+*token*.json
