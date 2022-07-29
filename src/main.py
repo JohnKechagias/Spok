@@ -78,7 +78,7 @@ class FontSelector(ttk.Frame):
             text='Select Font Color',
             bootstyle=(INVERSE, SECONDARY),
             anchor=CENTER,
-            font="-size 13"
+            font='-size 13'
         )
         self.color_Label.grid(row=1, column=0, sticky=EW, pady=6)
 
@@ -245,7 +245,7 @@ class InfoInput(ttk.Labelframe):
             background=self.background_color,
             command=self._select_info_file
         )
-        #C4C4C4
+
         self.select_info_file_button.grid(row=1, column=0, padx=(0, 16), pady=4, sticky=W)
 
         self.info_path_entry = ttk.Entry(
@@ -657,7 +657,7 @@ class App(ttk.Frame):
         elif tab == 'Email':
             self.modes_combobox.current(1)
 
-    def load_info_file(self, path:str, *_):
+    def load_userlist(self, path:str, *_):
         filetype = path.split('.')[-1]
 
         if filetype in {'exel', 'xls', 'xlsx', 'xlsm',
@@ -783,7 +783,6 @@ class App(ttk.Frame):
             self.hide_progressbar
         )
 
-
     def send_emails(self):
         email_sender = EmailSender()
 
@@ -836,7 +835,6 @@ class App(ttk.Frame):
             self.hide_progressbar,
             userlist
         )
-
 
     @staticmethod
     def launch_independent_tread(

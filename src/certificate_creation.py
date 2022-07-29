@@ -50,17 +50,16 @@ class CertificateCreator:
         self,
         lock: threading.Lock,
         progress_var: ttk.IntVar,
-        item_list: List[User],
+        user_list: List[User],
         cleanup_func: Optional[Callable[[], Any]] = None
     ):
-        """
-        Creates a certificate for each user in the `item_list`.
+        """Creates a certificate for each user in the `user_list`.
 
         Args:
             lock: A threading lock.
             progress_var: An IntVar that represents the amount of certificates done.
                 The IntVar is linked to a progressbar.
-            item_list: The list of Users.
+            user_list: The list of Users.
             cleanup_func: The cleanup func is optional and if given, will be run
                 at the end, after all the certificates have been created.
         """
@@ -79,7 +78,7 @@ class CertificateCreator:
         pool = mp.Pool(processes=NUMBER_OF_PROCESSES)
         log_list = pool.imap(
             func,
-            item_list,
+            user_list,
             chunksize=15
         )
 
@@ -139,7 +138,7 @@ class CertificateCreator:
         )
         # Save the edited image
         name = user[1].replace(' ', '_')
-        image_name = f'{name}.png'
+        image_name = f'{name}.{image.format}'
         image_location = Path('certificates') / image_name
         image_copy.save(image_location, format='png', compress_level=compress_level)
         return user
