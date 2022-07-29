@@ -115,8 +115,12 @@ class CanvasImage(ttk.Frame):
         _vbar.grid(row=0, column=1, sticky=NS)
 
         # Create canvas and bind it with scrollbars. Public for outer classes
-        self._canvas = ttk.Canvas(self, highlightthickness=0,
-                                xscrollcommand=_hbar.set, yscrollcommand=_vbar.set)
+        self._canvas = ttk.Canvas(
+            self,
+            highlightthickness=0,
+            xscrollcommand=_hbar.set,
+            yscrollcommand=_vbar.set
+        )
         self._canvas.grid(row=0, column=0, sticky=NSEW)
         self._canvas.update()  # Wait till canvas is created
         _hbar.configure(command=self._scroll_X)  # Bind scrollbars to the canvas
@@ -141,7 +145,6 @@ class CanvasImage(ttk.Frame):
         self._huge = False  # Huge or not
         self._huge_size = 14000  # Define size of the huge image
         self._band_width = 1024  # Width of the tile band
-        Image.MAX_IMAGE_PIXELS = 1000000000  # Suppress DecompressionBombError for the big image
 
         # Current pixel coords (the image pixel in which the mouse is inside)
         self.temp_x_coord = ttk.IntVar(value=0)
@@ -181,20 +184,11 @@ class CanvasImage(ttk.Frame):
             warnings.simplefilter('ignore')
             self._image = Image.open(self.path)  # Open image, but down't load it
         self.im_width, self.im_height = self._image.size  # Public for outer classes
-
-        if self.im_width * self.im_height > self._huge_size * self._huge_size and \
-           self._image.tile[0][0] == 'raw':  # Only raw images could be tiled
-            self._huge = True  # Image is huge
-            self._offset = self._image.tile[0][2]  # Initial tile offset
-            self._tile = [self._image.tile[0][0],  # It has to be 'raw'
-                           [0, 0, self.im_width, 0],  # Tile extent (a rectangle)
-                           self._offset,
-                           self._image.tile[0][3]]  # List of arguments to the decoder
         self._min_side = min(self.im_width, self.im_height)  # Get the smaller image side
         # Create image pyramid
-        self._pyramid = [self.smaller()] if self._huge else [Image.open(self.path)]
+        self._pyramid = [Image.open(self.path)]
         # Set ratio coefficient for image pyramid
-        self._ratio = max(self.im_width, self.im_height) / self._huge_size if self._huge else 1.0
+        self._ratio = 1.0
         self._curr_img = 0  # Current image from the pyramid
         self._scale = self.im_scale * self._ratio  # Image pyramide scale
         self._reduction = 2  # Reduction degree of image pyramid
@@ -210,45 +204,6 @@ class CanvasImage(ttk.Frame):
         self._show_image()  # Zoom tile and show it on the canvas
         self._canvas.focus_set()  # Set focus on the canvas
 
-    def smaller(self):
-        """ Resize image proportionally and return smaller image. """
-        w1, h1 = float(self.im_width), float(self.im_height)
-        w2, h2 = float(self._huge_size), float(self._huge_size)
-        aspect_ratio1 = w1 / h1
-        aspect_ratio2 = w2 / h2  # It equals to 1.0
-        if aspect_ratio1 == aspect_ratio2:
-            image = Image.new('RGB', (int(w2), int(h2)))
-            k = h2 / h1  # Compression ratio
-            w = int(w2)  # Band length
-        elif aspect_ratio1 > aspect_ratio2:
-            image = Image.new('RGB', (int(w2), int(w2 / aspect_ratio1)))
-            k = h2 / w1  # Compression ratio
-            w = int(w2)  # Band length
-        else:  # aspect_ratio1 < aspect_ration2
-            image = Image.new('RGB', (int(h2 * aspect_ratio1), int(h2)))
-            k = h2 / h1  # Compression ratio
-            w = int(h2 * aspect_ratio1)  # Band length
-            i, j, n = 0, 1, round(0.5 + self.im_height / self._band_width)
-        while i < self.im_height:
-            print('\rOpening image: {j} from {n}'.format(j=j, n=n), end='')
-            band = min(self._band_width, self.im_height - i)  # Width of the tile band
-            self._tile[1][3] = band  # Set band width
-            self._tile[2] = self._offset + self.im_width * i * 3  # Tile offset (3 bytes per pixel)
-            self._image.close()
-            self._image = Image.open(self.path)  # Reopen / reset image
-            self._image.size = (self.im_width, band)  # Set size of the tile band
-            self._image.tile = [self._tile]  # Set tile
-            cropped = self._image.crop((0, 0, self.im_width, band))  # crop tile band
-            image.paste(cropped.resize((w, int(band * k)+1), self._filter), (0, int(i * k)))
-            i += band
-            j += 1
-        print('\r' + 30*' ' + '\r', end='')  # Hide printed string
-        return image
-
-    def redraw_figures(self):
-        """ Dummy function to redraw figures in the children classes. """
-        pass
-
     def _scroll_X(self, *args, **kwargs):
         """ Scroll canvas horizontally and redraw the image. """
         self._canvas.xview(*args)  # Scroll horizontally
@@ -263,15 +218,21 @@ class CanvasImage(ttk.Frame):
         """ Show image on the Canvas.
             Implements correct image zoom almost like in Google Maps. """
         box_image = self._canvas.coords(self._container)  # Get image area
-        box_canvas = (self._canvas.canvasx(0),  # Get visible area of the canvas
-                      self._canvas.canvasy(0),
-                      self._canvas.canvasx(self._canvas.winfo_width()),
-                      self._canvas.canvasy(self._canvas.winfo_height()))
+        box_canvas = (
+            self._canvas.canvasx(0),  # Get visible area of the canvas
+            self._canvas.canvasy(0),
+            self._canvas.canvasx(self._canvas.winfo_width()),
+            self._canvas.canvasy(self._canvas.winfo_height())
+        )
 
         box_img_int = tuple(map(int, box_image))  # Convert to integer or it will not work properly
         # Get scroll region box
-        box_scroll = [min(box_img_int[0], box_canvas[0]), min(box_img_int[1], box_canvas[1]),
-                      max(box_img_int[2], box_canvas[2]), max(box_img_int[3], box_canvas[3])]
+        box_scroll = [
+            min(box_img_int[0], box_canvas[0]),
+            min(box_img_int[1], box_canvas[1]),
+            max(box_img_int[2], box_canvas[2]),
+            max(box_img_int[3], box_canvas[3])
+        ]
 
         # Horizontal part of the image is in the visible area
         if  box_scroll[0] == box_canvas[0] and box_scroll[2] == box_canvas[2]:
@@ -344,24 +305,17 @@ class CanvasImage(ttk.Frame):
             self._curr_center[1] = round(y1 / self.im_scale)
 
         if int(x2 - x1) > 0 and int(y2 - y1) > 0:  # Show image if it in the visible area
-            if self._huge and self._curr_img < 0:  # Show huge image
-                h = int((y2 - y1) / self.im_scale)  # Height of the tile band
-                self._tile[1][3] = h  # Set the tile band height
-                self._tile[2] = self._offset + self.im_width * int(y1 / self.im_scale) * 3
-                self._image.close()
-                self._image = Image.open(self.path)  # Reopen / reset image
-                self._image.size = (self.im_width, h)  # Set size of the tile band
-                self._image.tile = [self._tile]
-                image = self._image.crop((int(x1 / self.im_scale), 0, int(x2 / self.im_scale), h))
-            else:  # Show normal image
-                image = self._pyramid[max(0, self._curr_img)].crop(  # Crop current img from pyramid
-                                    (int(x1 / self._scale), int(y1 / self._scale),
-                                     int(x2 / self._scale), int(y2 / self._scale)))
+            image = self._pyramid[max(0, self._curr_img)].crop(  # Crop current img from pyramid
+                (int(x1 / self._scale), int(y1 / self._scale),
+                int(x2 / self._scale), int(y2 / self._scale))
+            )
             image_tk = ImageTk.PhotoImage(image.resize((int(x2 - x1), int(y2 - y1)), self._filter))
-
-            image_id = self._canvas.create_image(max(box_canvas[0], box_img_int[0]),
-                                               max(box_canvas[1], box_img_int[1]),
-                                               anchor=NW, image=image_tk)
+            image_id = self._canvas.create_image(
+                max(box_canvas[0], box_img_int[0]),
+                max(box_canvas[1], box_img_int[1]),
+                anchor=NW,
+                image=image_tk
+            )
             self._canvas.lower(image_id)  # Set image into background
             self._canvas.imagetk = image_tk  # Keep an extra reference to prevent garbage-collection
 
@@ -391,20 +345,16 @@ class CanvasImage(ttk.Frame):
         scale = 1.0
         # Respond to Linux (event.num) or Windows (event.delta) wheel event
         if event.num == 5 or event.delta == -120:  # Scroll down, smaller
-            new_im_scale = self.im_scale / self._delta
-            if self.disable_zoom_out and new_im_scale < 1: # Allow the image to become smaller than its normal size
-                return
             if round(self._min_side * self.im_scale) < 30: return  # Image is less than 30 pixels
-            self.im_scale  = new_im_scale
-            scale        /= self._delta
+            self.im_scale /= self._delta
+            scale         /= self._delta
             # Use BICUBIC filtering to make the zoomed out image smoother
-            if self.im_scale < 1.0:
-                self._filter = Image.BICUBIC
+            if self.im_scale < 1.0: self._filter = Image.BICUBIC
         if event.num == 4 or event.delta == 120:  # Scroll up, bigger
             i = min(self._canvas.winfo_width(), self._canvas.winfo_height()) >> 1
             if i < self.im_scale: return  # 1 pixel is bigger than the visible area
             self.im_scale *= self._delta
-            scale        *= self._delta
+            scale         *= self._delta
             # Use NEAREST filtering to make the pixels visisble
             if self.im_scale > 1.0:
                 self._filter = Image.NEAREST
@@ -412,10 +362,7 @@ class CanvasImage(ttk.Frame):
         k = self.im_scale * self._ratio  # Temporary coefficient
         self._curr_img = min((-1) * int(math.log(k, self._reduction)), len(self._pyramid) - 1)
         self._scale = k * math.pow(self._reduction, max(0, self._curr_img))
-
         self._canvas.scale(ALL, x, y, scale, scale)  # Escale all objects
-        # Redraw some figures before showing image on the screen
-        self.redraw_figures()  # Method for child classes
         self._show_image()
 
     def _on_keystroke(self, event: tk.Event):
@@ -460,29 +407,6 @@ class CanvasImage(ttk.Frame):
         x = self._canvas.canvasx(event.x)
         y = self._canvas.canvasy(event.y)
         if self._outside(x, y): return
-
         temp = self._canvas_coords_to_image_coords(event.x, event.y)
         self.temp_x_coord.set(temp[0])
         self.temp_y_coord.set(temp[1])
-
-    def crop(self, bbox: tuple[int, int, int, int]):
-        """ Crop rectangle from the image and return it. """
-        if self._huge:  # Image is huge and not totally in RAM
-            band = bbox[3] - bbox[1]  # Width of the tile band
-            self._tile[1][3] = band  # Set the tile height
-            self._tile[2] = self._offset + self.im_width * bbox[1] * 3  # Set offset of the band
-            self._image.close()
-            self._image = Image.open(self.path)  # Reopen / reset image
-            self._image.size = (self.im_width, band)  # Set size of the tile band
-            self._image.tile = [self._tile]
-            return self._image.crop((bbox[0], 0, bbox[2], band))
-        else:  # Image is totally in RAM
-            return self._pyramid[0].crop(bbox)
-
-    def destroy(self):
-        """ ImageFrame destructor. """
-        self._image.close()
-        map(lambda i: i.close, self._pyramid)  # Close all pyramid images
-        del self._pyramid[:]  # Delete pyramid list
-        del self._pyramid  # Delete pyramid variable
-        self._canvas.destroy()
