@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Tuple
 import pandas as pd
 import unicodedata
 import re
@@ -9,7 +9,7 @@ import re
 # Row: [name, email, errorflags_string].
 ulist = List[List[str]]
 
-def split_name_and_email(text: str) -> tuple[str, str]:
+def split_name_and_email(text: str) -> Tuple[str, str]:
     """ Strip the email from a text.
 
     Returns:
@@ -82,7 +82,6 @@ def exel_to_list(path: str) -> ulist:
     df = pd.read_excel(
         path,
         usecols=["Email", "Name"],
-        names=["Timestamp", "Email", "Name"]
     )[["Name", "Email"]]
     return dataframe_to_list(df)
 
@@ -92,7 +91,6 @@ def csv_to_list(path: str) -> ulist:
     df = pd.read_csv(
         path,
         usecols=["Email", "Name"],
-        names=["Timestamp", "Email", "Name"]
     )[["Name", "Email"]]
     return dataframe_to_list(df)
 
