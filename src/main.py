@@ -13,6 +13,8 @@ import ttkbootstrap as ttk
 from ttkbootstrap.constants import *
 from ttkbootstrap.dialogs.dialogs import FontDialog, Messagebox
 
+from tktooltip import ToolTip
+
 from certificate_creation import CertificateCreator
 from email_sender import EmailSender
 
@@ -225,6 +227,8 @@ class InfoInput(ttk.Labelframe):
             command=self._select_image_file
         )
         self.select_template_button.grid(row=0, column=0, padx=(0, 16), pady=4, sticky=W)
+        msg = 'The image file to write on.'
+        ToolTip(self.select_template_button, msg=msg, delay=1.2)
 
         self.image_path_entry = ttk.Entry(
             master=self,
@@ -245,6 +249,8 @@ class InfoInput(ttk.Labelframe):
             background=self.background_color,
             command=self._select_info_file
         )
+        msg = 'The info file to get the names and emails from.'
+        ToolTip(self.select_info_file_button, msg=msg, delay=1.2)
 
         self.select_info_file_button.grid(row=1, column=0, padx=(0, 16), pady=4, sticky=W)
 
@@ -358,6 +364,8 @@ class EmailInput(ttk.Labelframe):
             background=self.background_color
         )
         self.test_email_button.grid(row=0, column=0, padx=(0, 16), pady=4, sticky=W)
+        msg = 'The email to use in test mode.'
+        ToolTip(self.test_email_button, msg=msg, delay=1.2)
 
         self.test_email_entry = PlaceholderEntry(
             master=self,
@@ -378,6 +386,8 @@ class EmailInput(ttk.Labelframe):
             background=self.background_color
         )
         self.real_email_button.grid(row=1, column=0, padx=(0, 16), pady=4, sticky=W)
+        msg = 'The email to use when sending certificates.'
+        ToolTip(self.real_email_button, msg=msg, delay=1.2)
 
         self.real_email_entry = PlaceholderEntry(
             master=self,
