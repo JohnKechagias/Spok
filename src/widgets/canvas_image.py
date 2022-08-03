@@ -176,7 +176,7 @@ class CanvasImage(ttk.Frame):
         self._previous_state = 0  # Previous state of the keyboard
         self.path = path  # Path to the image, should be public for outer classes
 
-        self._curr_center = [0, 0]  # Coordinate center
+        self._top_left_corner = [0, 0]  # Coordinate center
         self._image_wider_than_canvas = False
         self._image_taller_than_canvas = True
 
@@ -215,8 +215,8 @@ class CanvasImage(ttk.Frame):
         self._show_image()  # Redraw the image
 
     def _show_image(self):
-        """ Show image on the Canvas.
-            Implements correct image zoom almost like in Google Maps. """
+        """ Show image on the Canvas. Implements correct image zoom
+        almost like in Google Maps. """
         box_image = self._canvas.coords(self._container)  # Get image area
         box_canvas = (
             self._canvas.canvasx(0),  # Get visible area of the canvas
@@ -252,7 +252,7 @@ class CanvasImage(ttk.Frame):
         # so it occupies the whole x axis
         if self._canvas.winfo_width() > curr_image_width:
             self._image_wider_than_canvas = False
-            self._curr_center[0] = self._canvas.canvasx(0) - box_scroll[0]
+            self._top_left_corner[0] = self._canvas.canvasx(0) - box_scroll[0]
         else:
             self._image_wider_than_canvas = True
             # Image distance from canvas left side
@@ -272,7 +272,7 @@ class CanvasImage(ttk.Frame):
         # so it occupies the whole Y axis
         if self._canvas.winfo_height() > curr_image_height:
             self._image_taller_than_canvas = False
-            self._curr_center[1] = self._canvas.canvasy(0) - box_scroll[1]
+            self._top_left_corner[1] = self._canvas.canvasy(0) - box_scroll[1]
         else:
             self._image_taller_than_canvas = True
             # Image distance from canvas top side
@@ -300,9 +300,9 @@ class CanvasImage(ttk.Frame):
 
         # Calculate current image center
         if self._image_wider_than_canvas:
-            self._curr_center[0] = round(x1 / self.im_scale)
+            self._top_left_corner[0] = round(x1 / self.im_scale)
         if self._image_taller_than_canvas:
-            self._curr_center[1] = round(y1 / self.im_scale)
+            self._top_left_corner[1] = round(y1 / self.im_scale)
 
         if int(x2 - x1) > 0 and int(y2 - y1) > 0:  # Show image if it in the visible area
             image = self._pyramid[max(0, self._curr_img)].crop(  # Crop current img from pyramid
@@ -369,18 +369,17 @@ class CanvasImage(ttk.Frame):
         """ Scrolling with the keyboard. Independent from the language of
         the keyboard, CapsLock, <Ctrl>+<key>, etc. """
         if event.state - self._previous_state == 4:  # Means that the Control key is pressed
-            pass  # Do nothing if Control key is pressed
-        else:
-            self._previous_state = event.state  # Remember the last keystroke state
-            # Up, Down, Left, Right keystrokes
-            if event.keycode in [40, 114, 85]:  # Scroll right: keys 'D', 'Right' or 'Numpad-6'
-                self._scroll_X('scroll',  1, 'unit', event=event)
-            elif event.keycode in [38, 113, 83]:  # Scroll left: keys 'A', 'Left' or 'Numpad-4'
-                self._scroll_X('scroll', -1, 'unit', event=event)
-            elif event.keycode in [25, 111, 80]:  # Scroll up: keys 'W', 'Up' or 'Numpad-8'
-                self._scroll_Y('scroll', -1, 'unit', event=event)
-            elif event.keycode in [39, 116, 88]:  # Scroll down: keys 'S', 'Down' or 'Numpad-2'
-                self._scroll_Y('scroll',  1, 'unit', event=event)
+            return  # Do nothing if Control key is pressed
+        self._previous_state = event.state  # Remember the last keystroke state
+        # Up, Down, Left, Right keystrokes
+        if event.keycode in [40, 114, 85]:  # Scroll right: keys 'D', 'Right' or 'Numpad-6'
+            self._scroll_X('scroll',  1, 'unit', event=event)
+        elif event.keycode in [38, 113, 83]:  # Scroll left: keys 'A', 'Left' or 'Numpad-4'
+            self._scroll_X('scroll', -1, 'unit', event=event)
+        elif event.keycode in [25, 111, 80]:  # Scroll up: keys 'W', 'Up' or 'Numpad-8'
+            self._scroll_Y('scroll', -1, 'unit', event=event)
+        elif event.keycode in [39, 116, 88]:  # Scroll down: keys 'S', 'Down' or 'Numpad-2'
+            self._scroll_Y('scroll',  1, 'unit', event=event)
 
     def _save_coordinates(self, event: tk.Event):
         """ Save current `temp_coords` to `saved_coords`. """
@@ -391,14 +390,19 @@ class CanvasImage(ttk.Frame):
         """ Convert canvas coords to image coords.
         The center of the image is its top left corner. """
         if self._image_wider_than_canvas:
-            x_coord = int(self._curr_center[0] + (x / self.im_scale))
+            x_coord = int(self._top_left_corner[0] + (x / self.im_scale))
         else:
-            x_coord = int((self._curr_center[0] + x) / self.im_scale)
+            x_coord = int((self._top_left_corner[0] + x) / self.im_scale)
 
         if self._image_taller_than_canvas:
-            y_coord = int(self._curr_center[1] + (y / self.im_scale))
+            y_coord = int(self._top_left_corner[1] + (y / self.im_scale))
         else:
-            y_coord = int((self._curr_center[1] + y) / self.im_scale)
+            y_coord = int((self._top_left_corner[1] + y) / self.im_scale)
+
+        # Because the coords conversion isn't totally accurate,
+        # we make sure that the coords returned are inside the image.
+        x_coord = min(x_coord, self.im_width - 1)
+        y_coord = min(y_coord, self.im_height - 1)
         return (x_coord, y_coord)
 
     def _on_mouse_movement(self, event: tk.Event):
