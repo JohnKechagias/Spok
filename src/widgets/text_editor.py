@@ -25,12 +25,12 @@ class TextEditor(ttk.Frame):
         self.rowconfigure(0, weight=1)
         self.columnconfigure(1, weight=1)
 
-        dark_color      = '#303030'
-        secondary_color = '#444444'
-        num_font_color  = '#687273'
-        text_font_color = '#e8e8e8'
-        cursor_color    = '#f7d4d4'
-        find_background = '#2b2b2b'
+        dark_color                      = '#303030'
+        secondary_color                 = '#444444'
+        num_font_color                  = '#687273'
+        text_font_color                 = '#e8e8e8'
+        cursor_color                    = '#f7d4d4'
+        find_background                 = '#2b2b2b'
         dark_background_color           = '#222222'
         secondary_dark_background_color = '#363636'
         selected_background_color       = '#444444'
@@ -130,14 +130,10 @@ class TextEditor(ttk.Frame):
             textvariable=self._find_text)
         self._find_entry.pack(side=LEFT, pady=2, padx=(10, 4))
 
-        # Import the image using PhotoImage function
-        assets_path = Path(__file__).parent.parent.parent / 'assets'
-        self._find_img= ttk.PhotoImage(file=assets_path / 'x.png')
-
         self._find_close_button = tk.Button(
             self._find_frame,
             autostyle=False,
-            image=self._find_img,
+            image='x',
             borderwidth=0,
             highlightthickness=0,
             background=dark_background_color,

@@ -41,17 +41,17 @@ class Logger(ttk.Frame):
         self.rowconfigure(0, weight=1)
         self.columnconfigure(1, weight=1)
 
-        timestamp_color = '#ffffff'
-        info_color      = '#ADB5BD'
-        warning_color   = '#f39c12'
-        error_color     = '#e74c3c'
-        Success_color   = '#00bc8c'
+        timestamp_color                 = '#ffffff'
+        info_color                      = '#ADB5BD'
+        warning_color                   = '#f39c12'
+        error_color                     = '#e74c3c'
+        Success_color                   = '#00bc8c'
 
-        dark_color      = '#303030'
-        secondary_color = '#444444'
-        num_font_color  = '#687273'
-        text_font_color = '#e8e8e8'
-        cursor_color    = '#f7d4d4'
+        dark_color                      = '#303030'
+        secondary_color                 = '#444444'
+        num_font_color                  = '#687273'
+        text_font_color                 = '#e8e8e8'
+        cursor_color                    = '#f7d4d4'
         dark_background_color           = '#222222'
         secondary_dark_background_color = '#363636'
         selected_background_color       = '#444444'
@@ -149,14 +149,10 @@ class Logger(ttk.Frame):
         )
         self._find_entry.pack(side=LEFT, pady=2, padx=(10, 4))
 
-        # Import the image using PhotoImage function
-        assets_path = Path(__file__).parent.parent.parent / 'assets'
-        self._find_button_img= ttk.PhotoImage(file=assets_path / 'x.png')
-
         self._find_close_button = tk.Button(
             self._find_frame,
             autostyle=False,
-            image=self._find_button_img,
+            image='x',
             borderwidth=0,
             highlightthickness=0,
             background=dark_background_color,
