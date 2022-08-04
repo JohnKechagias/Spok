@@ -36,6 +36,7 @@ import data_filtering
 from PIL import ImageFont
 from configparser import ConfigParser
 from file_dialog import open_folder
+import assets_manager
 
 
 
@@ -54,21 +55,6 @@ class FontSelector(ttk.Frame):
         self.font_dialog = FontDialog(parent=master.master, title='Font Selection')
 
         self.background_color = '#222222'
-
-        # =-=-=-=-=-=-=-=- Load Icons -=-=-=-=-=--=-=-=-=-=-=
-        image_files = {
-            'userlists-folder-default': 'userlists_folder_default_32px.png',
-            'userlists-folder-active': 'userlists_folder_active_32px.png',
-            'fonts-folder-default': 'fonts_folder_default_32px.png',
-            'fonts-folder-active': 'fonts_folder_active_32px.png',
-            'templates-folder-default': 'templates_folder_default_32px.png',
-            'templates-folder-active': 'templates_folder_active_32px.png'
-        }
-
-        self.photoimages = []
-        for key, val in image_files.items():
-            _path = ICONS / val
-            self.photoimages.append(ttk.PhotoImage(name=key, file=_path))
 
         if font is None:
             font = ttk.font.Font(
@@ -263,19 +249,6 @@ class InfoInput(ttk.Labelframe):
         self.image_changed_handler = None
         self.info_file_changed_handler = None
 
-        # =-=-=-=-=-=-=-=- Load Icons -=-=-=-=-=--=-=-=-=-=-=
-        image_files = {
-            'template-default': 'template_default_32px.png',
-            'template-active': 'template_active_32px.png',
-            'userlist-default': 'userlist_default_32px.png',
-            'userlist-active': 'userlist_active_32px.png'
-        }
-
-        self.photoimages = []
-        for key, val in image_files.items():
-            _path = ICONS / val
-            self.photoimages.append(ttk.PhotoImage(name=key, file=_path))
-
         self.select_template_button = ImageButton(
             master=self,
             default_image='template-default',
@@ -401,23 +374,10 @@ class EmailInput(ttk.Labelframe):
         self.test_mode = ttk.BooleanVar(value=testmode)
         self.personal_email = ttk.BooleanVar(value=personalemail)
 
-        # =-=-=-=-=-=-=-=- Load Icons -=-=-=-=-=--=-=-=-=-=-=
-        image_files = {
-            'test_email-default': 'test_email_default_32px.png',
-            'test_email-active': 'test_email_active_32px.png',
-            'email-default': 'email_default_32px.png',
-            'email-active': 'email_active_32px.png'
-        }
-
-        self.photoimages = []
-        for key, val in image_files.items():
-            _path = ICONS / val
-            self.photoimages.append(ttk.PhotoImage(name=key, file=_path))
-
         self.test_email_button = ImageButton(
             master=self,
-            default_image='test_email-default',
-            hover_image='test_email-active',
+            default_image='test-email-default',
+            hover_image='test-email-active',
             background=self.background_color
         )
         self.test_email_button.grid(row=0, column=0, padx=(0, 16), pady=4, sticky=W)
@@ -517,6 +477,10 @@ class App(ttk.Frame):
         self.rowconfigure(2, weight=1)
         self.columnconfigure(0, weight=1, minsize=450)
         self.columnconfigure(1, weight=1)
+
+        # =-=-=-=-=-=-=-=- Load Icons -=-=-=-=-=--=-=-=-=-=-=
+
+        assets_manager.load_assets(ICONS)
 
         # =-=-=-=-=-=-=-=- Read Config -=-=-=-=-=--=-=-=-=-=-=
 
