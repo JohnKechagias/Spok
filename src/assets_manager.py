@@ -7,13 +7,25 @@ import os
 ICONS = []
 
 def load_assets(assets_path: Path):
-    files = os.listdir(assets_path)
+    """ Load app assets. """
+    load_icons(assets_path / 'icons')
+
+
+def load_icons(icons_path: Path):
+    """ Loads icons assets. The name of a loaded icon is its
+    base filename, if we replace `_` with `-` and remove the
+    icon dimension, ex. `_32px` and the file extension.
+
+    ex. `default_icon_32px.png` is converted to `default-icon`.
+    """
+    files = os.listdir(icons_path)
 
     for icon in files:
-        words = icon.rsplit('_', 1)
-        # remove filetype from the last word
-        words[-1] = words[-1].split('.')[0]
-        words[0] = words[0].replace('_', '-')
+        name = icon.rsplit('.', 1)[0]
+        # remove icon dimension
+        if 'px' in name.rsplit('_', 1)[-1]:
+            name = name.rsplit('_', 1)[0]
+        name = name.replace('_', '-')
 
-        _path = assets_path / icon
-        ICONS.append(ttk.PhotoImage(name=words[0], file=_path))
+        _path = icons_path / icon
+        ICONS.append(ttk.PhotoImage(name=name, file=_path))

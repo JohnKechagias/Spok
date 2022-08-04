@@ -41,7 +41,7 @@ import assets_manager
 
 
 BASE_DIR = Path(__file__).parent.parent
-ICONS = BASE_DIR / 'assets' / 'icons'
+ASSETS = BASE_DIR / 'assets'
 CERTIFICATES = BASE_DIR / 'certificates'
 FONTS = BASE_DIR / 'fonts'
 TEMPLATES = BASE_DIR / 'templates'
@@ -480,7 +480,7 @@ class App(ttk.Frame):
 
         # =-=-=-=-=-=-=-=- Load Icons -=-=-=-=-=--=-=-=-=-=-=
 
-        assets_manager.load_assets(ICONS)
+        assets_manager.load_assets(ASSETS)
 
         # =-=-=-=-=-=-=-=- Read Config -=-=-=-=-=--=-=-=-=-=-=
 

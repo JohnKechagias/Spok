@@ -6,7 +6,6 @@ import ttkbootstrap as ttk
 from ttkbootstrap.constants import *
 
 from widgets.constants import User
-
 from .auto_scrollbar import AutoScrollbar
 
 
@@ -124,7 +123,8 @@ class DataViewer(ttk.Frame):
             self,
             orient=VERTICAL,
             bootstyle=scrollbar_bootstyle,
-            command=self._tree.yview)
+            command=self._tree.yview
+        )
 
         self._tree.configure(yscroll=self.scrollbar.set)
         self.scrollbar.grid(row=0, column=1, sticky=NS)
@@ -146,7 +146,8 @@ class DataViewer(ttk.Frame):
         self._tree.bind('<Double-Button-1>', self._enter_edit_mode, add='+')
         self._tree.bind('<space>', self.create_entry, add='+')
         self._tree.bind('<Escape>', self._cancel_edit_mode, add='+')
-        self._tree.bind('<Return>', self._leave_edit_mode, add='+')
+        self._edit_name_entry.bind('<Return>', self._leave_edit_mode, add='+')
+        self._edit_email_entry.bind('<Return>', self._leave_edit_mode, add='+')
         self._tree.bind('<Button-3>', self._leave_edit_mode, add='+')
         self._tree.bind('<Delete>', self._delete_selected_entries, add='+')
         self._tree.bind('<Control-z>', self._undo, add='+')
@@ -270,9 +271,22 @@ class DataViewer(ttk.Frame):
         temp = self._tree.get_children()[index]
         self._tree.selection_add(temp)
 
-    def edit_entry(self, entry, values:tuple, save_edit=True):
+    def edit_entry(
+        self,
+        entry: str,
+        values: Tuple[str, str],
+        save_edit: bool = True
+    ) -> None:
+        """ Change entrys values.
+
+        Args:
+            entry: The name of the entry to change.
+            values: The new entry values.
+            save_edit: If true, the edit is saved.
+        """
         old_values = self._tree.item(entry, 'values')
         new_values = (old_values[0], values[0], values[1])
+        # TODO might want to also save the tags
         if save_edit:
             self._push_edit(['edit', entry, old_values, new_values])
         self._tree.item(entry, values=new_values)
@@ -291,8 +305,16 @@ class DataViewer(ttk.Frame):
     def _leave_edit_mode(self, event: tk.Event = None):
         """ Save changes and leave edit mode. """
         if not self._edit_mode: return
+        old_values = self._tree.item(self._item_to_edit)['values']
         new_values = (self._edit_name.get(), self._edit_email.get())
         self.edit_entry(self._item_to_edit, new_values)
+
+        # If the new values are different from the old ones and the
+        # entry has an error flag, remove the error flag (consider the
+        # entry fixed).
+        if old_values != new_values:
+            self._tree.item(self._item_to_edit, tags=[])
+
         self._edit_mode = False
         self._edit_frame.place_forget()
 
