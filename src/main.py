@@ -35,6 +35,7 @@ import data_filtering
 
 from PIL import ImageFont
 from configparser import ConfigParser
+from file_dialog import open_folder
 
 
 
@@ -91,7 +92,7 @@ class FontSelector(ttk.Frame):
         self.cco_labelframe.pack(expand=YES, fill=BOTH)
         self.cco_labelframe.rowconfigure(5, weight=1)
 
-        # =-=-=-=-=-=- Folders Dialogs -=-=-=-=-=--=-=
+        # =-=-=-=-=-=- Folder Dialogs -=-=-=-=-=--=-=
 
         self.folders_frame = ttk.Frame(self.cco_labelframe)
         self.folders_frame.grid(row=0, column=0, sticky=EW, pady=(0, 6))
@@ -101,6 +102,7 @@ class FontSelector(ttk.Frame):
             default_image='userlists-folder-default',
             hover_image='userlists-folder-active',
             background=self.background_color,
+            command=partial(open_folder, USERLISTS)
         )
         self.userlists_folder_button.grid(row=0, column=0, padx=(0, 16))
         msg = 'Userlists folder.'
@@ -111,6 +113,7 @@ class FontSelector(ttk.Frame):
             default_image='fonts-folder-default',
             hover_image='fonts-folder-active',
             background=self.background_color,
+            command=partial(open_folder, FONTS)
         )
         self.fonts_folder_button.grid(row=0, column=1, padx=(0, 16))
         msg = 'Fonts folder.'
@@ -121,6 +124,7 @@ class FontSelector(ttk.Frame):
             default_image='templates-folder-default',
             hover_image='templates-folder-active',
             background=self.background_color,
+            command=partial(open_folder, TEMPLATES)
         )
         self.templates_folder_button.grid(row=0, column=2, padx=(0, 16))
         msg = 'Templates folder.'
