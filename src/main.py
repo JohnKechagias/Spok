@@ -52,6 +52,23 @@ class FontSelector(ttk.Frame):
         super().__init__(master)
         self.font_dialog = FontDialog(parent=master.master, title='Font Selection')
 
+        self.background_color = '#222222'
+
+        # =-=-=-=-=-=-=-=- Load Icons -=-=-=-=-=--=-=-=-=-=-=
+        image_files = {
+            'userlists-folder-default': 'userlists_folder_default_32px.png',
+            'userlists-folder-active': 'userlists_folder_active_32px.png',
+            'fonts-folder-default': 'fonts_folder_default_32px.png',
+            'fonts-folder-active': 'fonts_folder_active_32px.png',
+            'templates-folder-default': 'templates_folder_default_32px.png',
+            'templates-folder-active': 'templates_folder_active_32px.png'
+        }
+
+        self.photoimages = []
+        for key, val in image_files.items():
+            _path = ICONS / val
+            self.photoimages.append(ttk.PhotoImage(name=key, file=_path))
+
         if font is None:
             font = ttk.font.Font(
                 name='default_font',
@@ -61,7 +78,8 @@ class FontSelector(ttk.Frame):
                 weight=NORMAL,
                 slant=ROMAN,
                 underline=False,
-                overstrike=False)
+                overstrike=False
+            )
         self.font = font
 
         self.cco_labelframe = ttk.Labelframe(
@@ -72,6 +90,41 @@ class FontSelector(ttk.Frame):
         )
         self.cco_labelframe.pack(expand=YES, fill=BOTH)
         self.cco_labelframe.rowconfigure(5, weight=1)
+
+        # =-=-=-=-=-=- Folders Dialogs -=-=-=-=-=--=-=
+
+        self.folders_frame = ttk.Frame(self.cco_labelframe)
+        self.folders_frame.grid(row=0, column=0, sticky=EW, pady=(0, 6))
+
+        self.userlists_folder_button = ImageButton(
+            master=self.folders_frame,
+            default_image='userlists-folder-default',
+            hover_image='userlists-folder-active',
+            background=self.background_color,
+        )
+        self.userlists_folder_button.grid(row=0, column=0, padx=(0, 16))
+        msg = 'Userlists folder.'
+        ToolTip(self.userlists_folder_button, msg=msg, delay=1)
+
+        self.fonts_folder_button = ImageButton(
+            master=self.folders_frame,
+            default_image='fonts-folder-default',
+            hover_image='fonts-folder-active',
+            background=self.background_color,
+        )
+        self.fonts_folder_button.grid(row=0, column=1, padx=(0, 16))
+        msg = 'Fonts folder.'
+        ToolTip(self.fonts_folder_button, msg=msg, delay=1)
+
+        self.templates_folder_button = ImageButton(
+            master=self.folders_frame,
+            default_image='templates-folder-default',
+            hover_image='templates-folder-active',
+            background=self.background_color,
+        )
+        self.templates_folder_button.grid(row=0, column=2, padx=(0, 16))
+        msg = 'Templates folder.'
+        ToolTip(self.templates_folder_button, msg=msg, delay=1)
 
         # =-=-=-=-=-=- Colors Options -=-=-=-=-=--=-=
 
@@ -228,7 +281,7 @@ class InfoInput(ttk.Labelframe):
         )
         self.select_template_button.grid(row=0, column=0, padx=(0, 16), pady=4, sticky=W)
         msg = 'The image file to write on.'
-        ToolTip(self.select_template_button, msg=msg, delay=1.2)
+        ToolTip(self.select_template_button, msg=msg, delay=1)
 
         self.image_path_entry = ttk.Entry(
             master=self,
@@ -250,7 +303,7 @@ class InfoInput(ttk.Labelframe):
             command=self._select_info_file
         )
         msg = 'The info file to get the names and emails from.'
-        ToolTip(self.select_info_file_button, msg=msg, delay=1.2)
+        ToolTip(self.select_info_file_button, msg=msg, delay=1)
 
         self.select_info_file_button.grid(row=1, column=0, padx=(0, 16), pady=4, sticky=W)
 
@@ -365,7 +418,7 @@ class EmailInput(ttk.Labelframe):
         )
         self.test_email_button.grid(row=0, column=0, padx=(0, 16), pady=4, sticky=W)
         msg = 'The email to use in test mode.'
-        ToolTip(self.test_email_button, msg=msg, delay=1.2)
+        ToolTip(self.test_email_button, msg=msg, delay=1)
 
         self.test_email_entry = PlaceholderEntry(
             master=self,
@@ -387,7 +440,7 @@ class EmailInput(ttk.Labelframe):
         )
         self.real_email_button.grid(row=1, column=0, padx=(0, 16), pady=4, sticky=W)
         msg = 'The email to use when sending certificates.'
-        ToolTip(self.real_email_button, msg=msg, delay=1.2)
+        ToolTip(self.real_email_button, msg=msg, delay=1)
 
         self.real_email_entry = PlaceholderEntry(
             master=self,
