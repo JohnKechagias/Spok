@@ -1,14 +1,16 @@
 from functools import partial
+from typing import Union
 import clipboard
 
 import tkinter as tk
 import ttkbootstrap as ttk
 from ttkbootstrap.constants import *
+from .constants import *
 
 
 
 class ColorSelector(ttk.Frame):
-    def __init__(self, master=None, color: tuple[int, int, int] = None):
+    def __init__(self, master=None, color: Color = None):
         """ Initialize `ColorSelector` widget. """
         super().__init__(master)
 
@@ -69,34 +71,35 @@ class ColorSelector(ttk.Frame):
             highlightthickness=0
         )
         self.colored_button.pack(side=TOP, expand=YES, fill=X)
-        self.colored_button.bind('<Button-1>', self._on_colored_button_clicked, add='+')
+        self.colored_button.bind('<Button-1>',
+            self._on_colored_button_clicked, add='+')
 
     @staticmethod
-    def from_RGB(rgb: tuple[int, int, int]) -> str:
-        """ Translate an rgb tuple of int to a tkinter friendly color code. """
+    def rgb_to_hex(rgb: Color) -> Hex:
+        """ Convert a rgb color to hex. """
         r, g, b = rgb
         return f'#{r:02x}{g:02x}{b:02x}'
 
-    def update_color_value(self, color: str, *_):
+    def update_color_value(self, color_name: str, *_):
         """ Round color channel value and update buttons background. """
         # Normalize and update color value
         if self.update_in_progress == True: return
         try:
-            temp_value = self.color[color]['value'].get()
+            temp_value = self.color[color_name]['value'].get()
         except:
             return
 
         # aquire lock
         self.update_in_progress = True
         # Round the float value
-        self.color[color]['value'].set(round(temp_value))
+        self.color[color_name]['value'].set(round(temp_value))
         self.update_button_bg()
         # release lock
         self.update_in_progress = False
 
     def update_button_bg(self):
-        """ Set button background to be the same as the color that the
-        user has selected. """
+        """ Set button background to be the same as the color
+        that the user has selected. """
         # Sum of RGB channel values
         sum_of_color_values = sum(self.get_color_tuple())
         color_code = self.get_color_code()
@@ -117,25 +120,34 @@ class ColorSelector(ttk.Frame):
             text=color_code
         )
 
-    def get_color_tuple(self) -> tuple[str, str, str]:
+    def get_color_tuple(self) -> Color:
         """ Return color in RGB form. """
         return (i['value'].get() for i in self.color.values())
 
-    def get_color_code(self) -> str:
+    def get_color_code(self) -> Hex:
         """ Return color in Hex form. """
         color_RGB_tuple = self.get_color_tuple()
-        return self.from_RGB(color_RGB_tuple)
+        return self.rgb_to_hex(color_RGB_tuple)
 
-    def set_color(self, color: tuple[int, int, int] | str):
+    def set_color(self, color: Union[Color, Hex]):
         """ Set `color`. """
-        if isinstance(color, str):
+        if isinstance(color, Hex):
             color = tuple(int(color[i:i+2], 16) for i in (0, 2, 4))
 
         for i, channel in enumerate(self.color.values()):
             channel['value'].set(color[i])
 
-    def _on_key_pressed(top_widget, entry_text_var, event: tk.Event):
-        """ Handles key presses from user. """
+    def _on_key_pressed(
+        self,
+        color_int_var: tk.IntVar,
+        event: tk.Event
+    ):
+        """ Handles key presses from user.
+
+        Args:
+            color_int_var: The IntVar of the corresponding color.
+            event: Event args.
+        """
         min_value = 0
         max_value = 255
 
@@ -143,19 +155,19 @@ class ColorSelector(ttk.Frame):
             # Check if the cursor is in the end of the word
             # (don't want to fire the event if the user just wants
             # to move the cursor)
-            if event.widget.index(INSERT) == len(str(entry_text_var.get())):
-                value = entry_text_var.get() + 1
+            if event.widget.index(INSERT) == len(str(color_int_var.get())):
+                value = color_int_var.get() + 1
                 if value <= max_value:
-                    entry_text_var.set(value)
+                    color_int_var.set(value)
         elif event.keysym == 'Left':
             # Check if the cursor is at the start of the word
             # (don't want to fire the event if the user just wants
             # to move the cursor)
             if event.widget.index(INSERT) == 0:
-                value = entry_text_var.get() - 1
+                value = color_int_var.get() - 1
                 if value >= min_value:
-                    entry_text_var.set(value)
+                    color_int_var.set(value)
 
-    def _on_colored_button_clicked(self, *args):
-        """ Paste the colors hex code into the clipboard. """
+    def _on_colored_button_clicked(self, *_):
+        """ Paste the colors hex code to the clipboard. """
         clipboard.copy(self.get_color_code())

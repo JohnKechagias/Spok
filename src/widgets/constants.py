@@ -1,10 +1,16 @@
 from enum import Enum
-from typing import Tuple
+from typing import Tuple, List
 
 
 
-# type defs
+# Type defs
 User = Tuple[str, str, str]
+Color = Tuple[int, int, int]
+Hex = str
+
+# Ulist (userslist) is a custom list where each row represents a user.
+# Row: [name, email, errorflags_string].
+Ulist = List[List[str]]
 
 # Logging level enum
 class LogLevel(Enum):
