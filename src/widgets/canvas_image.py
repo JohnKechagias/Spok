@@ -1,10 +1,13 @@
 import math
+from optparse import Values
 import warnings
 from PIL import Image, ImageTk
 
 import ttkbootstrap as ttk
 from ttkbootstrap.constants import *
 import tkinter as tk
+
+from widgets.image_button import ImageButton
 
 from .auto_scrollbar import AutoScrollbar
 
@@ -58,25 +61,136 @@ class ImageViewer(ttk.Frame):
         self.text_alignment_combobox.current(item_index)
         self.text_alignment_combobox.pack(side=LEFT)
 
-        self.curr_coord_frame = ttk.Frame(self.top_frame)
+        self.curr_coord_frame = ttk.Frame(
+            self.top_frame,
+            bootstyle=SECONDARY,
+            borderwidth=2
+        )
         self.curr_coord_frame.pack(side=RIGHT)
 
-        self.x_curr_coord_label = ttk.Label(self.curr_coord_frame, text='X: ')
-        self.x_curr_coord_label.pack(side=LEFT, padx=(0, 3))
+        # =-=-=-=-=-=-=-=-=- TreeView -=-=-=-=-=-=-=-=-=-=-=
+
+        self.tree_frame = ttk.Frame(self, bootstyle=DARK)
+        # Make tree resizable
+        self.rowconfigure(0, weight=1)
+        #self.columnconfigure(0, weight=1)
+
+        # Define columns
+        self._columns = ('index', 'x', 'y')
+        self._tree_is_visible = False
+        self._item_to_edit = None
+
+        self._tree = ttk.Treeview(
+            self.tree_frame,
+            bootstyle=DARK,
+            columns=self._columns,
+            show=HEADINGS
+        )
+        self._tree.grid(row=0, column=0, sticky=NSEW)
+
+        # Setup scrollbar
+        self._scrollbar = AutoScrollbar(
+            self.tree_frame,
+            orient=VERTICAL,
+            bootstyle=DEFAULT,
+            command=self._tree.yview
+        )
+
+        self._tree.configure(yscroll=self._scrollbar.set)
+        self._scrollbar.grid(row=0, column=1, sticky=NS)
+
+        # Define and tweak columns
+        self._tree.column('#1', stretch=NO, width=50)
+        self._tree.column('#2', width=38, anchor=CENTER)
+        self._tree.column('#3', width=38, anchor=CENTER)
+
+        self._tree.heading('index', text='Index')
+        self._tree.heading('x', text='X')
+        self._tree.heading('y', text='Y')
 
         self.image_canvas.saved_x_coord.set(xcoord)
         self.image_canvas.saved_y_coord.set(ycoord)
+        self.background_color = '#222222'
 
-        self.x_curr_coord_entry = ttk.Entry(self.curr_coord_frame,
-            textvariable=self.image_canvas.saved_x_coord, width=4, bootstyle=DARK)
-        self.x_curr_coord_entry.pack(side=LEFT, padx=(0, 15))
+        self.add_coord_button = ImageButton(
+            self.top_frame,
+            default_image='add-default',
+            hover_image='add-active',
+            background=self.background_color,
+            command=self._add_new_coords
+        )
+        self.add_coord_button.pack(side=RIGHT, padx=(0, 8))
 
-        self.y_curr_coord_label = ttk.Label(self.curr_coord_frame, text='Y: ')
-        self.y_curr_coord_label.pack(side=LEFT, padx=(0, 3))
+        self.index = tk.StringVar(value='1')
+        self.index_coord_entry = ttk.Entry(
+            self.curr_coord_frame,
+            textvariable=self.index,
+            width=4,
+            bootstyle=SECONDARY,
+            state=READONLY
+        )
+        self.index_coord_entry.pack(side=LEFT, padx=(0, 2))
 
-        self.y_curr_coord_entry = ttk.Entry(self.curr_coord_frame,
-            textvariable=self.image_canvas.saved_y_coord, width=4, bootstyle=DARK)
+        self.index_coord_entry.bind('<Double-ButtonPress-1>',
+            self._show_tree, add='+')
+
+        self.index_coord_entry.bind('<ButtonPress-3>',
+            self._hide_tree, add='+')
+
+        self.x_curr_coord_entry = ttk.Entry(
+            self.curr_coord_frame,
+            textvariable=self.image_canvas.saved_x_coord,
+            width=4,
+            bootstyle=SECONDARY,
+            state=READONLY
+        )
+        self.x_curr_coord_entry.pack(side=LEFT, padx=(0, 2))
+
+        self.x_curr_coord_entry.bind('<Double-ButtonPress-1>',
+            self._show_tree, add='+')
+
+        self.x_curr_coord_entry.bind('<ButtonPress-3>',
+            self._hide_tree, add='+')
+
+        self.y_curr_coord_entry = ttk.Entry(
+            self.curr_coord_frame,
+            textvariable=self.image_canvas.saved_y_coord,
+            width=4,
+            bootstyle=SECONDARY,
+            state=READONLY
+        )
         self.y_curr_coord_entry.pack(side=LEFT)
+
+        self.y_curr_coord_entry.bind('<Double-ButtonPress-1>',
+            self._show_tree, add='+')
+
+        self.y_curr_coord_entry.bind('<ButtonPress-3>',
+            self._hide_tree, add='+')
+
+    def _show_tree(self, event: tk.Event):
+        if self._tree_is_visible:
+            return
+
+        self.tree_frame.place(
+            relx=1,
+            y=38,
+            width=134,
+            anchor=NE,
+            bordermode=OUTSIDE
+        )
+        self._tree_is_visible = True
+
+    def _hide_tree(self, event: tk.Event):
+        if not self._tree_is_visible:
+            return
+
+        self.tree_frame.place_forget()
+        self._tree_is_visible = False
+
+    def _add_new_coords(self, *args):
+        item_index = len(self._tree.get_children()) + 1
+        values =  [item_index, 0, 0]
+        self._tree.insert('', END, values=values)
 
     def get_saved_coords(self) -> tuple[int, int]:
         """ Return saved coords. """

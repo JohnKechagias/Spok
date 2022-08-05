@@ -81,7 +81,8 @@ class DataViewer(ttk.Frame):
             columns=self._columns,
             show=HEADINGS,
             *args,
-            **kwargs)
+            **kwargs
+        )
         self._tree.grid(row=0, column=0, sticky=NSEW)
 
         # The entry has the same email as another entry
@@ -295,8 +296,12 @@ class DataViewer(ttk.Frame):
         pass
 
     def _enter_edit_mode(self, event: tk.Event = None):
+        # Check if any entry is selected
+        try:
+            self._item_to_edit = self._tree.selection()[0]
+        except IndexError:
+            return
         self._edit_mode = True
-        self._item_to_edit = self._tree.selection()[0]
         user = self._tree.item(self._item_to_edit)['values']
         self._edit_name.set(user[1])
         self._edit_email.set(user[2])
