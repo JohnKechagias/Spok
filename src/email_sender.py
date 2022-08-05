@@ -126,7 +126,7 @@ class EmailSender:
         cc: Optional[List[str]] = None,
         bcc: Optional[List[str]] = None,
         attachments: Optional[List[str]] = None
-        ) -> Dict[str, str]:
+    ) -> Dict[str, str]:
         """ Creates and sends the raw email message.
 
         Args:

@@ -1,4 +1,3 @@
-from pathlib import Path
 import time
 
 import tkinter as tk
@@ -174,7 +173,7 @@ class Logger(ttk.Frame):
         message: str = None,
         log_level: LogLevel = LogLevel.INFO,
         newline=True
-        ):
+    ):
         """ Log a message. Each message has a logLevel assosiated
         with it.
 

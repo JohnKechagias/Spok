@@ -1,6 +1,8 @@
 import os
 from ttkbootstrap.validation import validator, ValidationEvent, add_validation
 
+
+
 @validator
 def _validate_path(event: ValidationEvent):
     """ Contents is a valid os path. """

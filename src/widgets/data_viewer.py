@@ -188,7 +188,7 @@ class DataViewer(ttk.Frame):
         tags: List[str] | Tuple[str, ...] = None,
         focus: bool = False,
         save_edit: bool = True
-        ) -> str:
+    ) -> str:
         """ Insert an item.
 
         POSSIBLE TAGS

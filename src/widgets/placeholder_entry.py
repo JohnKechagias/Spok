@@ -13,7 +13,7 @@ class PlaceholderEntry(ttk.Entry):
         placeholdercolor='gray',
         *args,
         **kwargs
-        ):
+    ) -> None:
         super().__init__(master, *args, **kwargs)
 
         self.placeholder = placeholder
@@ -50,7 +50,7 @@ class tkPlaceholderEntry(tk.Entry):
         placeholdercolor='gray',
         *args,
         **kwargs
-        ) -> None:
+    ) -> None:
         super().__init__(master, *args, **kwargs)
 
         self.placeholder = placeholder

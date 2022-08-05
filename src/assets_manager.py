@@ -7,7 +7,11 @@ import os
 ICONS = []
 
 def load_assets(assets_path: Path):
-    """ Load app assets. """
+    """ Load app assets.
+
+    Args:
+        assets_pathL: Path to assets folder.
+    """
     load_icons(assets_path / 'icons')
 
 
@@ -17,6 +21,9 @@ def load_icons(icons_path: Path):
     icon dimension, ex. `_32px` and the file extension.
 
     ex. `default_icon_32px.png` is converted to `default-icon`.
+
+    Args:
+        icons_path: Path to icons folder.
     """
     files = os.listdir(icons_path)
 

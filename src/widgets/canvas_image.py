@@ -20,7 +20,7 @@ class ImageViewer(ttk.Frame):
         ycoord=0,
         *args,
         **kwArgs
-        ) -> None:
+    ) -> None:
         super().__init__(master)
 
         self.top_frame = ttk.Frame(self)
@@ -96,7 +96,7 @@ class CanvasImage(ttk.Frame):
         bootstyle=DEFAULT,
         path=None,
         disable_zoom_out=False
-        ) -> None:
+    ) -> None:
         super().__init__(master)
         """ Initialize the ImageFrame. """
         self.im_scale = 1.0  # Scale for the canvas image zoom, public for outer classes

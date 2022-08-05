@@ -12,9 +12,6 @@ import ttkbootstrap as ttk
 
 
 
-NUMBER_OF_PROCESSES = mp.cpu_count() - 1
-
-
 class CertificateCreator:
     """ Used in creating certificates. Can also log actions. """
     def __init__(
@@ -28,8 +25,7 @@ class CertificateCreator:
         compress_level: int,
         log_func,
         num_of_processes: int = mp.cpu_count() - 1
-        ) -> None:
-        """ Create a CertificateCreator instanse. """
+    ) -> None:
         self.num_of_processes = num_of_processes
         self.image = Image.open(image_path)
         self.output_folder_path = output_folder_path

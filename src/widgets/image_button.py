@@ -12,7 +12,7 @@ class ImageButton(tk.Button):
         background: str = '#ffffff',
         *args,
         **kwargs
-        ) -> None:
+    ) -> None:
         super().__init__(
             master=master,
             image=default_image,

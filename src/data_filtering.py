@@ -1,13 +1,10 @@
+from widgets.constants import *
 from typing import List, Tuple
 import pandas as pd
 import unicodedata
 import re
 
 
-
-# ulist (userslist) is a custom list where each row represents a user.
-# Row: [name, email, errorflags_string].
-ulist = List[List[str]]
 
 def split_name_and_email(text: str) -> Tuple[str, str]:
     """ Strip the email from a text.
@@ -30,7 +27,7 @@ def remove_nonspacing_marks(s: str) -> str:
                    if unicodedata.category(c) != "Mn")
 
 
-def txt_to_list(txtPath: str) -> ulist:
+def txt_to_list(txtPath: str) -> Ulist:
     """ Convert a txt file to a list. Each row in the txt must contain
     an email and a name. If an entry is missing a name or an email and
     logging is disabled, it will be deleted.
@@ -77,7 +74,7 @@ def txt_to_list(txtPath: str) -> ulist:
     return users_list
 
 
-def exel_to_list(path: str) -> ulist:
+def exel_to_list(path: str) -> Ulist:
     """ Convert an exel to a userlist. """
     df = pd.read_excel(
         path,
@@ -86,7 +83,7 @@ def exel_to_list(path: str) -> ulist:
     return dataframe_to_list(df)
 
 
-def csv_to_list(path: str) -> ulist:
+def csv_to_list(path: str) -> Ulist:
     """ Convert a csv to a userlist. """
     df = pd.read_csv(
         path,
@@ -95,7 +92,7 @@ def csv_to_list(path: str) -> ulist:
     return dataframe_to_list(df)
 
 
-def dataframe_to_list(df: pd.DataFrame) -> ulist:
+def dataframe_to_list(df: pd.DataFrame) -> Ulist:
     """ Convert a dataframe to a userlist. """
     df.drop_duplicates(subset=None, keep="first", inplace=True)
     df.sort_values(by=["Name"], inplace=True)
@@ -105,7 +102,7 @@ def dataframe_to_list(df: pd.DataFrame) -> ulist:
     return user_list
 
 
-def list_to_txt(list: ulist) -> None:
+def list_to_txt(list: Ulist) -> None:
     """ Write a Ulist to txt. """
     with open("userlist.temp", "w", encoding="utf-8") as file:
         for item in list:
@@ -113,10 +110,10 @@ def list_to_txt(list: ulist) -> None:
 
 
 def name_email_list_to_ulist(
-    user_list: list[tuple[str, str]],
+    name_email_list: List[Tuple[str, str]],
     check_for_name_duplicates=True,
     check_for_email_duplicates=False
-    ) -> ulist:
+    ) -> Ulist:
     """ Convert a name-email list to a userlist.
 
     1.  Clean name and email by removing forbidden chars, ex. "(", ")"
@@ -129,7 +126,7 @@ def name_email_list_to_ulist(
     duplicate = False
     clean_user_list = []
 
-    for user in user_list:
+    for user in name_email_list:
         name = clean_name(user[0])
         email = clean_email(user[1])
 
