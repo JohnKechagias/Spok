@@ -172,7 +172,7 @@ class FontSizeSelector(ttk.Meter):
         maxfontsize=50,
         *args,
         **kwargs
-        ) -> None:
+    ) -> None:
         super().__init__(
             master=master,
             amounttotal=maxfontsize,
@@ -220,7 +220,7 @@ class InfoInput(ttk.Labelframe):
         master,
         testmode=True,
         logging=True
-        ) -> None:
+    ) -> None:
         super().__init__(master, text='Certificate Options', padding=(16, 10))
 
         self.columnconfigure(1, weight=1)
@@ -359,7 +359,7 @@ class EmailInput(ttk.Labelframe):
         realemail='',
         testmode=True,
         personalemail=False
-        ) -> None:
+    ) -> None:
         super().__init__(master, text='Emailing Options', padding=(16, 10))
 
         self.columnconfigure(1, weight=1)
@@ -458,7 +458,17 @@ class MainWindow(object):
 
         self.app = App(self.root)
         self.app.pack(expand=YES, fill=BOTH, padx=10, pady=10)
-        self.app.bind_class('TEntry', '<Return>', lambda _: self.app.focus_set(), add='+')
+        self.app.bind_class('TEntry',
+            '<Return>',
+            lambda _: self.app.focus_set(),
+            add='+'
+        )
+
+        self.app.bind_class('TEntry',
+            '<Escape>',
+            lambda _: self.app.focus_set(),
+            add='+'
+        )
 
     def __enter__(self):
         return self
