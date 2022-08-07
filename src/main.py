@@ -86,7 +86,7 @@ class FontSelector(ttk.Frame):
         self.userlists_folder_button = ImageButton(
             master=self.folders_frame,
             default_image='userlists-folder-default',
-            hover_image='userlists-folder-active',
+            active_image='userlists-folder-active',
             background=self.background_color,
             command=partial(open_folder, USERLISTS)
         )
@@ -97,7 +97,7 @@ class FontSelector(ttk.Frame):
         self.fonts_folder_button = ImageButton(
             master=self.folders_frame,
             default_image='fonts-folder-default',
-            hover_image='fonts-folder-active',
+            active_image='fonts-folder-active',
             background=self.background_color,
             command=partial(open_folder, FONTS)
         )
@@ -108,7 +108,7 @@ class FontSelector(ttk.Frame):
         self.templates_folder_button = ImageButton(
             master=self.folders_frame,
             default_image='templates-folder-default',
-            hover_image='templates-folder-active',
+            active_image='templates-folder-active',
             background=self.background_color,
             command=partial(open_folder, TEMPLATES)
         )
@@ -252,7 +252,7 @@ class InfoInput(ttk.Labelframe):
         self.select_template_button = ImageButton(
             master=self,
             default_image='template-default',
-            hover_image='template-active',
+            active_image='template-active',
             background=self.background_color,
             command=self._select_image_file
         )
@@ -275,7 +275,7 @@ class InfoInput(ttk.Labelframe):
         self.select_info_file_button = ImageButton(
             master=self,
             default_image='userlist-default',
-            hover_image='userlist-active',
+            active_image='userlist-active',
             background=self.background_color,
             command=self._select_info_file
         )
@@ -377,7 +377,7 @@ class EmailInput(ttk.Labelframe):
         self.test_email_button = ImageButton(
             master=self,
             default_image='test-email-default',
-            hover_image='test-email-active',
+            active_image='test-email-active',
             background=self.background_color
         )
         self.test_email_button.grid(row=0, column=0, padx=(0, 16), pady=4, sticky=W)
@@ -399,7 +399,7 @@ class EmailInput(ttk.Labelframe):
         self.real_email_button = ImageButton(
             master=self,
             default_image='email-default',
-            hover_image='email-active',
+            active_image='email-active',
             background=self.background_color
         )
         self.real_email_button.grid(row=1, column=0, padx=(0, 16), pady=4, sticky=W)
@@ -449,8 +449,8 @@ class MainWindow(object):
     def __init__(self, *args, **kwargs):
         self.root = ttk.Window(
             title='Certificates Creation',
-            themename='darkly',
-            minsize=(600, 565),
+            themename=THEMENAME,
+            minsize=(1200, 565),
             *args,
             **kwargs
         )
