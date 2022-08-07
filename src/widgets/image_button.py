@@ -1,38 +1,67 @@
 import tkinter as tk
+from typing import Optional
+
+from assets_manager import ICONS
+from .constants import *
 
 
 
 class ImageButton(tk.Button):
     def __init__(
         self,
-        master,
-        default_image: tk.PhotoImage,
-        hover_image: tk.PhotoImage,
-        active_image: tk.PhotoImage = None,
-        background: str = '#ffffff',
+        master: tk.Widget,
+        codename: Optional[str] = None,
+        default_image: Optional[tk.PhotoImage] = None,
+        active_image: Optional[tk.PhotoImage] = None,
+        hover_image: Optional[tk.PhotoImage] = None,
+        background: Hex = THEME['bg'],
         *args,
         **kwargs
     ) -> None:
+        """ Constructor.
+
+        Args:
+            master: Parent widget.
+            codename: Can be used to identify the image family
+                and select the proper default_image, hover_image and
+                active_image. An images (tk.PhotoImage) codename is
+                the image name without the part that denotes the images
+                use. ex. The codename of the image `background-active`
+                is `background`. The codename of the image `add-hover`
+                is `add`. `If we don't supply the image codename we
+                have to supply the individual images`.
+            default_image: The image to be used when the button is in
+                its default state.
+            hover_image The image to be used when the user is hovering
+                over the button.
+            active_image The image to be used when to user clicks the
+                button.
+            background: The buttons background color.
+        """
+        if codename is not None:
+            default_image = codename + '-default'
+            active_image = codename + '-active'
+            hover_image = codename + '-hover'
+
         super().__init__(
             master=master,
             image=default_image,
-            *args,
             autostyle=False,
             border=0,
             borderwidth=0,
             highlightthickness=0,
             background=background,
             activebackground=background,
+            *args,
             **kwargs
         )
 
         self.default_image = default_image
+        self.active_image = active_image
         self.hover_image = hover_image
 
-        if active_image is None:
-            self.active_image = self.hover_image
-        else:
-            self.active_image = active_image
+        if hover_image not in ICONS:
+            self.hover_image = self.active_image
 
         super().bind('<Enter>', self.enter)
         super().bind('<Leave>', self.leave)
