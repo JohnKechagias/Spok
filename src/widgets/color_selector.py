@@ -1,5 +1,5 @@
 from functools import partial
-from typing import Union
+from typing import Optional, Union
 import clipboard
 
 import tkinter as tk
@@ -10,8 +10,21 @@ from .constants import *
 
 
 class ColorSelector(ttk.Frame):
-    def __init__(self, master=None, color: Color = None):
-        """ Initialize `ColorSelector` widget. """
+    def __init__(
+        self,
+        master=None,
+        color: Optional[Color] = None,
+        foreground_threshold: int = 300
+        ):
+        """ Initializes `ColorSelector` widget.
+
+        Args:
+            master: Parent widget.
+            color: Default color.
+            foreground_threshold: Threshold that dictates when
+                the foreground of the `colored_button` alternates
+                between black and white.
+        """
         super().__init__(master)
 
         if color is None:
@@ -25,7 +38,7 @@ class ColorSelector(ttk.Frame):
         # Theshold that dictates the color of the colored button
         # foreground. Whem the button bg is dark, the fg is white
         # and when the bg is bright, the fg is black
-        self.foreground_threshold = 300
+        self.foreground_threshold = foreground_threshold
 
         # Is used to lock and unlock event handlers like a mutex
         self.update_in_progress = False
@@ -49,7 +62,13 @@ class ColorSelector(ttk.Frame):
                 variable=channel['value'],
                 value=75, to=255
             )
-            channel['scale'].pack(side=RIGHT, fill=X, expand=YES, padx=6, pady=6)
+            channel['scale'].pack(
+                side=RIGHT,
+                fill=X,
+                expand=YES,
+                padx=6,
+                pady=6
+            )
 
             channel['value'].trace_add('write',
                 partial(self.update_color_value, channel_name))
