@@ -34,5 +34,5 @@ def load_icons(icons_path: Path):
             name = name.rsplit('_', 1)[0]
         name = name.replace('_', '-')
 
-        _path = icons_path / icon
-        ICONS.append(ttk.PhotoImage(name=name, file=_path))
+        path = icons_path / icon
+        ICONS.append(ttk.PhotoImage(name=name, file=path))
