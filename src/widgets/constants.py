@@ -1,5 +1,6 @@
 from enum import Enum
 from typing import Tuple, List
+from ttkbootstrap.themes.standard import STANDARD_THEMES
 
 
 
@@ -24,3 +25,7 @@ class LogLevel(Enum):
 LEFT = 'left'
 MIDDLE = 'middle'
 RIGHT = 'right'
+
+# Theme constants
+THEMENAME = 'darkly'
+THEME = STANDARD_THEMES['darkly']['colors']
