@@ -200,7 +200,7 @@ class ImageViewer(ttk.Frame):
         )
         self.index_coord_entry.pack(side=LEFT, padx=(0, 2))
 
-        self.index_coord_entry.bind('<Double-ButtonPress-1>',
+        self.index_coord_entry.bind('<ButtonPress-1>',
             self._show_tree, add='+')
 
         self.index_coord_entry.bind('<ButtonPress-3>',
@@ -210,31 +210,17 @@ class ImageViewer(ttk.Frame):
             self.curr_coord_frame,
             textvariable=self.image_canvas.saved_x_coord,
             width=4,
-            bootstyle=SECONDARY,
-            state=READONLY
+            bootstyle=SECONDARY
         )
         self.x_curr_coord_entry.pack(side=LEFT, padx=(0, 2))
-
-        self.x_curr_coord_entry.bind('<Double-ButtonPress-1>',
-            self._show_tree, add='+')
-
-        self.x_curr_coord_entry.bind('<ButtonPress-3>',
-            self._hide_tree, add='+')
 
         self.y_curr_coord_entry = ttk.Entry(
             self.curr_coord_frame,
             textvariable=self.image_canvas.saved_y_coord,
             width=4,
-            bootstyle=SECONDARY,
-            state=READONLY
+            bootstyle=SECONDARY
         )
         self.y_curr_coord_entry.pack(side=LEFT)
-
-        self.y_curr_coord_entry.bind('<Double-ButtonPress-1>',
-            self._show_tree, add='+')
-
-        self.y_curr_coord_entry.bind('<ButtonPress-3>',
-            self._hide_tree, add='+')
 
     @property
     def tree_size(self) -> int:
