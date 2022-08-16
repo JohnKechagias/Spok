@@ -1,14 +1,10 @@
 import math
-from pathlib import Path
-from typing import Literal, Optional
 import warnings
 from PIL import Image, ImageTk
 
 import ttkbootstrap as ttk
 from ttkbootstrap.constants import *
 import tkinter as tk
-
-from widgets.image_button import ImageButton
 
 from .auto_scrollbar import AutoScrollbar
 
@@ -17,64 +13,36 @@ from .auto_scrollbar import AutoScrollbar
 class ImageViewer(ttk.Frame):
     def __init__(
         self,
-        master: tk.Widget = None,
-        imagepath: Path = None,
-        text_alignment: Literal['left', 'middle', 'right'] = LEFT,
-        xcoord: int = 0,
-        ycoord: int = 0,
-        tree_height: int = 1,
-        tree_max_height: int = 9,
+        master=None,
+        imagepath=None,
+        text_alignment=LEFT,
+        xcoord=0,
+        ycoord=0,
         *args,
         **kwArgs
     ) -> None:
         super().__init__(master)
 
-        self.background_color = '#222222'
-        # The number of saved coords. The curr_coord is
-        # also included. So, _tree_size = num of entries + 1.
-        # Should only be accessed by the property tree_size.
-        self._tree_size = 1
-        self.tree_max_height = tree_max_height
-
-        # =-=-=-=-=-=-=-=-=- Top frame -=-=-=-=-=-=-=-=-=-=-=
-
         self.top_frame = ttk.Frame(self)
         self.top_frame.pack(side=TOP, fill=X, pady=5)
 
-        self.image_canvas = CanvasImage(
-            self,
-            bootstyle=(DEFAULT, ROUND),
-            path=imagepath,
-            *args,
-            **kwArgs
-        )
+        self.image_canvas = CanvasImage(self,
+            bootstyle=(DEFAULT, ROUND), path=imagepath, *args, **kwArgs)
         self.image_canvas.pack(side=TOP, expand=YES, fill=BOTH)
-
-        # =-=-=-=-=-=-=-=- Canvas Coords -=-=-=-=-=-=-=-=-=-=
 
         self.x_coord_label = ttk.Label(self.top_frame, text='X: ')
         self.x_coord_label.pack(side=LEFT, padx=(0, 3))
 
-        self.x_coord_entry = ttk.Entry(
-            self.top_frame,
-            textvariable=self.image_canvas.temp_x_coord,
-            width=4,
-            bootstyle=DARK
-        )
+        self.x_coord_entry = ttk.Entry(self.top_frame,
+            textvariable=self.image_canvas.temp_x_coord, width=4, bootstyle=DARK)
         self.x_coord_entry.pack(side=LEFT, padx=(0, 15))
 
         self.y_coord_label = ttk.Label(self.top_frame, text='Y: ')
         self.y_coord_label.pack(side=LEFT, padx=(0, 3))
 
-        self.y_coord_entry = ttk.Entry(
-            self.top_frame,
-            textvariable=self.image_canvas.temp_y_coord,
-            width=4,
-            bootstyle=DARK
-        )
+        self.y_coord_entry = ttk.Entry(self.top_frame,
+            textvariable=self.image_canvas.temp_y_coord, width=4, bootstyle=DARK)
         self.y_coord_entry.pack(side=LEFT, padx=(0, 40))
-
-        # =-=-=-=-=-=-=-=- Text Alignment -=-=-=-=-=-=-=-=-=-=
 
         self.text_alignment = ttk.StringVar()
         self.text_alignment_list = ('left', 'middle', 'right')
@@ -90,248 +58,25 @@ class ImageViewer(ttk.Frame):
         self.text_alignment_combobox.current(item_index)
         self.text_alignment_combobox.pack(side=LEFT)
 
-        # =-=-=-=-=-=-=-=-=- TreeView -=-=-=-=-=-=-=-=-=-=-=
+        self.curr_coord_frame = ttk.Frame(self.top_frame)
+        self.curr_coord_frame.pack(side=RIGHT)
 
-        self.tree_frame = ttk.Frame(
-            self,
-            bootstyle=SECONDARY,
-            borderwidth=4
-        )
-
-        self.tree_frame.bind('<ButtonPress-3>',
-            self._hide_tree, add='+')
-
-        # Make tree resizable
-        self.rowconfigure(0, weight=1)
-
-        # Define columns
-        self._columns = ('index', 'x', 'y')
-        self._tree_is_visible = False
-        # Is used to hold the old curr cord
-        # so we can add it to the tree
-        self._old_curr_coord = None
-
-        self._tree = ttk.Treeview(
-            self.tree_frame,
-            bootstyle=DARK,
-            columns=self._columns,
-            selectmode=BROWSE,
-            height=self.tree_size - 1,
-            show=HEADINGS
-        )
-        self._tree.grid(row=0, column=0, sticky=NSEW)
-
-        # Setup scrollbar
-        self._scrollbar = AutoScrollbar(
-            self.tree_frame,
-            orient=VERTICAL,
-            bootstyle=DEFAULT,
-            command=self._tree.yview
-        )
-
-        self._tree.configure(yscroll=self._scrollbar.set)
-        self._scrollbar.grid(row=0, column=1, sticky=NS)
-
-        self._tree.column('#1', stretch=NO, width=46)
-        self._tree.column('#2', width=38, anchor=CENTER)
-        self._tree.column('#3', width=38, anchor=CENTER)
-
-        self._tree.heading('index', text='Index')
-        self._tree.heading('x', text='X')
-        self._tree.heading('y', text='Y')
+        self.x_curr_coord_label = ttk.Label(self.curr_coord_frame, text='X: ')
+        self.x_curr_coord_label.pack(side=LEFT, padx=(0, 3))
 
         self.image_canvas.saved_x_coord.set(xcoord)
         self.image_canvas.saved_y_coord.set(ycoord)
 
-        self._tree.bind(
-            '<Double-ButtonPress-1>',
-            self._on_entry_double_clicked,
-            add='+'
-        )
+        self.x_curr_coord_entry = ttk.Entry(self.curr_coord_frame,
+            textvariable=self.image_canvas.saved_x_coord, width=4, bootstyle=DARK)
+        self.x_curr_coord_entry.pack(side=LEFT, padx=(0, 15))
 
-        self._tree.bind('<ButtonPress-3>',
-            self._hide_tree, add='+')
+        self.y_curr_coord_label = ttk.Label(self.curr_coord_frame, text='Y: ')
+        self.y_curr_coord_label.pack(side=LEFT, padx=(0, 3))
 
-        #TODO Load saved coords
-
-        # =-=-=-=-=-=-=-=- Saved Coords -=-=-=-=-=-=-=-=-=-=
-
-        self.curr_coord_frame = ttk.Frame(
-            self.top_frame,
-            bootstyle=SECONDARY,
-            borderwidth=2
-        )
-        self.curr_coord_frame.pack(side=RIGHT)
-
-        self.curr_coord_frame.bind('<Double-ButtonPress-1>',
-            self._show_tree, add='+')
-
-        self.curr_coord_frame.bind('<ButtonPress-3>',
-            self._hide_tree, add='+')
-
-        self.buttons_frame = ttk.Frame(self.top_frame)
-        self.buttons_frame.pack(side=RIGHT, padx=(0, 8))
-
-        self.add_coord_button = ImageButton(
-            self.buttons_frame,
-            codename='add',
-            background=self.background_color,
-            command=self._add_saved_coord_entry
-        )
-        self.add_coord_button.pack(side=TOP)
-
-        self.remove_coord_button = ImageButton(
-            self.buttons_frame,
-            codename='minus',
-            background=self.background_color,
-            command=self._remove_saved_coord_entry
-        )
-        self.remove_coord_button.pack(side=BOTTOM)
-
-        # Holds the curr_coords index
-        self.index = tk.StringVar(value='1')
-
-        self.index_coord_entry = ttk.Entry(
-            self.curr_coord_frame,
-            textvariable=self.index,
-            width=4,
-            bootstyle=SECONDARY,
-            state=READONLY
-        )
-        self.index_coord_entry.pack(side=LEFT, padx=(0, 2))
-
-        self.index_coord_entry.bind('<ButtonPress-1>',
-            self._show_tree, add='+')
-
-        self.index_coord_entry.bind('<ButtonPress-3>',
-            self._hide_tree, add='+')
-
-        self.x_curr_coord_entry = ttk.Entry(
-            self.curr_coord_frame,
-            textvariable=self.image_canvas.saved_x_coord,
-            width=4,
-            bootstyle=SECONDARY
-        )
-        self.x_curr_coord_entry.pack(side=LEFT, padx=(0, 2))
-
-        self.y_curr_coord_entry = ttk.Entry(
-            self.curr_coord_frame,
-            textvariable=self.image_canvas.saved_y_coord,
-            width=4,
-            bootstyle=SECONDARY
-        )
+        self.y_curr_coord_entry = ttk.Entry(self.curr_coord_frame,
+            textvariable=self.image_canvas.saved_y_coord, width=4, bootstyle=DARK)
         self.y_curr_coord_entry.pack(side=LEFT)
-
-    @property
-    def tree_size(self) -> int:
-        return self._tree_size
-
-    @tree_size.setter
-    def tree_size(self, value: int):
-        self._tree_size = value
-        # Update tree height. Height can't be larger than
-        # tree_max_height.
-        tree_height = min(self._tree_size - 1, self.tree_max_height)
-        self._tree.configure(height=tree_height)
-
-    def _show_tree(self, event: tk.Event):
-        if self._tree_is_visible:
-            return
-
-        self.tree_frame.place(
-            relx=1,
-            y=38,
-            width=134,
-            anchor=NE,
-            bordermode=OUTSIDE
-        )
-        self._tree_is_visible = True
-
-    def _hide_tree(self, event: tk.Event):
-        if not self._tree_is_visible:
-            return
-
-        self.tree_frame.place_forget()
-        self._tree_is_visible = False
-
-    def _on_entry_double_clicked(self, event: tk.Event):
-        """ Callback for when a TreeView entry is double clicked. """
-        # We must first save the curr coord to a temp var,
-        # then set the new curr coord and lastly add the
-        # old curr coord to the tree. We can't just add the
-        # curr coord to the tree and then set the new coord,
-        # because that causes a bug where if the user presses
-        # the consecutively very quickly the new tree entry
-        # (which is the old curr coord) gets duplicated.
-        self._swap_curr_coord()
-
-    def _swap_curr_coord(self, index: Optional[int] = None):
-        """ Swap the current coord with a coord in the tree
-        and save the old current coord in the tree.
-
-        Args:
-            index: The index of the tree coord to swap the
-                current coord with. If the index is None,
-                the top coord from the tree selection is
-                set as the current coord instead.
-        """
-        values = [
-            self.index.get(),
-            self.image_canvas.saved_x_coord.get(),
-            self.image_canvas.saved_y_coord.get()
-        ]
-        # Save curr coord to a temp var
-        self._old_curr_coord = values
-
-        try:
-            if index is not None:
-                entry_to_set = self._tree.get_children()[index]
-            else:
-                entry_to_set = self._tree.selection()[0]
-        except IndexError:
-            return
-        values = self._tree.item(entry_to_set)['values']
-        self.index.set(values[0])
-        self.image_canvas.saved_x_coord.set(values[1])
-        self.image_canvas.saved_y_coord.set(values[2])
-
-        # Add old curr coord to the tree
-        tree_index = int(self._old_curr_coord[0]) - 1
-        self._tree.insert('', tree_index, values=self._old_curr_coord)
-
-        # Delete new curr coord from the tree
-        self._tree.delete(entry_to_set)
-
-    def _add_saved_coord_entry(self, *args):
-        """ Add a new saved coord entry to the tree. """
-        self.tree_size += 1
-        values =  [self.tree_size, 0, 0]
-        self._tree.insert('', END, values=values)
-
-    def _remove_saved_coord_entry(self, *_):
-        """ Remove the saved coord entry with the largest index
-        from the tree. The current coord is also included. If the
-        current coord is the entry with the largest index, its
-        place is given to the coord with the new largest index
-        (former 2nd largest index). """
-        # If only one coord exists (the current coord),
-        # don't delete it
-        if self.tree_size == 1:
-            return
-
-        # If the current coord is the last in the tree
-        # (largest index), remove it and give its place
-        # to the coord with the new largest index
-        # (former 2nd largest index)
-        if int(self.index.get()) == self.tree_size:
-            self._swap_curr_coord(-1)
-
-        try:
-            entry_to_delete = self._tree.get_children()[-1]
-        except IndexError:
-            return
-        self._tree.delete(entry_to_delete)
-        self.tree_size -= 1
 
     def get_saved_coords(self) -> tuple[int, int]:
         """ Return saved coords. """
