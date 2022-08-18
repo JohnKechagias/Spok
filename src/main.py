@@ -26,6 +26,7 @@ from widgets.email_creator import EmailCreator
 from widgets.placeholder_entry import PlaceholderEntry
 from widgets.text_editor import TextEditor
 from widgets.image_button import ImageButton
+from widgets.font_manager import FontManager
 from widgets.constants import *
 
 from googleapiclient.errors import HttpError
@@ -54,8 +55,6 @@ class FontSelector(ttk.Frame):
         super().__init__(master)
         self.font_dialog = FontDialog(parent=master.master, title='Font Selection')
 
-        self.background_color = '#222222'
-
         if font is None:
             font = ttk.font.Font(
                 name='default_font',
@@ -78,43 +77,28 @@ class FontSelector(ttk.Frame):
         self.cco_labelframe.pack(expand=YES, fill=BOTH)
         self.cco_labelframe.rowconfigure(5, weight=1)
 
-        # =-=-=-=-=-=- Folder Dialogs -=-=-=-=-=--=-=
+        # =-=-=-=-=-=- Font Manager -=-=-=-=-=-=--=-=
 
-        self.folders_frame = ttk.Frame(self.cco_labelframe)
-        self.folders_frame.grid(row=0, column=0, sticky=EW, pady=(0, 6))
-
-        self.userlists_folder_button = ImageButton(
-            master=self.folders_frame,
-            default_image='userlists-folder-default',
-            active_image='userlists-folder-active',
-            background=self.background_color,
-            command=partial(open_folder, USERLISTS)
+        self.font_manager_button = ttk.Checkbutton(
+            master=self.cco_labelframe,
+            bootstyle=(WARNING, TOOLBUTTON),
+            text='Font Manager'
         )
-        self.userlists_folder_button.grid(row=0, column=0, padx=(0, 16))
-        msg = 'Userlists folder.'
-        ToolTip(self.userlists_folder_button, msg=msg, delay=1)
+        self.font_manager_button.grid(row=0, column=0, sticky=EW, pady=6)
 
-        self.fonts_folder_button = ImageButton(
-            master=self.folders_frame,
-            default_image='fonts-folder-default',
-            active_image='fonts-folder-active',
-            background=self.background_color,
-            command=partial(open_folder, FONTS)
+        self.current_font_settings = ttk.StringVar()
+        self.font_settings = ('left', 'middle', 'right')
+        self.font_settings_combobox = ttk.Combobox(
+            master=self.cco_labelframe,
+            bootstyle=WARNING,
+            state=READONLY,
+            textvariable=self.current_font_settings,
+            width=6,
+            values=self.font_settings
         )
-        self.fonts_folder_button.grid(row=0, column=1, padx=(0, 16))
-        msg = 'Fonts folder.'
-        ToolTip(self.fonts_folder_button, msg=msg, delay=1)
-
-        self.templates_folder_button = ImageButton(
-            master=self.folders_frame,
-            default_image='templates-folder-default',
-            active_image='templates-folder-active',
-            background=self.background_color,
-            command=partial(open_folder, TEMPLATES)
-        )
-        self.templates_folder_button.grid(row=0, column=2, padx=(0, 16))
-        msg = 'Templates folder.'
-        ToolTip(self.templates_folder_button, msg=msg, delay=1)
+        item_index = self.font_settings.index('left')
+        self.font_settings_combobox.current(item_index)
+        #self.font_settings_combobox.grid(row=0, column=0, sticky=EW, pady=6)
 
         # =-=-=-=-=-=- Colors Options -=-=-=-=-=--=-=
 
@@ -532,12 +516,21 @@ class App(ttk.Frame):
 
         # =-=-=-=-=-=-=-=-=- Top Frame -=-=-=-=-=--=-=-=-=-=-=
 
-        self.modes_selection_title = ttk.Label(
+        self.main_title = ttk.Label(
             master=self.topframe,
-            text='Certificates Creator',
-            font='-size 24 -weight bold'
+            text='Spok',
+            font='-size 26 -weight bold'
         )
-        self.modes_selection_title.pack(side=LEFT)
+        self.main_title.pack(side=LEFT, anchor=SW)
+
+        self.secondary_title = ttk.Label(
+            master=self.topframe,
+            text=' a certificate creator',
+            font='-size 16 -weight bold',
+            justify=CENTER,
+            padding=(0, 0, 0, 3)
+        )
+        self.secondary_title.pack(side=LEFT, anchor=SW)
 
         self.mode = ttk.StringVar()
         self.modes_selection_label = ttk.Label(
@@ -554,10 +547,47 @@ class App(ttk.Frame):
             values=self.modes
         )
         self.modes_combobox.current(0)
-        self.modes_combobox.pack(padx=10, side=RIGHT)
-        self.modes_selection_label.pack(side=RIGHT)
+        #self.modes_combobox.pack(padx=10, side=RIGHT)
+        #self.modes_selection_label.pack(side=RIGHT)
 
         self.mode.trace_add('write', self.switch_mode)
+
+        # =-=-=-=-=-=- Folder Dialogs -=-=-=-=-=--=-=
+
+        self.folders_frame = ttk.Frame(self.topframe)
+        self.folders_frame.pack(side=RIGHT)
+
+        self.userlists_folder_button = ImageButton(
+            master=self.folders_frame,
+            default_image='userlists-folder-default',
+            active_image='userlists-folder-active',
+            command=partial(open_folder, USERLISTS)
+        )
+        self.userlists_folder_button.grid(row=0, column=0, padx=(0, 16))
+        msg = 'Userlists folder.'
+        ToolTip(self.userlists_folder_button, msg=msg, delay=1)
+
+        self.fonts_folder_button = ImageButton(
+            master=self.folders_frame,
+            default_image='fonts-folder-default',
+            active_image='fonts-folder-active',
+            command=partial(open_folder, FONTS)
+        )
+        self.fonts_folder_button.grid(row=0, column=1, padx=(0, 16))
+        msg = 'Fonts folder.'
+        ToolTip(self.fonts_folder_button, msg=msg, delay=1)
+
+        self.templates_folder_button = ImageButton(
+            master=self.folders_frame,
+            default_image='templates-folder-default',
+            active_image='templates-folder-active',
+            command=partial(open_folder, TEMPLATES)
+        )
+        self.templates_folder_button.grid(row=0, column=2, padx=(0, 16))
+        msg = 'Templates folder.'
+        ToolTip(self.templates_folder_button, msg=msg, delay=1)
+
+        # =-=-=-=-=-=-=-=-=- Progressbar -=-=-=-=-=--=-=-=-=-=-=
 
         self.progressbar_var = ttk.IntVar(value=0)
         self.progressbar = ttk.Progressbar(
@@ -567,7 +597,7 @@ class App(ttk.Frame):
         )
 
         self.seperator = ttk.Separator(self)
-        self.seperator.grid(row=1, column=0, columnspan=3, sticky=EW, pady=6)
+        self.seperator.grid(row=1, column=0, columnspan=3, sticky=EW, pady=(2, 6))
 
         # =-=-=-=-=-=-=-=-=- Left Frame -=-=-=-=-=--=-=-=-=-=-=
 
@@ -620,6 +650,10 @@ class App(ttk.Frame):
         self.file_manager_notebook.enable_traversal()
 
         # Initialize widgets
+        self.font_manager = FontManager(
+            self.file_manager_notebook,
+            scrollbar_bootstyle=(DEFAULT, ROUND)
+        )
         self.text_editor = TextEditor(
             self.file_manager_notebook,
             scrollbar_bootstyle=(DEFAULT, ROUND)
@@ -638,6 +672,7 @@ class App(ttk.Frame):
         )
 
         self.filemanager_children = {}
+        self.filemanager_children['Font Manager'] = self.font_manager
         self.filemanager_children['Info File'] = self.text_editor
         self.filemanager_children['Name List'] = self.data_viewer
         self.filemanager_children['Email'] = self.email_creator
@@ -770,7 +805,7 @@ class App(ttk.Frame):
         """ Change the app mode. If the current mode is emailing,
         switch to certificate creation and vise versa. """
         mode = self.modes_combobox.get()
-        self.modes_selection_title.configure(text=mode)
+        self.main_title.configure(text=mode)
 
         if self.mode.get() == 'Email Sender':
             self.switch_to_emailing_mode()
