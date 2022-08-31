@@ -29,3 +29,12 @@ RIGHT = 'right'
 # Theme constants
 THEMENAME = 'darkly'
 THEME = STANDARD_THEMES['darkly']['colors']
+
+# Font constants
+small_font = 10
+medium_font = 12
+big_font = 14
+
+small_size = '-size 10'
+medium_size = '-size 12'
+big_size = 'size 14'
