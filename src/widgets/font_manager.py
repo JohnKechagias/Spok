@@ -1,6 +1,9 @@
-from typing import Union
+from typing import Literal, Union
+import tkinter as tk
+from tkinter.font import *
 import ttkbootstrap as ttk
 from ttkbootstrap.constants import *
+from widgets.constants import Hex
 
 from widgets.scrollable_frame import ScrollableFrame
 
@@ -39,10 +42,8 @@ class FontManager(ttk.Frame):
         self.rowconfigure(0, weight=1)
         self.columnconfigure(0, weight=1)
 
-        self.font = ('Arial', '14')
-
         self.container_frame = ttk.Frame(self, bootstyle=INFO)
-        self.container_frame.grid(row=0, column=0)
+        self.container_frame.grid(row=0, column=0, sticky=NSEW)
 
         self._font_frame_container = ScrollableFrame(
             self.container_frame,
@@ -55,28 +56,48 @@ class FontManager(ttk.Frame):
 
         self.font_frame = self._font_frame_container.frame
         self.font_frame.columnconfigure(0, weight=1)
-        self.font_frame.columnconfigure(5, weight=1)
+        self.font_frame.columnconfigure(1, weight=1)
         self.font_frame.columnconfigure(6, weight=1)
+        self.font_frame.columnconfigure(7, weight=1)
 
-
-        self._columns = ('font', 'size', 'color', 'weight',
+        self._columns = ('name', 'font', 'size', 'color', 'weight',
             'slant', 'effects', 'preview')
-
+        self._num_of_cols = len(self._columns)
         self.columns = []
+        self.last_row = 0
 
-        for index, col in enumerate(self._columns):
+        self.add_font_settings(*self._columns)
+
+    def add_font_settings(
+        self,
+        name: str,
+        family: str,
+        size: int,
+        color: Hex,
+        weight: Literal['normal', 'bold'] = NORMAL,
+        slant: Literal['roman', 'italic'] = ROMAN,
+        underline: bool = True,
+        overstrike: bool = True
+    ):
+        font_info = (name, family, str(size), color, weight, slant, str(underline), str(overstrike))
+        col_labels = []
+
+        for index in range(self._num_of_cols):
             col_label = ttk.Label(
                 self.font_frame,
                 bootstyle=(INVERSE, DARK),
-                text=col,
-                justify=LEFT,
-                font=self.font
+                text=font_info[index],
+                justify=LEFT
             )
-            col_label.grid(row=0, column=index, sticky=NSEW, padx=1, pady=1)
-            self.columns.append(col_label)
-
-    def add_font_settings(self): ...
+            col_label.grid(row=self.last_row, column=index, sticky=NSEW, padx=1, pady=1)
+            col_labels.append(col_label)
+        self.columns.append(col_labels)
+        self.last_row += 1
 
     def remove_font_settings(self, row_index: Union[int, END]):
         if row_index == END:
             row_index = -1
+        
+        for label in self.columns[row_index]:
+            label.grid_remove()
+        self.columns.pop(row_index)
