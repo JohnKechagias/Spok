@@ -106,8 +106,7 @@ class FontSelector(ttk.Frame):
             master=self.cco_labelframe,
             text='Select Font Color',
             bootstyle=(INVERSE, SECONDARY),
-            anchor=CENTER,
-            font='-size 13'
+            anchor=CENTER
         )
         self.color_Label.grid(row=1, column=0, sticky=EW, pady=6)
 
@@ -210,7 +209,6 @@ class InfoInput(ttk.Labelframe):
         self.columnconfigure(1, weight=1)
         self.columnconfigure(2, weight=1)
 
-        self.font = '-size 13'
         self.background_color = '#222222'
 
         self.image_path = ttk.StringVar()
@@ -246,7 +244,6 @@ class InfoInput(ttk.Labelframe):
 
         self.image_path_entry = ttk.Entry(
             master=self,
-            font=self.font,
             textvariable=self.image_path
         )
         self.image_path_entry.grid(row=0, column=1, columnspan=3, pady=6, sticky=EW)
@@ -270,7 +267,6 @@ class InfoInput(ttk.Labelframe):
 
         self.info_path_entry = ttk.Entry(
             master=self,
-            font=self.font,
             textvariable=self.info_file_path
         )
         self.info_path_entry.grid(row=1, column=1, columnspan=3, pady=6, sticky=EW)
@@ -349,7 +345,6 @@ class EmailInput(ttk.Labelframe):
         self.columnconfigure(1, weight=1)
         self.columnconfigure(2, weight=1)
 
-        self.font = '-size 13'
         self.background_color = '#222222'
 
         self.test_email = ttk.StringVar()
@@ -372,7 +367,6 @@ class EmailInput(ttk.Labelframe):
             master=self,
             text=testemail,
             placeholder='Testing Email',
-            font=self.font,
             textvariable=self.test_email
         )
         self.test_email_entry.grid(row=0, column=1, columnspan=2, pady=6, sticky=EW)
@@ -394,7 +388,6 @@ class EmailInput(ttk.Labelframe):
             master=self,
             text=realemail,
             placeholder='Real Email',
-            font=self.font,
             textvariable=self.real_email
         )
         self.real_email_entry.grid(row=1, column=1, columnspan=2, pady=6, sticky=EW)
@@ -519,14 +512,14 @@ class App(ttk.Frame):
         self.main_title = ttk.Label(
             master=self.topframe,
             text='Spok',
-            font='-size 26 -weight bold'
+            font='-size 20 -weight bold'
         )
         self.main_title.pack(side=LEFT, anchor=SW)
 
         self.secondary_title = ttk.Label(
             master=self.topframe,
             text=' a certificate creator',
-            font='-size 16 -weight bold',
+            font='-size 14 -weight bold',
             justify=CENTER,
             padding=(0, 0, 0, 3)
         )
@@ -804,8 +797,6 @@ class App(ttk.Frame):
     def switch_mode(self, *args):
         """ Change the app mode. If the current mode is emailing,
         switch to certificate creation and vise versa. """
-        mode = self.modes_combobox.get()
-        self.main_title.configure(text=mode)
 
         if self.mode.get() == 'Email Sender':
             self.switch_to_emailing_mode()

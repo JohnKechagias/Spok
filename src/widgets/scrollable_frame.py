@@ -36,18 +36,21 @@ class ScrollableFrame(ttk.Frame):
         self.frame.columnconfigure(0, weight=1)
         self.frame.rowconfigure(0, weight=1)
 
-        self.frame.bind(
-            '<Configure>',
-            lambda _: self.canvas.configure(
-                scrollregion=self.canvas.bbox(ALL)
-            )
-        )
+        self.frame.bind('<Configure>', self._on_frame_configure)
+        self.canvas.bind('<Configure>', self._on_canvas_configure)
 
-        self.canvas.create_window(
+        self._frame_id = self.canvas.create_window(
             (0, 0),
             window=self.frame,
-            anchor=CENTER,
+            anchor=NW,
             width=500
         )
 
         self.canvas.configure(yscrollcommand=self.scrollbar.set)
+
+    def _on_frame_configure(self,  event: tk.Event):       
+        self.canvas.configure(scrollregion=self.frame.bbox(ALL))
+
+    def _on_canvas_configure(self, event: tk.Event):
+        width = event.width
+        self.canvas.itemconfigure(self._frame_id, width=self.canvas.winfo_width())

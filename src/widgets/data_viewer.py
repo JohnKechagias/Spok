@@ -114,7 +114,7 @@ class DataViewer(ttk.Frame):
         )
 
         # Define and tweak columns
-        self._tree.column("# 1", stretch=NO, width=45)
+        self._tree.column('#1', stretch=NO, width=50)
         self._tree.heading('index', text='Index')
         self._tree.heading('name', text='Name')
         self._tree.heading('email', text='Email')

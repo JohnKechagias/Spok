@@ -72,7 +72,7 @@ class ImageViewer(ttk.Frame):
             width=4,
             bootstyle=DARK
         )
-        self.y_coord_entry.pack(side=LEFT, padx=(0, 40))
+        self.y_coord_entry.pack(side=LEFT, padx=(0, 30))
 
         # =-=-=-=-=-=-=-=- Text Alignment -=-=-=-=-=-=-=-=-=-=
 
@@ -102,7 +102,8 @@ class ImageViewer(ttk.Frame):
             self._hide_tree, add='+')
 
         # Make tree resizable
-        self.rowconfigure(0, weight=1)
+        self.tree_frame.rowconfigure(0, weight=1)
+        self.tree_frame.columnconfigure(0, weight=1)
 
         # Define columns
         self._columns = ('index', 'x', 'y')
@@ -132,7 +133,7 @@ class ImageViewer(ttk.Frame):
         self._tree.configure(yscroll=self._scrollbar.set)
         self._scrollbar.grid(row=0, column=1, sticky=NS)
 
-        self._tree.column('#1', stretch=NO, width=46)
+        self._tree.column('#1', stretch=NO, width=50)
         self._tree.column('#2', width=38, anchor=CENTER)
         self._tree.column('#3', width=38, anchor=CENTER)
 
@@ -164,10 +165,7 @@ class ImageViewer(ttk.Frame):
         self.curr_coord_frame.pack(side=RIGHT)
 
         self.curr_coord_frame.bind('<Double-ButtonPress-1>',
-            self._show_tree, add='+')
-
-        self.curr_coord_frame.bind('<ButtonPress-3>',
-            self._hide_tree, add='+')
+            self._switch_tree_visibility, add='+')
 
         self.buttons_frame = ttk.Frame(self.top_frame)
         self.buttons_frame.pack(side=RIGHT, padx=(0, 8))
@@ -201,7 +199,7 @@ class ImageViewer(ttk.Frame):
         self.index_coord_entry.pack(side=LEFT, padx=(0, 2))
 
         self.index_coord_entry.bind('<ButtonPress-1>',
-            self._show_tree, add='+')
+            self._switch_tree_visibility, add='+')
 
         self.index_coord_entry.bind('<ButtonPress-3>',
             self._hide_tree, add='+')
@@ -234,23 +232,23 @@ class ImageViewer(ttk.Frame):
         tree_height = min(self._tree_size - 1, self.tree_max_height)
         self._tree.configure(height=tree_height)
 
-    def _show_tree(self, event: tk.Event):
+    def _switch_tree_visibility(self, event: tk.Event):
         if self._tree_is_visible:
-            return
+            self._hide_tree(event)
+        else:
+            self._show_tree(event)
 
+    def _show_tree(self, event: tk.Event):
         self.tree_frame.place(
             relx=1,
             y=38,
-            width=134,
+            width=146,
             anchor=NE,
             bordermode=OUTSIDE
         )
         self._tree_is_visible = True
 
     def _hide_tree(self, event: tk.Event):
-        if not self._tree_is_visible:
-            return
-
         self.tree_frame.place_forget()
         self._tree_is_visible = False
 
