@@ -10,7 +10,7 @@ Vicer's main idea is the automation of certificate creation (ex. certificates of
 
 With Vicer you can:
 - Create multiple images from the same template but with different text written on each one.
-- Email each image to a different address. **[Under Construction]**
-- Send batches of emails. **[Under Contruction]**
+- Email each image to a different address.
+- Send batches of emails.
 
 -- **[Under Contruction]** --
