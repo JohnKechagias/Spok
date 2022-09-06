@@ -38,6 +38,7 @@ from PIL import ImageFont
 from configparser import ConfigParser
 from file_dialog import open_folder
 import assets_manager
+from database import Database
 
 
 
@@ -458,6 +459,14 @@ class MainWindow(object):
 class App(ttk.Frame):
     def __init__(self, master) -> None:
         super().__init__(master)
+
+        
+        # =-=-=-=-=- Connect to database -=-=--=-=-=-=-=-=
+
+        self.db_path = Path('.')
+        self.db = Database()
+        self.db.connect(self.db_path.parent / 'database.db')
+        self.db._create_tables()
 
         self.created_certificates = False
 

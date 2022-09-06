@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Tuple, List
+from typing import Tuple, List, Literal
 from ttkbootstrap.themes.standard import STANDARD_THEMES
 
 

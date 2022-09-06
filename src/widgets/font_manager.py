@@ -1,5 +1,4 @@
 from typing import Literal, Union
-import tkinter as tk
 from tkinter.font import *
 import ttkbootstrap as ttk
 from ttkbootstrap.constants import *
@@ -7,6 +6,29 @@ from widgets.constants import Hex
 
 from widgets.scrollable_frame import ScrollableFrame
 
+
+class FontData:
+    def __init__(self, font: ttk.font.Font, color: Hex) -> None:
+        self.name = font.name
+        self.family = font.cget('family')
+        self.size = font.cget('size')
+        self.weight = font.cget('weight')
+        self.slant = font.cget('slant')
+        self.underline = font.cget('underline')
+        self.overstrike = font.cget('overstrike')
+        self.color = color
+        
+        def get_font() -> ttk.font.Font:
+            return ttk.font.Font(
+                name=self.name,
+                exists=False,
+                family=self.family,
+                size=self.size,
+                weight=self.weight,
+                slant=self.slant,
+                underline=self.underline,
+                overstrike=self.overstrike
+            )
 
 
 class FontManager(ttk.Frame):
@@ -79,7 +101,7 @@ class FontManager(ttk.Frame):
         underline: bool = True,
         overstrike: bool = True
     ):
-        font_info = (name, family, str(size), color, weight, slant, str(underline), str(overstrike))
+        font_info = (name, family, size, color, weight, slant, underline, overstrike)
         col_labels = []
 
         for index in range(self._num_of_cols):
