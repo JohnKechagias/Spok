@@ -1,17 +1,16 @@
 from enum import Enum
-from typing import Tuple, List, Literal
 from ttkbootstrap.themes.standard import STANDARD_THEMES
 
 
 
 # Type defs
-User = Tuple[str, str, str]
-Color = Tuple[int, int, int]
+User = tuple[str, str, str]
+Color = tuple[int, int, int]
 Hex = str
 
 # Ulist (userslist) is a custom list where each row represents a user.
 # Row: [name, email, errorflags_string].
-Ulist = List[List[str]]
+Ulist = list[list[str]]
 
 # Logging level enum
 class LogLevel(Enum):
@@ -29,12 +28,3 @@ RIGHT = 'right'
 # Theme constants
 THEMENAME = 'darkly'
 THEME = STANDARD_THEMES['darkly']['colors']
-
-# Font constants
-small_font = 10
-medium_font = 12
-big_font = 14
-
-small_size = '-size 10'
-medium_size = '-size 12'
-big_size = 'size 14'

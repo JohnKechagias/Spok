@@ -1,5 +1,5 @@
 from functools import partial
-from typing import Optional, Union
+from typing import Optional
 import clipboard
 
 import tkinter as tk
@@ -13,7 +13,7 @@ class ColorSelector(ttk.Frame):
     def __init__(
         self,
         master=None,
-        color: Optional[Color] = None,
+        color: Color = (75, 75, 75),
         foreground_threshold: int = 300
         ):
         """ Initializes `ColorSelector` widget.
@@ -26,9 +26,6 @@ class ColorSelector(ttk.Frame):
                 between black and white.
         """
         super().__init__(master)
-
-        if color is None:
-            color = (75, 75, 75)
 
         self.color = {'red': {}, 'green': {}, 'blue': {}}
         self.color['red']['style'] = DANGER
@@ -60,7 +57,8 @@ class ColorSelector(ttk.Frame):
                 orient=HORIZONTAL,
                 bootstyle=channel['style'],
                 variable=channel['value'],
-                value=75, to=255
+                value=75,
+                to=255
             )
             channel['scale'].pack(
                 side=RIGHT,
@@ -111,7 +109,8 @@ class ColorSelector(ttk.Frame):
         # aquire lock
         self.update_in_progress = True
         # Round the float value
-        self.color[color_name]['value'].set(round(temp_value))
+        new_color_value = min(round(temp_value), 255)
+        self.color[color_name]['value'].set(new_color_value)
         self.update_button_bg()
         # release lock
         self.update_in_progress = False
@@ -148,7 +147,7 @@ class ColorSelector(ttk.Frame):
         color_RGB_tuple = self.get_color_tuple()
         return self.rgb_to_hex(color_RGB_tuple)
 
-    def set_color(self, color: Union[Color, Hex]):
+    def set_color(self, color: Color | Hex):
         """ Set `color`. """
         if isinstance(color, Hex):
             color = tuple(int(color[i:i+2], 16) for i in (0, 2, 4))

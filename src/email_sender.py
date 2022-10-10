@@ -68,7 +68,7 @@ class EmailSender:
             # The file gmail_token.json stores the user's access and refresh
             # tokens, and is created automatically when the authorization flow
             # completes for the first time.
-            if _creds:
+            if _creds is not None:
                 self.creds = _creds
             elif os.path.exists(self.creds_file):
                 self.creds = Credentials.from_authorized_user_file(
@@ -78,9 +78,10 @@ class EmailSender:
 
             if self.creds is None or not self.creds.valid:
                 flow = InstalledAppFlow.from_client_secrets_file(
-                    self.client_secret_file, self._SCOPES
+                    self.client_secret_file,
+                    self._SCOPES
                 )
-                self.creds = flow.run_local_server()
+                self.creds = flow.run_local_server(port=0)
                 # Save the credentials for the next run
                 with open(creds_file, 'w') as token:
                     token.write(self.creds.to_json())

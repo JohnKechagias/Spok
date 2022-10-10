@@ -2,8 +2,6 @@ from pathlib import Path
 import ttkbootstrap as ttk
 import os
 
-from database import Database
-
 
 
 ICONS = []

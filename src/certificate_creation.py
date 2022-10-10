@@ -134,9 +134,10 @@ class CertificateCreator:
             anchor=anchor,
             align=align
         )
+        image_format = 'png'
         # Save the edited image
         name = user[1].replace(' ', '_')
-        image_name = f'{name}.{image.format}'
+        image_name = f'{name}.{image_format}'
         image_location = Path('certificates') / image_name
         image_copy.save(image_location, format='png', compress_level=compress_level)
         return user

@@ -1,4 +1,4 @@
-from functools import  wraps
+from functools import wraps
 
 import tkinter as tk
 from typing import  Any, Tuple, List, Callable
@@ -114,7 +114,7 @@ class DataViewer(ttk.Frame):
         )
 
         # Define and tweak columns
-        self._tree.column('#1', stretch=NO, width=50)
+        self._tree.column("# 1", stretch=NO, width=45)
         self._tree.heading('index', text='Index')
         self._tree.heading('name', text='Name')
         self._tree.heading('email', text='Email')
@@ -176,6 +176,14 @@ class DataViewer(ttk.Frame):
             if len(entry_tags) == 0 or entry_tags is None:
                 entry_values = self._tree.item(entry, 'values')
                 values.append(entry_values)
+        return values
+
+    def get_num_of_valid_entries(self, num: int) -> List[User]:
+        values = []
+        entries = self._tree.get_children()[:num]
+
+        for entry in entries:
+            values.append(self._tree.item(entry, 'values'))
         return values
 
     def get_entry_from_index(self, index: int) -> User:

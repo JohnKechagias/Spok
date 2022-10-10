@@ -111,7 +111,7 @@ def list_to_txt(list: Ulist) -> None:
 
 def name_email_list_to_ulist(
     name_email_list: List[Tuple[str, str]],
-    check_for_name_duplicates=True,
+    check_for_name_duplicates=False,
     check_for_email_duplicates=False
     ) -> Ulist:
     """ Convert a name-email list to a userlist.
