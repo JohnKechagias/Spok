@@ -100,7 +100,7 @@ class CanvasImage(ttk.Frame):
         master=None,
         bootstyle=DEFAULT,
         path: str = None,
-        disable_zoom_out:bool = False
+        disable_zoom_out: bool = False
     ) -> None:
         super().__init__(master)
         """ Initialize the ImageFrame. """

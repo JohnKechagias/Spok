@@ -4,8 +4,9 @@ from ttkbootstrap.themes.standard import STANDARD_THEMES
 
 
 # Type defs
+ID = str
 User = tuple[str, str, str]
-Color = tuple[int, int, int]
+RGB = tuple[int, int, int]
 Hex = str
 
 # Ulist (userslist) is a custom list where each row represents a user.
@@ -28,3 +29,8 @@ RIGHT = 'right'
 # Theme constants
 THEMENAME = 'darkly'
 THEME = STANDARD_THEMES['darkly']['colors']
+BG = 'bg'
+FG = 'fg'
+
+# Theme typdefs
+Style = str | tuple[str, ...] | list[str]

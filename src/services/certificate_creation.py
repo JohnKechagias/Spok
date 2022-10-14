@@ -4,7 +4,7 @@ from time import sleep
 
 import multiprocessing as mp
 import threading
-from typing import Any, Tuple, Callable, List, Optional
+from typing import Any, Callable
 
 from PIL import Image, ImageDraw, ImageFont
 from widgets.constants import *
@@ -19,8 +19,8 @@ class CertificateCreator:
         image_path: str,
         output_folder_path: str,
         font: ImageFont.FreeTypeFont,
-        font_color: Tuple[int, int, int],
-        image_coords: Tuple[int, int],
+        font_color: tuple[int, int, int],
+        image_coords: tuple[int, int],
         word_position: str,
         compress_level: int,
         log_func,
@@ -48,8 +48,8 @@ class CertificateCreator:
         self,
         lock: threading.Lock,
         progress_var: ttk.IntVar,
-        user_list: List[User],
-        cleanup_func: Optional[Callable[[], Any]] = None
+        user_list: list[User],
+        cleanup_func: Callable[[], Any] | None = None
     ):
         """ Creates a certificate for each user in the `user_list`.
 
@@ -95,9 +95,9 @@ class CertificateCreator:
     @staticmethod
     def create_certificate(
         image: Image.Image,
-        coords: Tuple[int, int],
+        coords: tuple[int, int],
         font: ImageFont.FreeTypeFont,
-        font_color: Tuple[int, int, int],
+        font_color: tuple[int, int, int],
         anchor: str,
         align: str,
         compress_level: int,
@@ -111,7 +111,7 @@ class CertificateCreator:
             coords: The image coords to start drawing on.
             font: The font to use.
             font_color: The font color to use.
-            anchor: The text anchor. For more information visit
+            anchor: The text anchor.
             align: The text alignment.
             compress_level: The level of png compression to use.
                 Compression levels range from 0 to 9.

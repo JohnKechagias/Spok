@@ -28,17 +28,14 @@ class EmailCreator(ttk.Frame):
         finally:
             self.signature = signature
 
-        self._subject = PlaceholderEntry(self, placeholder='Subject')
+        self._subject = PlaceholderEntry(self, placeholder='Subject', text=subject)
         self._subject.grid(row=1, column=0, sticky=EW, pady=(0, 5))
-        if subject != '':
-            self._subject.clean_placeholder()
-            self._subject.insert(END, subject)
 
         self._to = PlaceholderEntry(self, placeholder='To')
 
         self._body = ttk.Text(self, *args, **kwargs, undo=True)
         self._body.grid(row=2,  column=0, sticky=NSEW, pady=(5, 0))
-        self._body.insert(END, body)
+        self._body.insert(END, body.strip())
 
         self._body.bind('<KeyPress-t>', lambda _: self.get_email())
 

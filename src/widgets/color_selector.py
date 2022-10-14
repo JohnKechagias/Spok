@@ -1,5 +1,4 @@
 from functools import partial
-from typing import Optional
 import clipboard
 
 import tkinter as tk
@@ -13,7 +12,7 @@ class ColorSelector(ttk.Frame):
     def __init__(
         self,
         master=None,
-        color: Color = (75, 75, 75),
+        color: RGB = (75, 75, 75),
         foreground_threshold: int = 300
         ):
         """ Initializes `ColorSelector` widget.
@@ -27,10 +26,10 @@ class ColorSelector(ttk.Frame):
         """
         super().__init__(master)
 
-        self.color = {'red': {}, 'green': {}, 'blue': {}}
-        self.color['red']['style'] = DANGER
-        self.color['green']['style'] = SUCCESS
-        self.color['blue']['style'] = DEFAULT
+        self.colors = {'red': {}, 'green': {}, 'blue': {}}
+        self.colors['red']['style'] = DANGER
+        self.colors['green']['style'] = SUCCESS
+        self.colors['blue']['style'] = DEFAULT
 
         # Theshold that dictates the color of the colored button
         # foreground. Whem the button bg is dark, the fg is white
@@ -40,7 +39,7 @@ class ColorSelector(ttk.Frame):
         # Is used to lock and unlock event handlers like a mutex
         self.update_in_progress = False
 
-        for i, (channel_name, channel) in enumerate(self.color.items()):
+        for i, (channel_name, channel) in enumerate(self.colors.items()):
             channel['value'] = tk.IntVar(value=color[i])
 
             channel['frame'] = ttk.Frame(master=self)
@@ -81,9 +80,9 @@ class ColorSelector(ttk.Frame):
             autostyle=False,
             foreground='white',
             activeforeground='white',
-            background=self.get_color_code(),
-            activebackground=self.get_color_code(),
-            text=self.get_color_code(),
+            background=self.get_color_HEX(),
+            activebackground=self.get_color_HEX(),
+            text=self.get_color_HEX(),
             bd=0,
             highlightthickness=0
         )
@@ -92,7 +91,7 @@ class ColorSelector(ttk.Frame):
             self._on_colored_button_clicked, add='+')
 
     @staticmethod
-    def rgb_to_hex(rgb: Color) -> Hex:
+    def rgb_to_hex(rgb: RGB) -> Hex:
         """ Convert a rgb color to hex. """
         r, g, b = rgb
         return f'#{r:02x}{g:02x}{b:02x}'
@@ -102,7 +101,7 @@ class ColorSelector(ttk.Frame):
         # Normalize and update color value
         if self.update_in_progress == True: return
         try:
-            temp_value = self.color[color_name]['value'].get()
+            temp_value = self.colors[color_name]['value'].get()
         except:
             return
 
@@ -110,7 +109,7 @@ class ColorSelector(ttk.Frame):
         self.update_in_progress = True
         # Round the float value
         new_color_value = min(round(temp_value), 255)
-        self.color[color_name]['value'].set(new_color_value)
+        self.colors[color_name]['value'].set(new_color_value)
         self.update_button_bg()
         # release lock
         self.update_in_progress = False
@@ -119,8 +118,8 @@ class ColorSelector(ttk.Frame):
         """ Set button background to be the same as the color
         that the user has selected. """
         # Sum of RGB channel values
-        sum_of_color_values = sum(self.get_color_tuple())
-        color_code = self.get_color_code()
+        sum_of_color_values = sum(self.get_color_RGB())
+        color_code = self.get_color_HEX()
 
         if sum_of_color_values > self.foreground_threshold:
             self.colored_button.configure(
@@ -138,21 +137,21 @@ class ColorSelector(ttk.Frame):
             text=color_code
         )
 
-    def get_color_tuple(self) -> Color:
+    def get_color_RGB(self) -> RGB:
         """ Return color in RGB form. """
-        return (i['value'].get() for i in self.color.values())
+        return (i['value'].get() for i in self.colors.values())
 
-    def get_color_code(self) -> Hex:
+    def get_color_HEX(self) -> Hex:
         """ Return color in Hex form. """
-        color_RGB_tuple = self.get_color_tuple()
+        color_RGB_tuple = self.get_color_RGB()
         return self.rgb_to_hex(color_RGB_tuple)
 
-    def set_color(self, color: Color | Hex):
+    def set_color(self, color: RGB | Hex):
         """ Set `color`. """
         if isinstance(color, Hex):
             color = tuple(int(color[i:i+2], 16) for i in (0, 2, 4))
 
-        for i, channel in enumerate(self.color.values()):
+        for i, channel in enumerate(self.colors.values()):
             channel['value'].set(color[i])
 
     def _on_key_pressed(
@@ -188,4 +187,4 @@ class ColorSelector(ttk.Frame):
 
     def _on_colored_button_clicked(self, *_):
         """ Paste the colors hex code to the clipboard. """
-        clipboard.copy(self.get_color_code())
+        clipboard.copy(self.get_color_HEX())

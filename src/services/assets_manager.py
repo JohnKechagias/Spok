@@ -29,7 +29,7 @@ def load_icons(icons_path: Path):
 
     for icon in files:
         name = icon.rsplit('.', 1)[0]
-        # remove icon dimension
+        # remove icon dimension from name
         if 'px' in name.rsplit('_', 1)[-1]:
             name = name.rsplit('_', 1)[0]
         name = name.replace('_', '-')

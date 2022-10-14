@@ -1,6 +1,5 @@
 import os
 import base64
-from typing import Dict, List, Optional
 
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build, Resource
@@ -45,7 +44,7 @@ class EmailSender:
         self,
         client_secret_file: str = 'client_secret.json',
         creds_file: str = 'gmail_token.json',
-        _creds: Optional[Credentials] = None
+        _creds: Credentials | None = None
     ) -> None:
         """ Initializes EmailSender. Creates a googleapiclient.discovery resource
         for interacting with the Gmail API from a client secret file.
@@ -122,12 +121,12 @@ class EmailSender:
         sender: str,
         to: str,
         subject: str = '',
-        msg_html: Optional[str] = None,
-        msg_plain: Optional[str] = None,
-        cc: Optional[List[str]] = None,
-        bcc: Optional[List[str]] = None,
-        attachments: Optional[List[str]] = None
-    ) -> Dict[str, str]:
+        msg_html: str | None = None,
+        msg_plain: str | None = None,
+        cc: list[str] | None = None,
+        bcc: list[str] | None = None,
+        attachments: list[str] | None = None
+    ) -> dict[str, str]:
         """ Creates and sends the raw email message.
 
         Args:
@@ -164,12 +163,12 @@ class EmailSender:
         sender: str,
         to: str,
         subject: str = '',
-        msg_html: Optional[str] = None,
-        msg_plain: Optional[str] = None,
-        cc: Optional[List[str]] = None,
-        bcc: Optional[List[str]] = None,
-        attachments: Optional[List[str]] = None
-    ) -> Dict[str, MIMEMultipart]:
+        msg_html: str | None = None,
+        msg_plain: str | None = None,
+        cc: list[str] | None = None,
+        bcc: list[str] | None = None,
+        attachments: list[str] | None = None
+    ) -> dict[str, MIMEMultipart]:
         """ Creates the raw email message to be sent.
 
         Args:
@@ -224,8 +223,8 @@ class EmailSender:
 
     def send_message(
         self,
-        message: Dict[str, MIMEMultipart]
-    ) -> Dict[str, str]:
+        message: dict[str, MIMEMultipart]
+    ) -> dict[str, str]:
         """ Sends the provided message.
 
         Args:
@@ -245,7 +244,7 @@ class EmailSender:
     def _add_attachments(
         self,
         msg: MIMEMultipart,
-        attachments: List[str]
+        attachments: list[str]
     ) -> None:
         """ Converts attachment filepaths to MIME objects and adds them to msg.
 
