@@ -57,6 +57,9 @@ class Logger(ttk.Frame):
         selected_foreground_color       = '#f7d4d4'
         find_background                 = '#2b2b2b'
 
+        font = ('Arial', '14')
+        find_font = ('Arial', '13')
+
         self._last_line_index = 0  # Store the row index of the previously selected line
         self.log_level = log_level  # Store logLevel as a public var
         self._timestamp = timestamp
@@ -69,6 +72,7 @@ class Logger(ttk.Frame):
             maxundo=-1,
             autoseparators=True,
             autostyle=False,
+            font=font,
             insertwidth=3,
             borderwidth=0,
             highlightthickness=0,
@@ -133,6 +137,7 @@ class Logger(ttk.Frame):
             self._find_frame,
             placeholder='Find..',
             autostyle=False,
+            font=find_font,
             borderwidth=0,
             insertwidth=2,
             highlightthickness=0,

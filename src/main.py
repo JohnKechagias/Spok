@@ -5,40 +5,34 @@ from pathlib import Path
 from functools import partial
 
 import tkinter as tk
-from tkinter import Misc, filedialog as fd
-from tkinter.font import ROMAN
-from typing import Any, Callable, List, Optional
+from tkinter.messagebox import askyesno
+from tkinter.font import Font
+from typing import Any, Callable
 
 import ttkbootstrap as ttk
 from ttkbootstrap.constants import *
-from ttkbootstrap.dialogs.dialogs import FontDialog, Messagebox
+from ttkbootstrap.dialogs.dialogs import Messagebox
 
-from tktooltip import ToolTip
+from folder_links import FolderLinks
+from inputs import InfoInput, EmailInput
 
-from certificate_creation import CertificateCreator
-from email_sender import EmailSender
+from services.certificate_creation import CertificateCreator
+from services.email_sender import EmailSender
+from widgets.font_selector import FontSelector
 
 from widgets.logger import Logger
 from widgets.canvas_image import ImageViewer
-from widgets.color_selector import ColorSelector
-from widgets.data_viewer import DataViewer
 from widgets.email_creator import EmailCreator
-from widgets.placeholder_entry import PlaceholderEntry
-from widgets.text_editor import TextEditor
-from widgets.image_button import ImageButton
-from widgets.font_manager import FontManager
+from widgets.user_viewer import UserViewer
 from widgets.constants import *
 
 from googleapiclient.errors import HttpError
 
-import validators
-import data_filtering
+from services.data_filtering import file_to_ulist
 
 from PIL import ImageFont
 from configparser import ConfigParser
-from file_dialog import open_folder
-import assets_manager
-from database import Database
+import services.assets_manager as assets_manager
 
 
 
@@ -48,379 +42,8 @@ CERTIFICATES = BASE_DIR / 'certificates'
 FONTS = BASE_DIR / 'fonts'
 TEMPLATES = BASE_DIR / 'templates'
 USERLISTS = BASE_DIR / 'userlists'
+SECRETS = BASE_DIR / 'client-secrets'
 CONFIG = BASE_DIR / 'config.ini'
-
-
-class FontSelector(ttk.Frame):
-    def __init__(self, master: Misc, font: ttk.font.Font = None) -> None:
-        super().__init__(master)
-        self.font_dialog = FontDialog(parent=master.master, title='Font Selection')
-
-        if font is None:
-            font = ttk.font.Font(
-                name='default_font',
-                exists=False,
-                family='Courier',
-                size=48,
-                weight=NORMAL,
-                slant=ROMAN,
-                underline=False,
-                overstrike=False
-            )
-        self.font = font
-
-        self.cco_labelframe = ttk.Labelframe(
-            master=self,
-            text='Certificate Creation Options',
-            padding=10,
-            width=330
-        )
-        self.cco_labelframe.pack(expand=YES, fill=BOTH)
-        self.cco_labelframe.rowconfigure(5, weight=1)
-
-        # =-=-=-=-=-=- Font Manager -=-=-=-=-=-=--=-=
-
-        self.font_manager_button = ttk.Checkbutton(
-            master=self.cco_labelframe,
-            bootstyle=(WARNING, TOOLBUTTON),
-            text='Font Manager'
-        )
-        self.font_manager_button.grid(row=0, column=0, sticky=EW, pady=6)
-
-        self.current_font_settings = ttk.StringVar()
-        self.font_settings = ('left', 'middle', 'right')
-        self.font_settings_combobox = ttk.Combobox(
-            master=self.cco_labelframe,
-            bootstyle=WARNING,
-            state=READONLY,
-            textvariable=self.current_font_settings,
-            width=6,
-            values=self.font_settings
-        )
-        item_index = self.font_settings.index('left')
-        self.font_settings_combobox.current(item_index)
-        #self.font_settings_combobox.grid(row=0, column=0, sticky=EW, pady=6)
-
-        # =-=-=-=-=-=- Colors Options -=-=-=-=-=--=-=
-
-        self.color_Label = ttk.Label(
-            master=self.cco_labelframe,
-            text='Select Font Color',
-            bootstyle=(INVERSE, SECONDARY),
-            anchor=CENTER
-        )
-        self.color_Label.grid(row=1, column=0, sticky=EW, pady=6)
-
-        self.color_selector = ColorSelector(master=self.cco_labelframe)
-        self.color_selector.grid(row=2, column=0, sticky=EW)
-
-        self.font_size_selector = FontSizeSelector(
-            master=self.cco_labelframe,
-            bootstyle=WARNING,
-            maxfontsize=60
-            )
-        self.font_size_selector.grid(row=6, column=0, sticky=EW, pady=6)
-        self.font_size_selector.amountusedvar.trace_add(
-            'write', self._update_font_size)
-
-        self.select_font_button = ttk.Button(
-            master=self.cco_labelframe,
-            bootstyle=(OUTLINE, WARNING),
-            text='Select Font',
-            padding=10,
-            command=self._show_font_dialog
-        )
-        self.select_font_button.grid(row=7, column=0, sticky=EW, pady=6)
-
-    def get_font_color(self) -> str:
-        return self.color_selector.get_color_code()
-
-    def get_font_size(self) -> int:
-        return self.font_size_selector.amountusedvar.get()
-
-    def _update_font_size(self, *args):
-        new_size = self.font_size_selector.amountusedvar.get()
-        self.font.configure(size=new_size)
-
-    def _show_font_dialog(self):
-        self.font_dialog.show()
-        self.font = self.font_dialog._result
-        self.font_size_selector.configure(amountused=self.font.cget('size'))
-
-
-class FontSizeSelector(ttk.Meter):
-    def __init__(
-        self,
-        master: Misc,
-        fontsize=25,
-        maxfontsize=50,
-        *args,
-        **kwargs
-    ) -> None:
-        super().__init__(
-            master=master,
-            amounttotal=maxfontsize,
-            metersize=150,
-            amountused=fontsize,
-            stripethickness=8,
-            subtext='Font Size',
-            interactive=False,
-            *args,
-            **kwargs
-        )
-
-        # Get label child of meter widget
-        meter_child = self.winfo_children()[0].winfo_children()[0]
-        meter_child.bind('<Button-5>', self._wheelScroll) # Linux, wheel scroll down
-        meter_child.bind('<Button-4>', self._wheelScroll)  # Linux, wheel scroll up
-        meter_child.bind('<MouseWheel>', self._wheelScroll) # Windows wheel scroll keybind
-
-    def get_font_size(self) -> int:
-        return self.amountusedvar.get()
-
-    def _increment_meter(self):
-        new_value = self.amountusedvar.get() + 1
-        # Make sure new value isn't out of bounds
-        if new_value <= self.amounttotalvar.get():
-            self.configure(amountused=new_value)
-
-    def _decrement_meter(self):
-        new_value = self.amountusedvar.get() - 1
-        # Make sure new value isn't out of bounds
-        if new_value >= 0:
-            self.configure(amountused=new_value)
-
-    def _wheelScroll(self, event: tk.Event):
-        # Respond to Linux (event.num) or Windows (event.delta) wheel event
-        if event.num == 4 or event.delta == 120: # Scroll up
-            self._increment_meter()
-        if event.num == 5 or event.delta == -120: # Scroll down
-            self._decrement_meter()
-
-
-class InfoInput(ttk.Labelframe):
-    def __init__(
-        self,
-        master,
-        testmode=True,
-        logging=True
-    ) -> None:
-        super().__init__(master, text='Certificate Options', padding=(16, 10))
-
-        self.columnconfigure(1, weight=1)
-        self.columnconfigure(2, weight=1)
-
-        self.background_color = '#222222'
-
-        self.image_path = ttk.StringVar()
-        self.info_file_path = ttk.StringVar()
-
-        self.image_path.trace_add('write', self._invoke_image_handler)
-        self.info_file_path.trace_add('write', self._invoke_info_file_handler)
-
-        self.test_mode = ttk.BooleanVar(value=testmode)
-        self.logging = ttk.BooleanVar(value=logging)
-
-        # We manually call the handlers instead of tracing the vars because
-        # we want to call the handlers whenever the complete path is given
-        # and not when the path changes.
-
-        # Ex. if a user types the path into the Entry the stringVar will
-        # constantly change and the handler will be called multiple
-        # times with an incompete path. To avoid this we will decide when
-        # to call the handler
-        self.image_changed_handler = None
-        self.info_file_changed_handler = None
-
-        self.select_template_button = ImageButton(
-            master=self,
-            default_image='template-default',
-            active_image='template-active',
-            background=self.background_color,
-            command=self._select_image_file
-        )
-        self.select_template_button.grid(row=0, column=0, padx=(0, 16), pady=4, sticky=W)
-        msg = 'The image file to write on.'
-        ToolTip(self.select_template_button, msg=msg, delay=1)
-
-        self.image_path_entry = ttk.Entry(
-            master=self,
-            textvariable=self.image_path
-        )
-        self.image_path_entry.grid(row=0, column=1, columnspan=3, pady=6, sticky=EW)
-
-        self.image_path_entry.bind('<Return>', lambda _: self._invoke_image_handler(), add='+')
-
-        validators.add_file_type_validation(self.image_path_entry,
-            filetypes={'img', 'png', 'jpeg', 'jpg'})
-
-        self.select_info_file_button = ImageButton(
-            master=self,
-            default_image='userlist-default',
-            active_image='userlist-active',
-            background=self.background_color,
-            command=self._select_info_file
-        )
-        msg = 'The info file to get the names and emails from.'
-        ToolTip(self.select_info_file_button, msg=msg, delay=1)
-
-        self.select_info_file_button.grid(row=1, column=0, padx=(0, 16), pady=4, sticky=W)
-
-        self.info_path_entry = ttk.Entry(
-            master=self,
-            textvariable=self.info_file_path
-        )
-        self.info_path_entry.grid(row=1, column=1, columnspan=3, pady=6, sticky=EW)
-
-        self.info_path_entry.bind('<Return>', lambda _: self._invoke_info_file_handler(), add='+')
-
-        validators.add_file_type_validation(self.info_path_entry,
-            filetypes={'txt', 'exel', 'xlsx'})
-
-        ttk.Separator(self).grid(row=2, column=0, columnspan=3, pady=10, sticky=EW)
-
-        self.error_checking_mode_checkbutton = ttk.Checkbutton(
-            master=self,
-            bootstyle=(WARNING, TOGGLE, SQUARE),
-            text=' Test Mode',
-            variable=self.test_mode
-        )
-        self.error_checking_mode_checkbutton.grid(row=3, column=0, columnspan=2, sticky=W, pady=6)
-
-        self.logging_mode_button = ttk.Checkbutton(
-            master=self,
-            bootstyle=(WARNING, TOGGLE, SQUARE),
-            text=' Logging',
-            variable=self.logging
-        )
-        self.logging_mode_button.grid(row=4, column=0, columnspan=2, sticky=W, pady=6)
-
-        self.create_certificates_button = ttk.Button(
-            master=self,
-            bootstyle=(DANGER, OUTLINE),
-            text='Create Certificates',
-            padding=9, width=18,
-        )
-        self.create_certificates_button.grid(row=3, rowspan=2, column=2, sticky=E)
-
-    def _select_image_file(self):
-        image_path = fd.askopenfilename(
-            title='Select template',
-            filetypes=(("Image files",".img .png .jpeg .jpg"),("All files","*.*")),
-            initialdir=TEMPLATES
-        )
-
-        if image_path not in {None, '', ()}:
-            self.image_path.set(image_path)
-
-    def _select_info_file(self):
-        info_file_path = fd.askopenfilename(
-            title='Select Info file',
-            filetypes=(("Info files",".txt .exel .xlsx .csv"),("All files","*.*")),
-            initialdir=USERLISTS
-        )
-
-        if info_file_path not in {None, '', ()}:
-            self.info_file_path.set(info_file_path)
-
-    def _invoke_image_handler(self, *args):
-        if self.image_changed_handler is not None and self.image_path_entry.validate():
-            self.image_changed_handler(self.image_path.get())
-
-    def _invoke_info_file_handler(self, *args):
-        if self.info_file_changed_handler is not None and self.info_path_entry.validate():
-            self.info_file_changed_handler(self.info_file_path.get())
-
-
-class EmailInput(ttk.Labelframe):
-    def __init__(
-        self,
-        master,
-        testemail='',
-        realemail='',
-        testmode=True,
-        personalemail=False
-    ) -> None:
-        super().__init__(master, text='Emailing Options', padding=(16, 10))
-
-        self.columnconfigure(1, weight=1)
-        self.columnconfigure(2, weight=1)
-
-        self.background_color = '#222222'
-
-        self.test_email = ttk.StringVar()
-        self.real_email = ttk.StringVar()
-
-        self.test_mode = ttk.BooleanVar(value=testmode)
-        self.personal_email = ttk.BooleanVar(value=personalemail)
-
-        self.test_email_button = ImageButton(
-            master=self,
-            default_image='test-email-default',
-            active_image='test-email-active',
-            background=self.background_color
-        )
-        self.test_email_button.grid(row=0, column=0, padx=(0, 16), pady=4, sticky=W)
-        msg = 'The email to use in test mode.'
-        ToolTip(self.test_email_button, msg=msg, delay=1)
-
-        self.test_email_entry = PlaceholderEntry(
-            master=self,
-            text=testemail,
-            placeholder='Testing Email',
-            textvariable=self.test_email
-        )
-        self.test_email_entry.grid(row=0, column=1, columnspan=2, pady=6, sticky=EW)
-        self.test_email_entry.bind('<Return>',
-            lambda _: self.test_email_entry.validate(), add='+')
-        validators.add_email_validation(self.test_email_entry)
-
-        self.real_email_button = ImageButton(
-            master=self,
-            default_image='email-default',
-            active_image='email-active',
-            background=self.background_color
-        )
-        self.real_email_button.grid(row=1, column=0, padx=(0, 16), pady=4, sticky=W)
-        msg = 'The email to use when sending certificates.'
-        ToolTip(self.real_email_button, msg=msg, delay=1)
-
-        self.real_email_entry = PlaceholderEntry(
-            master=self,
-            text=realemail,
-            placeholder='Real Email',
-            textvariable=self.real_email
-        )
-        self.real_email_entry.grid(row=1, column=1, columnspan=2, pady=6, sticky=EW)
-        self.real_email_entry.bind('<Return>',
-            lambda _: self.real_email_entry.validate(), add='+')
-        validators.add_email_validation(self.real_email_entry)
-
-        ttk.Separator(self).grid(row=2, column=0, columnspan=3, pady=10, sticky=EW)
-
-        self.test_mode_checkbutton = ttk.Checkbutton(
-            master=self,
-            bootstyle=(DANGER, TOGGLE, SQUARE),
-            text=' Use Test Email',
-            variable=self.test_mode
-        )
-        self.test_mode_checkbutton.grid(row=3, column=0, columnspan=2, sticky=W, pady=6)
-
-        self.personal_email_checkbutton = ttk.Checkbutton(
-            master=self,
-            bootstyle=(WARNING, TOGGLE, SQUARE),
-            text=' Personal Email',
-            variable=self.personal_email
-        )
-        self.personal_email_checkbutton.grid(row=4, column=0, columnspan=2, sticky=W, pady=6)
-
-        self.send_emails_button = ttk.Button(
-            master=self,
-            bootstyle=(DANGER, OUTLINE),
-            text='Send Emails',
-            padding=9, width=18,
-        )
-        self.send_emails_button.grid(row=3, rowspan=2, column=2, sticky=E)
 
 
 class MainWindow(object):
@@ -436,6 +59,7 @@ class MainWindow(object):
 
         self.app = App(self.root)
         self.app.pack(expand=YES, fill=BOTH, padx=10, pady=10)
+
         self.app.bind_class('TEntry',
             '<Return>',
             lambda _: self.app.focus_set(),
@@ -448,25 +72,21 @@ class MainWindow(object):
             add='+'
         )
 
+        self.root.protocol(
+            'WM_DELETE_WINDOW',
+            lambda: self.app.save_state(self.root.destroy)
+        )
+
     def __enter__(self):
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self.app.save_config()
-        self.app.clean_temp_files()
+        pass
 
 
 class App(ttk.Frame):
     def __init__(self, master) -> None:
         super().__init__(master)
-
-        
-        # =-=-=-=-=- Connect to database -=-=--=-=-=-=-=-=
-
-        self.db_path = Path('.')
-        self.db = Database()
-        self.db.connect(self.db_path.parent / 'database.db')
-        self.db._create_tables()
 
         self.created_certificates = False
 
@@ -481,31 +101,42 @@ class App(ttk.Frame):
         # =-=-=-=-=-=-=-=- Read Config -=-=-=-=-=--=-=-=-=-=-=
 
         config = ConfigParser()
-        config.read(CONFIG)
+        config.read(CONFIG, encoding='UTF-8')
 
-        template_file = config.get('certificateCreation', 'defaultTemplate')
-        userlist_file = config.get('certificateCreation', 'defaultUserlist')
-        cc_test_mode = config.getboolean('certificateCreation', 'testMode')
-        logging = config.getboolean('certificateCreation', 'logging')
+        template_file = config.get('certificateCreation', 'template')
+        userlist_file = config.get('certificateCreation', 'userlist')
 
-        text_color = config.get('certificate', 'color')
-        text_font  = config.get('certificate', 'font')
-        self.text_font = text_font  # TODO
-        text_font_size = config.getint('certificate', 'fontSize')
+        font_color = config.get('font', 'color')
+        font_family = config.get('font', 'family')
+        font_size = config.getint('font', 'size')
+        font_weight = config.get('font', 'weight')
+        font_slant = config.get('font', 'slant')
 
-        text_alignment = config.get('certificateText', 'textAlignment')
+        font = Font(
+            name='config_font',
+            exists=False,
+            family=font_family,
+            size=font_size,
+            weight=font_weight,
+            slant=font_slant,
+            underline=False,
+            overstrike=False
+        )
+
+        text_alignment = config.get('certificateText', 'alignment')
         xcoord = config.getint('certificateText', 'xcoord')
         ycoord = config.getint('certificateText', 'ycoord')
 
         test_email = config.get('emailing', 'testEmail')
         real_email = config.get('emailing', 'realEmail')
-        emailing_test_mode = config.getboolean('emailing', 'testMode')
-        personal_email = config.getboolean('emailing', 'personalEmail')
+        email_subject = config.get('emailing', 'subject')
+        email_body = config.get('emailing', 'body')
 
         # =-=-=-=-=-=- Initialize Main Frames -=-=--=-=-=-=-=-=
 
         self.topframe = ttk.Frame(self)
         self.topframe.grid(row=0, column=0, columnspan=3, sticky=NSEW)
+        self.topframe.columnconfigure(2, weight=1)
 
         self.lframe = ttk.Frame(self, padding=5)
         self.lframe.grid(row=2, column=0, sticky=NSEW)
@@ -519,77 +150,25 @@ class App(ttk.Frame):
         # =-=-=-=-=-=-=-=-=- Top Frame -=-=-=-=-=--=-=-=-=-=-=
 
         self.main_title = ttk.Label(
-            master=self.topframe,
-            text='Spok',
-            font='-size 20 -weight bold'
+            self.topframe,
+            text='Vicer',
+            font='-size 24 -weight bold'
         )
-        self.main_title.pack(side=LEFT, anchor=SW)
+        self.main_title.grid(row=0, column=0)
 
         self.secondary_title = ttk.Label(
-            master=self.topframe,
-            text=' a certificate creator',
-            font='-size 14 -weight bold',
-            justify=CENTER,
-            padding=(0, 0, 0, 3)
+            self.topframe,
+            text='a certificate creator',
+            font='-size 16'
         )
-        self.secondary_title.pack(side=LEFT, anchor=SW)
+        self.secondary_title.grid(row=0, column=1, padx=5, pady=(9, 0))
 
-        self.mode = ttk.StringVar()
-        self.modes_selection_label = ttk.Label(
-            master=self.topframe,
-            text='Select a mode:'
+        folders = [USERLISTS, FONTS, TEMPLATES, SECRETS]
+        self.folder_links = FolderLinks(
+            self.topframe,
+            folders
         )
-        self.modes = ('Certificates Creator', 'Email Sender')
-        self.modes_combobox= ttk.Combobox(
-            master=self.topframe,
-            bootstyle=(LIGHT),
-            state=READONLY,
-            textvariable=self.mode,
-            width=20,
-            values=self.modes
-        )
-        self.modes_combobox.current(0)
-        #self.modes_combobox.pack(padx=10, side=RIGHT)
-        #self.modes_selection_label.pack(side=RIGHT)
-
-        self.mode.trace_add('write', self.switch_mode)
-
-        # =-=-=-=-=-=- Folder Dialogs -=-=-=-=-=--=-=
-
-        self.folders_frame = ttk.Frame(self.topframe)
-        self.folders_frame.pack(side=RIGHT)
-
-        self.userlists_folder_button = ImageButton(
-            master=self.folders_frame,
-            default_image='userlists-folder-default',
-            active_image='userlists-folder-active',
-            command=partial(open_folder, USERLISTS)
-        )
-        self.userlists_folder_button.grid(row=0, column=0, padx=(0, 16))
-        msg = 'Userlists folder.'
-        ToolTip(self.userlists_folder_button, msg=msg, delay=1)
-
-        self.fonts_folder_button = ImageButton(
-            master=self.folders_frame,
-            default_image='fonts-folder-default',
-            active_image='fonts-folder-active',
-            command=partial(open_folder, FONTS)
-        )
-        self.fonts_folder_button.grid(row=0, column=1, padx=(0, 16))
-        msg = 'Fonts folder.'
-        ToolTip(self.fonts_folder_button, msg=msg, delay=1)
-
-        self.templates_folder_button = ImageButton(
-            master=self.folders_frame,
-            default_image='templates-folder-default',
-            active_image='templates-folder-active',
-            command=partial(open_folder, TEMPLATES)
-        )
-        self.templates_folder_button.grid(row=0, column=2, padx=(0, 16))
-        msg = 'Templates folder.'
-        ToolTip(self.templates_folder_button, msg=msg, delay=1)
-
-        # =-=-=-=-=-=-=-=-=- Progressbar -=-=-=-=-=--=-=-=-=-=-=
+        self.folder_links.grid(row=0, column=2, sticky=E)
 
         self.progressbar_var = ttk.IntVar(value=0)
         self.progressbar = ttk.Progressbar(
@@ -599,7 +178,7 @@ class App(ttk.Frame):
         )
 
         self.seperator = ttk.Separator(self)
-        self.seperator.grid(row=1, column=0, columnspan=3, sticky=EW, pady=(2, 6))
+        self.seperator.grid(row=1, column=0, columnspan=3, sticky=EW, pady=6)
 
         # =-=-=-=-=-=-=-=-=- Left Frame -=-=-=-=-=--=-=-=-=-=-=
 
@@ -608,28 +187,26 @@ class App(ttk.Frame):
 
         self.certificate_options= InfoInput(
             master=self.lframe,
-            testmode=cc_test_mode,
-            logging=logging
+            templates_path=TEMPLATES,
+            userlists_path=USERLISTS,
+            testmode=True
         )
         self.certificate_options.grid(row=0, column=0, sticky=EW)
         self.certificate_options.create_certificates_button.configure(
-            command=self.create_certificates)
+            command=self.create_certificates
+        )
+
+        self.certificate_options.image_changed_handler = self.load_image
+        self.certificate_options.info_file_changed_handler = self.load_userlist
 
         self.emailing_options = EmailInput(
             master=self.lframe,
             testemail=test_email,
             realemail=real_email,
-            testmode=emailing_test_mode,
-            personalemail=personal_email
-            )
+            testmode=True
+        )
         self.emailing_options.send_emails_button.configure(
             command=self.send_emails
-        )
-        self.emailing_options.personal_email.trace_add(
-            'write',
-            lambda *_: self.email_creator.personal_email.set(
-                self.emailing_options.personal_email.get()
-            )
         )
 
         self.image_viewer = ImageViewer(
@@ -637,11 +214,8 @@ class App(ttk.Frame):
             text_alignment=text_alignment,
             xcoord=xcoord,
             ycoord=ycoord
-            )
+        )
         self.image_viewer.grid(row=1, column=0, sticky=NSEW)
-
-        self.certificate_options.image_changed_handler = self.load_image
-        self.certificate_options.info_file_changed_handler = self.load_userlist
 
         # =-=-=-=-=-=-=-=- Middle Frame -=-=-=-=-=--=-=-=-=-=
 
@@ -652,30 +226,24 @@ class App(ttk.Frame):
         self.file_manager_notebook.enable_traversal()
 
         # Initialize widgets
-        self.font_manager = FontManager(
-            self.file_manager_notebook,
-            scrollbar_bootstyle=(DEFAULT, ROUND)
-        )
-        self.text_editor = TextEditor(
-            self.file_manager_notebook,
-            scrollbar_bootstyle=(DEFAULT, ROUND)
-        )
-        self.data_viewer = DataViewer(
+        self.data_viewer = UserViewer(
             self.file_manager_notebook,
             bootstyle=DARK,
             scrollbar_bootstyle=(DEFAULT, ROUND)
         )
+
         self.email_creator = EmailCreator(
-            self.file_manager_notebook
+            self.file_manager_notebook,
+            subject=email_subject,
+            body=email_body
         )
+
         self.logger = Logger(
             self.file_manager_notebook,
             scrollbar_bootstyle=(DEFAULT, ROUND)
         )
 
         self.filemanager_children = {}
-        self.filemanager_children['Font Manager'] = self.font_manager
-        self.filemanager_children['Info File'] = self.text_editor
         self.filemanager_children['Name List'] = self.data_viewer
         self.filemanager_children['Email'] = self.email_creator
         self.filemanager_children['Logger'] = self.logger
@@ -683,7 +251,10 @@ class App(ttk.Frame):
         for key, value in self.filemanager_children.items():
             self.file_manager_notebook.add(value, text=key, sticky=NSEW)
 
-        self.file_manager_notebook.bind('<<NotebookTabChanged>>', self.notebook_tab_changed)
+        self.file_manager_notebook.bind(
+            '<<NotebookTabChanged>>',
+            self.notebook_tab_changed
+        )
 
         default_template_path = TEMPLATES / template_file
         default_userlist_path = USERLISTS / userlist_file
@@ -693,10 +264,23 @@ class App(ttk.Frame):
 
         # =-=-=-=-=-=-=-=-=- Right Frame -=-=-=-=-=--=-=-=-=-=-=
 
-        self.font_configuration = FontSelector(master=self.rframe)
-        self.font_configuration.color_selector.set_color(text_color)
-        self.font_configuration.font_size_selector.amountusedvar.set(text_font_size)
-        self.font_configuration.pack(expand=YES, fill=Y, side=RIGHT)
+        font_families = [i.stem.replace('-', ' ') for i in FONTS.iterdir() if i.suffix == '.ttf']
+        self.font_configuration = FontSelector(
+            self.rframe,
+            font_families,
+            font,
+            color=font_color
+        )
+        self.font_configuration.pack(side=TOP, expand=TRUE, fill=BOTH)
+
+    def save_state(self, callback, *args, **kwargs):
+        try:
+            self.clean_temp_files()
+            self.save_config()
+        except:
+            pass
+        finally:
+            callback(*args, **kwargs)
 
     def clean_temp_files(self):
         if os.path.exists('userlist.temp'):
@@ -704,89 +288,52 @@ class App(ttk.Frame):
 
     def save_config(self):
         config = ConfigParser()
-        config.read(CONFIG)
+        config.read(CONFIG, encoding='UTF-8')
 
-        logging = str(self.certificate_options.logging.get()).lower()
-        config.set('certificateCreation', 'logging', logging)
+        font = self.font_configuration.font
+        color = self.font_configuration.color[1:]
 
-        text_color = self.font_configuration.get_font_color()[1:]
-        config.set('certificate', 'color', text_color)
-        text_font  = '' # TODO
-        text_font_size = self.font_configuration.get_font_size()
-        config.set('certificate', 'fontSize', str(text_font_size))
+        config.set('font', 'color', color)
+        config.set('font', 'family', font.cget('family'))
+        config.set('font', 'size', str(font.cget('size')))
+        config.set('font', 'weight', font.cget('weight'))
+        config.set('font', 'slant', font.cget('slant'))
 
+        alignment = self.image_viewer.text_alignment.get()
         coords = self.image_viewer.get_saved_coords()
+
+        config.set('certificateText', 'alignment', alignment)
         config.set('certificateText', 'xcoord', str(coords[0]))
         config.set('certificateText', 'ycoord', str(coords[1]))
 
         test_email = self.emailing_options.test_email.get()
-        config.set('emailing', 'testEmail', test_email)
         real_email = self.emailing_options.real_email.get()
-        config.set('emailing', 'realEmail', real_email)
+        email_subject = self.email_creator.get_subject()
+        email_body = self.email_creator.get_body().lstrip()
 
-        with open('config.ini', 'w') as configfile:
+        config.set('emailing', 'testEmail', test_email)
+        config.set('emailing', 'realEmail', real_email)
+        config.set('emailing', 'subject', email_subject)
+        config.set('emailing', 'body', email_body)
+
+        with open('config.ini', 'w', encoding='UTF-8') as configfile:
             config.write(configfile)
 
     def notebook_tab_changed(self, event: tk.Event):
-        tab = event.widget.tab(CURRENT)['text']
+        match event.widget.tab(CURRENT)['text']:
+            case 'Name List':
+                self.switch_to_certificate_mode()
+            case 'Email':
+                self.switch_to_emailing_mode()
 
-        if tab == 'Info File':
-            self.modes_combobox.current(0)
-        elif tab == 'Email':
-            self.modes_combobox.current(1)
-
-    def load_userlist(self, path:str, *_):
-        filetype = path.split('.')[-1]
-
-        if filetype in {'exel', 'xls', 'xlsx', 'xlsm',
-            'xlsb', 'odf', 'ods', 'odt'}:
-            user_list = data_filtering.exel_to_list(path)
-        elif filetype == 'csv':
-            user_list = data_filtering.csv_to_list(path)
-        else:
-            user_list = data_filtering.txt_to_list(path)
-
-        # List with valid users
-        self.user_list = []
-        # List with flagged users
-        self.flagged_user_list = []
-
-        # Filter users based on their flags
-        for item in user_list:
-            if item[2] == '':
-                self.user_list.append(item)
-            else:
-                self.flagged_user_list.append(item)
-
-        # Sort flaggedUserList based on flagIndex
-        self.flagged_user_list = sorted(self.flagged_user_list, key=lambda a: a[2])
-        # Clean dataViewer widgets
-        self.filemanager_children['Name List']._reset()
-
-        for item in self.user_list:
-            self.filemanager_children['Name List'].insert_entry(
-                values=[item[0], item[1]], save_edit=False)
-
-        for item in self.flagged_user_list:
-            tag = ''
-            # Convert item flag to tree tag
-            if item[2][0] == 'N':
-                tag = 'flaggedName'
-            elif item[2][0] == 'E':
-                tag = 'flaggedEmail'
-
-            self.filemanager_children['Name List'].insert_entry(
-                values=[item[0], item[1]], tags=(tag), save_edit=False)
-
-        data_filtering.list_to_txt(user_list)
-        self.load_file(BASE_DIR / 'userlist.temp')
-        # Switch to DataViewer tab
-        self.file_manager_notebook.select(1)
-
-    def load_file(self, path: str, *_):
-        """ Load text file in the Text editor widget. """
-        if os.path.exists(path):
-            self.text_editor.load_file(path)
+    def load_userlist(self, path: str, *_):
+        try:
+            userlist = file_to_ulist(Path(path))
+            self.data_viewer.load_list(userlist)
+            # Switch to DataViewer tab
+            self.file_manager_notebook.select(0)
+        except NotImplementedError:
+            pass
 
     def load_image(self, path: str, *_):
         """ Load image in the canvas widget. """
@@ -795,22 +342,13 @@ class App(ttk.Frame):
         if os.path.exists(path):
             self.image_viewer.load_image(path)
 
-    def switch_to_certificate_mode(self):
-        self.emailing_options.grid_remove()
-        self.certificate_options.grid(row=0, column=0, sticky=EW)
-
     def switch_to_emailing_mode(self):
         self.certificate_options.grid_remove()
         self.emailing_options.grid(row=0, column=0, sticky=EW)
 
-    def switch_mode(self, *args):
-        """ Change the app mode. If the current mode is emailing,
-        switch to certificate creation and vise versa. """
-
-        if self.mode.get() == 'Email Sender':
-            self.switch_to_emailing_mode()
-        else:
-            self.switch_to_certificate_mode()
+    def switch_to_certificate_mode(self):
+        self.emailing_options.grid_remove()
+        self.certificate_options.grid(row=0, column=0, sticky=EW)
 
     def initialize_progressbar(self, maximum: int):
         """ Replace the seperator on the top frame with a
@@ -826,16 +364,15 @@ class App(ttk.Frame):
         self.seperator.grid(row=1, column=0, columnspan=3, sticky=EW, pady=6)
 
     def create_certificates(self):
-        font_path = FONTS / self.text_font
-        font_path = FONTS / 'roboto-Regular.ttf'
-        font_size = self.font_configuration.get_font_size()
-        font = ImageFont.truetype(str(font_path), font_size)
+        font = self.font_configuration.font
+        font_path = FONTS / f'{font.cget("family").replace(" ", "-")}.ttf'
+        image_font = ImageFont.truetype(str(font_path), font.cget('size'))
 
         certificate_creator = CertificateCreator(
             image_path=self.certificate_options.image_path.get(),
-            output_folder_path='certificates',
-            font=font,
-            font_color=self.font_configuration.get_font_color(),
+            output_folder_path=CERTIFICATES,
+            font=image_font,
+            font_color=self.font_configuration.color,
             image_coords=self.image_viewer.get_saved_coords(),
             word_position=self.image_viewer.text_alignment_combobox.get(),
             compress_level=3,
@@ -860,6 +397,11 @@ class App(ttk.Frame):
         )
 
     def send_emails(self):
+        answer = askyesno('Emailing', 'You are about to send emails. Continue?')
+
+        if not answer:
+            return
+
         email_sender = EmailSender()
 
         sender = self.emailing_options.real_email_entry.get()
@@ -871,16 +413,6 @@ class App(ttk.Frame):
             sender = self.emailing_options.test_email_entry.get()
         else:
             sender = self.emailing_options.real_email_entry.get()
-
-        if self.emailing_options.personal_email.get():
-            to = email['to']
-            email_sender.send_email(
-                sender,
-                to,
-                subject,
-                msg_html=body
-            )
-            return
 
         if not self.created_certificates:
             Messagebox.show_warning(
@@ -896,7 +428,15 @@ class App(ttk.Frame):
             else:
                 self.data_viewer._tree.item(entry, tags=['emailError'])
 
-        userlist = self.data_viewer.get_list_of_valid_entries()
+        if self.emailing_options.test_mode.get():
+            userlist = []
+            for item in self.data_viewer.get_num_of_valid_entries(10):
+                item = list(item)
+                item[2] = self.emailing_options.test_email.get()
+                userlist.append(tuple(item))
+        else:
+            userlist = self.data_viewer.get_list_of_valid_entries()
+
         self.initialize_progressbar(len(userlist))
 
         App.launch_independent_tread(
@@ -934,9 +474,9 @@ class EmailSenderWrapper:
         create_message,
         send_message,
         progress_var: ttk.IntVar,
-        log : Optional[Callable[[], Any]],
-        cleanup_func : Optional[Callable[[], Any]],
-        userlist: List[User]
+        log : Callable[[], Any] | None,
+        cleanup_func : Callable[[], Any] | None,
+        userlist: list[User]
     ) -> None:
 
         func = partial(
@@ -977,7 +517,7 @@ class EmailSenderWrapper:
         body: str,
         create_message,
         user: User
-    ) -> Tuple[str, str]:
+    ) -> tuple[str, str]:
         certificate_path = CERTIFICATES / str(user[1].replace(' ', '_') + '.png')
         message = create_message(
             sender=sender,
@@ -990,5 +530,8 @@ class EmailSenderWrapper:
 
 
 if __name__ == '__main__':
+    # Prevents new processes from duplicating the main window
+    mp.freeze_support()
+
     with MainWindow() as w:
         w.root.mainloop()

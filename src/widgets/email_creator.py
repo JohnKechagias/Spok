@@ -8,7 +8,7 @@ from .placeholder_entry import PlaceholderEntry
 
 
 class EmailCreator(ttk.Frame):
-    def __init__(self, master=None, *args, **kwargs):
+    def __init__(self, master=None, subject='', body='', *args, **kwargs):
         super().__init__(master, padding=10)
 
         self.rowconfigure(2, weight=1)
@@ -19,21 +19,23 @@ class EmailCreator(ttk.Frame):
         # of personal emails (with a single recipient).
         self.personal_email = ttk.BooleanVar(value=False)
         self.personal_email.trace_add('write', self._on_personal_email_bool_changed)
+
         try:
-            with open('emailSignature.html', 'r') as file:
+            with open('emailSignature.html', 'r', encoding='UTF-8') as file:
                 signature = file.read()
         except FileNotFoundError:
             signature = ''
         finally:
             self.signature = signature
 
-        self._subject = PlaceholderEntry(self, placeholder='Subject')
-        self._subject.grid(row=1,  column=0, sticky=EW, pady=(0, 5))
+        self._subject = PlaceholderEntry(self, placeholder='Subject', text=subject)
+        self._subject.grid(row=1, column=0, sticky=EW, pady=(0, 5))
 
         self._to = PlaceholderEntry(self, placeholder='To')
 
-        self._body = ttk.Text(self, *args, **kwargs)
+        self._body = ttk.Text(self, *args, **kwargs, undo=True)
         self._body.grid(row=2,  column=0, sticky=NSEW, pady=(5, 0))
+        self._body.insert(END, body.strip())
 
         self._body.bind('<KeyPress-t>', lambda _: self.get_email())
 
@@ -67,3 +69,9 @@ class EmailCreator(ttk.Frame):
 
         email['body'] = body
         return email
+
+    def get_subject(self) -> str:
+        return self._subject.get()
+
+    def get_body(self) -> str:
+        return self._body.get('1.0', END)

@@ -35,6 +35,8 @@ class TextEditor(ttk.Frame):
         selected_background_color       = '#444444'
         selected_foreground_color       = '#f7d4d4'
 
+        font = ('Arial', '14')
+        find_font = ('Arial', '13')
         self._last_line_index = 0  # Store the row index of the previously selected line
 
         # Setup text widget
@@ -42,6 +44,7 @@ class TextEditor(ttk.Frame):
             master=self,
             wrap=NONE,
             autostyle=False,
+            font=font,
             borderwidth=0,
             highlightthickness=0,
             foreground=num_font_color,
@@ -55,6 +58,7 @@ class TextEditor(ttk.Frame):
             maxundo=-1,
             autoseparators=True,
             autostyle=False,
+            font=font,
             insertwidth=3,
             borderwidth=0,
             highlightthickness=0,
@@ -115,6 +119,7 @@ class TextEditor(ttk.Frame):
             self._find_frame,
             placeholder='Find..',
             autostyle=False,
+            font=find_font,
             borderwidth=0,
             insertwidth=2,
             highlightthickness=0,

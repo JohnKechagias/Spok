@@ -1,7 +1,5 @@
 import tkinter as tk
-from typing import Optional
-
-from assets_manager import ICONS
+from services.assets_manager import ICONS
 from .constants import *
 
 
@@ -10,11 +8,11 @@ class ImageButton(tk.Button):
     def __init__(
         self,
         master: tk.Widget,
-        codename: Optional[str] = None,
-        default_image: Optional[tk.PhotoImage] = None,
-        active_image: Optional[tk.PhotoImage] = None,
-        hover_image: Optional[tk.PhotoImage] = None,
-        background: Hex = THEME['bg'],
+        codename: str | None = None,
+        default_image: tk.PhotoImage  | None = None,
+        active_image: tk.PhotoImage | None = None,
+        hover_image: tk.PhotoImage | None = None,
+        background: Hex = THEME[BG],
         *args,
         **kwargs
     ) -> None:
