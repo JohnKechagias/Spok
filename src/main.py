@@ -370,7 +370,7 @@ class App(ttk.Frame):
 
         certificate_creator = CertificateCreator(
             image_path=self.certificate_options.image_path.get(),
-            output_folder_path=CERTIFICATES,
+            output_folder=CERTIFICATES,
             font=image_font,
             font_color=self.font_configuration.color,
             image_coords=self.image_viewer.get_saved_coords(),

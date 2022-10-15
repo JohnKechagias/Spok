@@ -17,7 +17,7 @@ class CertificateCreator:
     def __init__(
         self,
         image_path: str,
-        output_folder_path: str,
+        output_folder: Path,
         font: ImageFont.FreeTypeFont,
         font_color: tuple[int, int, int],
         image_coords: tuple[int, int],
@@ -28,7 +28,7 @@ class CertificateCreator:
     ) -> None:
         self.num_of_processes = num_of_processes
         self.image = Image.open(image_path)
-        self.output_folder_path = output_folder_path
+        self.output_folder = output_folder
         self.font = font
         self.font_color = font_color
         self.coords = image_coords
@@ -63,8 +63,9 @@ class CertificateCreator:
         """
 
         func = partial(
-            CertificateCreator.create_certificate,
+            self.create_certificate,
             self.image,
+            self.output_folder,
             self.coords,
             self.font,
             self.font_color,
@@ -95,6 +96,7 @@ class CertificateCreator:
     @staticmethod
     def create_certificate(
         image: Image.Image,
+        output_folder: Path,
         coords: tuple[int, int],
         font: ImageFont.FreeTypeFont,
         font_color: tuple[int, int, int],
@@ -138,7 +140,7 @@ class CertificateCreator:
         # Save the edited image
         name = user[1].replace(' ', '_')
         image_name = f'{name}.{image_format}'
-        image_location = Path('certificates') / image_name
+        image_location = output_folder / image_name
         image_copy.save(image_location, format='png', compress_level=compress_level)
         return user
 
