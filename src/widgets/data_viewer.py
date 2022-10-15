@@ -124,6 +124,16 @@ class DataViewer(ttk.Frame):
                 values.append(entry_values)
         return values
 
+    def get_num_of_valid_entries(self, num: int) -> list[User]:
+        values = []
+        for entry in self._tree.get_children()[:num]:
+            entry_tags = self._tree.item(entry, 'tags')
+            # Export only entry that don't have a tag
+            if len(entry_tags) == 0 or entry_tags is None:
+                entry_values = self._tree.item(entry, 'values')
+                values.append(entry_values)
+        return values
+
     def get_entry_from_index(self, index: int) -> User:
         return self._tree.get_children()[index - 1]
 
