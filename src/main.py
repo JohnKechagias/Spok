@@ -309,7 +309,7 @@ class App(ttk.Frame):
         test_email = self.emailing_options.test_email.get()
         real_email = self.emailing_options.real_email.get()
         email_subject = self.email_creator.get_subject()
-        email_body = self.email_creator.get_body().lstrip()
+        email_body = self.email_creator.get_body().rstrip()
 
         config.set('emailing', 'testEmail', test_email)
         config.set('emailing', 'realEmail', real_email)
