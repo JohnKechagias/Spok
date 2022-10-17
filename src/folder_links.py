@@ -26,4 +26,4 @@ class FolderLinks(ttk.Frame):
                 command=partial(open_folder, path)
             )
             self.buttons[path.name].pack(side=LEFT, expand=TRUE, padx=10)
-            ToolTip( self.buttons[path.name], msg=f"{folder_name.replace('-', ' ')} folder.", delay=1)
+            ToolTip( self.buttons[path.name], msg=f"{folder_name.replace('-', ' ')} folder", delay=1)

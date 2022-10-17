@@ -42,7 +42,6 @@ CERTIFICATES = BASE_DIR / 'certificates'
 FONTS = BASE_DIR / 'fonts'
 TEMPLATES = BASE_DIR / 'templates'
 USERLISTS = BASE_DIR / 'userlists'
-SECRETS = BASE_DIR / 'client-secrets'
 CONFIG = BASE_DIR / 'config.ini'
 
 
@@ -163,7 +162,7 @@ class App(ttk.Frame):
         )
         self.secondary_title.grid(row=0, column=1, padx=5, pady=(9, 0))
 
-        folders = [USERLISTS, FONTS, TEMPLATES, SECRETS]
+        folders = [USERLISTS, FONTS, TEMPLATES, CERTIFICATES]
         self.folder_links = FolderLinks(
             self.topframe,
             folders
