@@ -404,7 +404,10 @@ class App(ttk.Frame):
         if not answer:
             return
 
-        email_sender = EmailSender()
+        email_sender = EmailSender(
+            BASE_DIR / 'client_secret.json',
+            BASE_DIR / 'gmail_token.json'
+        )
 
         sender = self.emailing_options.real_email_entry.get()
         email = self.email_creator.get_email()

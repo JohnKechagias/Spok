@@ -98,7 +98,8 @@ class EmailSender:
             self._service = build(
                 self._API_NAME,
                 self._API_VERSION,
-                credentials=self.creds
+                credentials=self.creds,
+                static_discovery=False
             )
 
         except HttpError as error:
