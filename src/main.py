@@ -308,7 +308,7 @@ class App(ttk.Frame):
 
         test_email = self.emailing_options.test_email.get()
         real_email = self.emailing_options.real_email.get()
-        if email_subject := self.email_creator.get_subject() == 'Subject':
+        if (email_subject := self.email_creator.get_subject()) == 'Subject':
             email_subject = 'Example subject'
         if not len(email_body := self.email_creator.get_body().rstrip()):
             email_body = 'Example body'
@@ -318,7 +318,7 @@ class App(ttk.Frame):
         config.set('emailing', 'subject', email_subject)
         config.set('emailing', 'body', email_body)
 
-        with open('config.ini', 'w', encoding='UTF-8') as configfile:
+        with open(CONFIG, 'w', encoding='UTF-8') as configfile:
             config.write(configfile)
 
     def notebook_tab_changed(self, event: tk.Event):
