@@ -50,6 +50,7 @@ class MainWindow(object):
         self.root = ttk.Window(
             title='Certificates Creation',
             themename=THEMENAME,
+            iconphoto=(ASSETS / 'icons' / 'icon.png'),
             minsize=(1200, 565),
             *args,
             **kwargs
@@ -307,8 +308,10 @@ class App(ttk.Frame):
 
         test_email = self.emailing_options.test_email.get()
         real_email = self.emailing_options.real_email.get()
-        email_subject = self.email_creator.get_subject()
-        email_body = self.email_creator.get_body().rstrip()
+        if email_subject := self.email_creator.get_subject() == 'Subject':
+            email_subject = 'Example subject'
+        if not len(email_body := self.email_creator.get_body().rstrip()):
+            email_body = 'Example body'
 
         config.set('emailing', 'testEmail', test_email)
         config.set('emailing', 'realEmail', real_email)
