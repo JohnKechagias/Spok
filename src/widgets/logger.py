@@ -128,43 +128,6 @@ class Logger(ttk.Frame):
 
         self._text.grid(row=0, column=1, sticky=NSEW)
 
-        # Setup search functionality
-        self._search_open = False
-        self._find_text = ttk.StringVar()
-        self._find_frame = ttk.Frame(self._text)
-
-        self._find_entry = tkPlaceholderEntry(
-            self._find_frame,
-            placeholder='Find..',
-            autostyle=False,
-            font=find_font,
-            borderwidth=0,
-            insertwidth=2,
-            highlightthickness=0,
-            background=find_background,
-            foreground=text_font_color,
-            insertbackground=cursor_color,
-            textvariable=self._find_text
-        )
-        self._find_entry.pack(side=LEFT, pady=2, padx=(10, 4))
-
-        self._find_close_button = tk.Button(
-            self._find_frame,
-            autostyle=False,
-            image='x',
-            borderwidth=0,
-            highlightthickness=0,
-            background=dark_background_color,
-            activebackground=secondary_dark_background_color,
-            relief=FLAT,
-            cursor='arrow',
-            command=self._close_search
-        )
-        self._find_close_button.pack(side=LEFT, expand=NO, pady=2, padx=(0, 4))
-
-        self._text.bind_all('<Control-KeyPress-f>', lambda e: self._open_search(), add='+')
-        self._text.bind_all('<Escape>', lambda e: self._close_search(), add='+')
-
         self.log('LOGGER INITIALIZED', log_level=LogLevel.INFO, newline=False)
 
     def log(
@@ -202,11 +165,3 @@ class Logger(ttk.Frame):
 
     def _on_change(self, _):
         pass
-
-    def _open_search(self):
-        self._find_frame.place(relx=0.98, rely=0, anchor=NE, bordermode=OUTSIDE)
-        self._search_open = True
-
-    def _close_search(self):
-        self._find_frame.place_forget()
-        self._search_open = False
