@@ -66,7 +66,7 @@ def remove_nonspacing_marks(s: str) -> str:
 
 def clean_name(name: str) -> str:
     """ Remove invalid chars from the name str. """
-    name = name.translate(str.maketrans("-", " ", ")(!\"\":@#$.,"))
+    name = name.translate(str.maketrans("-", " ", ")(!\"\":@#$,"))
     return remove_nonspacing_marks(name).upper().strip()
 
 

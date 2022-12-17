@@ -235,7 +235,9 @@ class App(ttk.Frame):
         self.email_creator = EmailCreator(
             self.file_manager_notebook,
             subject=email_subject,
-            body=email_body
+            body=email_body,
+            signature_path= BASE_DIR / 'emailSignature.html',
+            attachments_path=BASE_DIR
         )
 
         self.logger = Logger(
@@ -411,6 +413,7 @@ class App(ttk.Frame):
 
         sender = self.emailing_options.real_email_entry.get()
         email = self.email_creator.get_email()
+        attachments = self.email_creator.get_attachments()
         subject = email['subject']
         body = email['body']
 
@@ -449,6 +452,7 @@ class App(ttk.Frame):
             sender,
             subject,
             body,
+            attachments,
             email_sender.create_message,
             email_sender.send_message,
             self.progressbar_var,
@@ -470,12 +474,14 @@ class App(ttk.Frame):
         independent_thread.start()
 
 
+pdf_path = BASE_DIR / 'attachments' / 'schedule.pdf'
 class EmailSenderWrapper:
     @staticmethod
     def send_certificates(
         sender: str,
         subject: str,
         body: str,
+        attachments: list[str],
         create_message,
         send_message,
         progress_var: ttk.IntVar,
@@ -489,6 +495,7 @@ class EmailSenderWrapper:
             sender,
             subject,
             body,
+            attachments,
             create_message
         )
 
@@ -520,16 +527,19 @@ class EmailSenderWrapper:
         sender: str,
         subject: str,
         body: str,
+        attachments: list[str],
         create_message,
         user: User
     ) -> tuple[str, str]:
         certificate_path = CERTIFICATES / str(user[1].replace(' ', '_') + '.png')
+        attachments.append(certificate_path)
+
         message = create_message(
             sender=sender,
             to=user[2],
             subject=subject,
             msg_html=body,
-            attachments=[certificate_path]
+            attachments=attachments
         )
         return (user[0], message)
 

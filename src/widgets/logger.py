@@ -5,7 +5,6 @@ import ttkbootstrap as ttk
 from ttkbootstrap.constants import *
 
 from .auto_scrollbar import AutoScrollbar
-from .placeholder_entry import tkPlaceholderEntry
 from .custom_texts import CText
 from .constants import *
 

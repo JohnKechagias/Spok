@@ -9,7 +9,9 @@ a = Analysis(
     pathex=[],
     binaries=[],
     datas=[],
-    hiddenimports=['PIL._tkinter_finder'],
+    hiddenimports=[
+        'PIL._tkinter_finder'
+    ],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
@@ -37,6 +39,7 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
+    icon='icon.ico'
 )
 coll = COLLECT(
     exe,

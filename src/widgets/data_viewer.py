@@ -269,7 +269,7 @@ class DataViewer(ttk.Frame):
 
     def _delete_selected_entries(self, event: tk.Event):
         try:
-            entries_to_delete = self._tree.selection()
+            entries_to_delete = self._tree.selection()[0]
         except:
             return
         self.delete_entries(entries_to_delete)
